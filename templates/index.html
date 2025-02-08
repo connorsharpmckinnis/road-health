@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Health Monitor</title>
+    <link rel="stylesheet" href="static/style.css">
+
+    <script>
+        function fetchAllDetails() {
+            fetchMainAppDetails();
+            fetchProcessingAppDetails();
+        }
+
+        function fetchMainAppDetails() {
+            fetch("/main-details")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("main_app_status").innerText = `Main App Status: ${data.main_status}`;
+                document.getElementById("main_monitoring_active").innerText = `Main App Monitoring: ${data.main_monitoring_active}`;
+
+                let countdownElement = document.getElementById("time_to_check");
+                let statusContainer = document.getElementById("status-container");
+
+                if (data.time_to_check !== null) {
+                    countdownElement.innerText = `Checking Box in ${data.time_to_check}...`;
+                    statusContainer.classList.add("countdown-active");
+                } else {
+                    countdownElement.innerText = "";
+                    statusContainer.classList.remove("countdown-active");
+                }
+            })
+            .catch(error => console.error("Error fetching main app details:", error));
+        }
+
+        function fetchProcessingAppDetails() {
+            fetch("/processing-details")
+            .then(response => response.json())
+            .then(data => {
+                let processingSection = document.getElementById("processing-section");
+        
+                if (processingSection) {
+                    if (data.processing_status !== "Idle" && Object.keys(data.processing_status).length > 0) {
+                        processingSection.classList.remove("hidden");
+                    } else {
+                        processingSection.classList.add("hidden");
+                    }
+                }
+        
+                let updateText = (id, text) => {
+                    let element = document.getElementById(id);
+                    if (element) {
+                        element.innerText = text;
+                    }
+                };
+        
+                updateText("processing_video_fps", `Processing Video FPS: ${data.processing_video_fps}`);
+                updateText("processing_analysis_frames_per_second", `Analysis FPS: ${data.processing_analysis_frames_per_second}`);
+                updateText("processing_analysis_max_frames", `Max Frames: ${data.processing_analysis_max_frames}`);
+                updateText("processing_analysis_batch_size", `Batch Size: ${data.processing_analysis_batch_size}`);
+                updateText("processing_seconds_analyzed", `Seconds Analyzed: ${data.processing_seconds_analyzed}`);
+                updateText("processing_minutes_analyzed", `Minutes Analyzed: ${data.processing_minutes_analyzed}`);
+                updateText("processing_status", `Processing Status: ${data.processing_status}`);
+            })
+            .catch(error => console.error("Error fetching processing app details:", error));
+        }
+
+        function fetchStatus() {
+            fetch("/status")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("status").innerText = `Status: ${data.status}`;
+                    document.getElementById("pending_files").innerText = `Pending files: ${data.pending_files}`;
+                })
+                .catch(error => console.error("Error fetching status:", error));
+        }
+
+        function fetchLogs() {
+            fetch('/logs')
+                .then(response => response.json())
+                .then(data => {
+                    let logContainer = document.getElementById('logs');
+                    logContainer.innerHTML = "";
+                    data.logs.forEach(log => {
+                        let logLine = document.createElement("p");
+                        logLine.textContent = log;
+                        logContainer.appendChild(logLine);
+                    });
+                })
+                .catch(error => console.error("Error fetching logs:", error));
+        }
+
+        function fetchFolderContents() {
+            fetch("/folder-contents")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("unprocessedList").innerHTML = 
+                        data.unprocessed_videos.length > 0 ? data.unprocessed_videos.join("<br>") : "No pending files";
+                    document.getElementById("processedList").innerHTML = 
+                        data.processed_videos.length > 0 ? data.processed_videos.join("<br>") : "No processed files";
+                })
+                .catch(error => console.error("Error fetching folder contents:", error));
+        }
+
+        // Polling intervals (polling every few seconds)
+        setInterval(fetchFolderContents, 5000);
+        setInterval(fetchStatus, 1000);
+        setInterval(fetchLogs, 5000);
+        setInterval(fetchAllDetails, 1000);
+
+        window.onload = function() {
+            fetchStatus();
+            fetchLogs();
+            fetchFolderContents();
+            fetchAllDetails();
+
+            document.getElementById("startMonitoringBtn").addEventListener("click", function() {
+                fetch("/start-monitoring", { method: "POST" })
+                    .then(response => response.json())
+                    .then(data => alert(data.status))
+                    .catch(error => console.error("Error starting monitoring:", error));
+            });
+        };
+    </script>
+</head>
+
+<body>
+
+    <header>
+        <h1>Road Health Monitor</h1>
+    </header>
+
+    <aside>
+        <nav>
+            <a href="#">Dashboard</a>
+            <a href="#">Settings</a>
+            <a href="#">Reports</a>
+            <a href="#">Logs</a>
+        </nav>
+    </aside>
+
+    <main>
+        <section>
+            <h2>System Status</h2>
+            <button id="startMonitoringBtn" class="btn">Start Monitoring</button>
+            <div id="status-container">
+                <p id="status">Loading...</p>
+                <span id="time_to_check"></span>
+            </div>
+            <p id="pending_files">Loading...</p>
+        </section>
+
+        <section>
+            <h2>Main App Details</h2>
+            <p id="main_app_status">Loading...</p>
+            <p id="main_monitoring_active">Loading...</p>
+        </section>
+
+        <section id="processing-section" class="hidden">
+            <h2>Processing App Details</h2>
+            <div id="processing-tracker"></div>
+        </section>
+
+        <section>
+            <h2>Folder Contents</h2>
+            <div id="folder-container">
+                <div class="folder-view">
+                    <h3>Unprocessed Videos</h3>
+                    <p id="unprocessedList">Loading...</p>
+                </div>
+                <div class="folder-view">
+                    <h3>Processed Videos</h3>
+                    <p id="processedList">Loading...</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Logs</h2>
+            <div id="logs"></div>
+        </section>
+    </main>
+
+</body>
+</html>

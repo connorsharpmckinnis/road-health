@@ -1,0 +1,261 @@
+from flask import Flask, request, jsonify
+from ai import AI
+from box import Box
+from salesforce import WorkOrderCreator
+from processing import Processor
+import utils
+import dotenv
+import os
+from logging_config import logger
+import time
+import shutil
+import threading
+
+
+dotenv.load_dotenv()
+
+
+flask_app = Flask(__name__)
+
+class App():
+    def __init__(self):
+        self.status = 'Monitoring Inactive'
+        self.monitoring_active = False
+        self.box = None
+        self.processor = None
+        self.work_order_creator = None
+        self.processed_videos = set()
+        self.all_files = []
+        self.telemetry_objects = None
+        self.downloaded_but_unprocessed = []
+        self.time_to_check = None
+        self.processing_status = {}
+
+        self.startup_box_client()
+        self.startup_processor()
+        self.startup_work_order_creator()
+        self.load_processed_videos()
+
+
+
+    def startup_box_client(self):
+        self.box = Box()
+
+    def startup_processor(self):
+        self.frame_processor = Processor()
+
+    def startup_work_order_creator(self):
+        self.work_order_creator = WorkOrderCreator()
+
+    def load_processed_videos(self):
+        try:
+            with open('processed_files.log', 'r') as f:
+                self.processed_videos = set(f.read().splitlines())
+        except FileNotFoundError:
+            self.processed_videos = set()
+
+    def load_downloaded_but_unprocessed_videos(self):
+        self.downloaded_but_unprocessed = os.listdir("unprocessed_videos")
+
+    def save_processed_videos(self):
+        """Save processed files to a log to prevent reprocessing."""
+        with open("processed_files.log", "w") as f:
+            f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
+
+    def pipeline(self, new_files_to_download: list=None):
+        self.status = 'Running pipeline...'
+        logger.info(f"Starting pipeline. Downloading files...")
+        
+        if self.download_files(new_files_to_download):
+            logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
+        
+        #check if there are files to process in the unprocessed_videos folder
+        files_to_process = os.listdir("unprocessed_videos")
+        self.processed_videos = set()
+
+        #establish processing status for each file
+        self.processing_status = {file: {"stage": "Queued", "status": "Waiting to Start"} for file in files_to_process}
+
+        if not files_to_process:
+            self.status = "Idle - No files to process."
+            logger.info("No files to process. Exiting pipeline.")
+            return
+
+        for file in files_to_process:
+            self.processing_status[file] = {"stage": "Downloading", "status": f"Downloading {file}..."}
+            logger.info(self.processing_status[file]["status"])
+
+            self.processing_status[file] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
+            logger.info(self.processing_status[file]["status"])
+
+            self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
+            self.processed_videos.add(file)
+
+            self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
+            logger.info(self.processing_status[file]["status"])
+
+
+        #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
+        self.status = "Processing Salesforce actions..."
+        logger.info(self.status)
+        self.work_order_creator.process_metadata_files()
+        if len(self.work_order_creator.all_metadata) > 0:
+            logger.info(f"Processed metadata for {len(self.work_order_creator.all_metadata)} files. Runnign through Work Order engine...")
+            work_orders_created = self.work_order_creator.work_order_engine()
+            logger.info(f"Work Orders created: {work_orders_created}")
+
+        self.save_processed_videos()
+        
+        
+        #then we'll upload all the frames/json to Box for long-term storage (using metadata templates to store the image telemetry and analysis results)
+        box_archive_action = self.box.save_frames_to_long_term_storage()
+
+        #Now that all the actions are done, we can clear out the frames and unprocessed_videos folder.
+        #For unprocessed_videos, make sure to only delete the files that are also in the processed_files list
+        self.status = "Cleaning up processed files..."
+        logger.info(self.status)
+        self.clear_folders()
+
+        self.status = "Idle - Waiting for next check"
+    
+    '''def get_files_to_process(self, files_to_download: list=None):
+        # Start with listing files that are in the Box folder
+        # Then list the files in unprocessed_videos folder (it's in the current directory)
+        # Then download only the files in the Box folder that aren't also in the unprocessed_videos folder
+        # So that double-downloading doesn't occur
+        box_folder_id = self.box.videos_folder_box_id
+        files_in_box = self.box.list_items_in_folder(box_folder_id)
+        #convert list of dicts to list of strings with just the 'name' key's value
+        files_in_unprocessed_folder = os.listdir("unprocessed_videos")
+        print(f"Files in unprocessed folder: {files_in_unprocessed_folder}")
+        
+        
+        
+        files_to_download = [file for file in files_in_box if file['name'] not in files_in_unprocessed_folder]
+        print(f"Files to download: {files_to_download}")
+        if len(files_to_download) == 0:
+            logger.info("No new files to download.")
+        elif len(files_to_download) > 0:
+            logger.info(f"Files to download: {files_to_download}")
+            for file in files_to_download:
+                logger.info(f"Downloading file: {file}. Please wait...")
+                self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
+                logger.info(f"Downloaded file: {file}")'''
+    
+    def download_files(self, files_to_download: list=None) -> bool:
+        for file in files_to_download:
+                logger.info(f"Downloading file: {file}. Please wait...")
+                self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
+                logger.info(f"Downloaded file: {file}")
+        return True
+
+
+    def get_all_files(self):
+        # all files from Box (specific callouts to be handled in box.py)
+        files = self.box.download_files(self.box.videos_folder_box_id)
+        logger.info(f"Downloaded {len(files)} files from Box. {files = }")
+        return files
+        
+    def check_for_new_files(self) -> list:
+        """Poll Box for new files and return the names of any that aren't already handled."""
+        logger.info("Checking for new files...")
+        new_files_to_download = []
+        self.load_processed_videos()
+
+        box_folder_id = self.box.videos_folder_box_id
+        files_in_box = self.box.list_items_in_folder(box_folder_id)  # List files in Box
+        
+        # Get filenames of downloaded but unprocessed files
+        files_in_unprocessed_folder = set(os.listdir("unprocessed_videos"))
+
+        #get filenames of downloaded and processed files
+        files_in_processed_videos_folder = set(os.listdir("processed_videos"))
+
+        # Exclude files already processed OR already downloaded
+        new_files = [
+            file for file in files_in_box 
+            if file['name'] not in self.processed_videos  # Not processed
+            and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
+            and file['name'] not in files_in_processed_videos_folder # Not already dwnldld and processed
+        ]
+
+        if not new_files:
+            logger.info("No new files to process.")
+            return new_files_to_download
+
+        logger.info(f"New files detected: {[file['name'] for file in new_files]}")
+
+        for file in new_files:
+            new_files_to_download.append(file)
+            logger.info(f"Adding {file['name']} to to-download: (Id {file['id']})")
+
+        return new_files_to_download
+
+    def clear_folders(self):
+        # Move processed videos
+        processed_videos_folder = "processed_videos"
+        os.makedirs(processed_videos_folder, exist_ok=True)  # Ensure folder exists
+
+        unprocessed_files = os.listdir("unprocessed_videos")
+        for file in unprocessed_files:
+            if file in self.processed_videos:
+                shutil.move(f"unprocessed_videos/{file}", f"{processed_videos_folder}/{file}")
+                logger.info(f"Moved {file} to {processed_videos_folder}")
+
+        #clear out the frames folder
+        frames = os.listdir("frames")
+        for frame in frames:
+            os.remove(f"frames/{frame}")
+
+        os.remove(f"temp_metadata.bin")
+        os.remove(f"temp_metadata.gpx")
+        os.remove(f"temp_metadata.kml")
+
+    def start_monitoring(self, interval=10):
+        """Starts the monitoring loop without using threading.
+        This function will block indefinitely.
+        """
+        if self.monitoring_active:
+            logger.info("Monitoring is already running.")
+            return
+        
+        self.monitoring_active = True
+        logger.info("Monitoring started.")
+        self.status = "Monitoring active - Checking for new files"
+
+        # The monitoring loop runs synchronously now.
+        try:
+            while self.monitoring_active:
+                for i in range(interval, 0, -1):
+                    self.time_to_check = i
+                    self.status = "Idle"
+                    time.sleep(1)
+
+                new_files_to_download = self.check_for_new_files()
+                if len(new_files_to_download) > 0:
+                    self.pipeline(new_files_to_download)
+                else:
+                    self.status = "Idle - No new files detected. Restarting countdown..."
+                    logger.info(self.status)
+        except Exception as e:
+            self.status = f"Monitoring stopped due to error: {e}"
+            logger.error(f"Monitoring loop error: {e}")
+            self.monitoring_active = False
+
+if __name__ == "__main__":
+    app = App()
+    app.start_monitoring(interval=10)
+
+
+"""
+TO DO: 
+- Figure out how to handle the checking of Box for new files vs the downloading of new files from Box. 
+-   - Currently, check_for_new_files looks for Box files that aren't in processed_files.log 
+-   - AND downloads those files. We probably want to only return something like a list of the new files, then
+-   - download those listed filenames in some other function within the pipeline or before the pipeline starts.
+-   - Currently the get_files_to_process function gets ALL files in Box that aren't in the unprocessed_videos folder.
+-   - This is probably where we should replace it with something that just gets the files returned by the (updated) check_for_new_files function.
+- Figure out how a web-based UI can interact with the monitoring loop. Probably can use a thread to run the
+- monitoring loop and then a different thread run polls against the log file(s) and folder contents or something.
+
+"""
