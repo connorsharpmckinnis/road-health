@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -64,5 +64,82 @@
         </section>
     </main>
 
+</body>
+</html>-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Health Monitor</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.0/cdn/themes/light.css" />
+    
+</head>
+
+<body>
+
+    <header>
+        <h1>Road Health Monitor</h1>
+    </header>
+
+    <aside>
+        <sl-button id="startMonitoringBtn" variant="primary" style="padding-bottom: 5px">Start Monitoring</sl-button>
+        <sl-button id="stopMonitoringBtn" variant="neutral">Stop Monitoring</sl-button>
+    </aside>
+    
+    <main>
+        <section>
+            <h2>System Status</h2>
+            <div id="status-container-vertical">
+                <section class="clear">
+                    <sl-badge id="badge-idle" variant="primary" pill pulse>Idle</sl-badge>
+                    <sl-badge id="badge-active" variant="success" pill pulse>Active</sl-badge>
+                    <sl-badge id="badge-error" variant="danger" pill pulse>Error</sl-badge>
+                </section>
+            </div>
+
+            <div id="status-container-flex">
+                <p id="status">Loading...</p>
+                <p id="time_to_check"></p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Main App Details</h2>
+            <p id="main_app_status">Loading...</p>
+            <p id="main_monitoring_active">Loading...</p>
+        </section>
+
+        <section id="processing-section" class="hidden">
+            <h2>Processing App Details</h2>
+            <div id="processing-tracker"></div>
+        </section>
+
+        <section>
+            <h2>Folder Contents</h2>
+            <div id="folder-container">
+                <div class="folder-view">
+                    <h3>Unprocessed Videos</h3>
+                    <p id="unprocessedList"><sl-spinner style="font-size: 30px; --track-width: 10px"></sl-spinner></p>
+                </div>
+                <div class="folder-view">
+                    <h3>Processed Videos</h3>
+                    <p id="processedList"><sl-spinner style="font-size: 30px; --track-width: 10px"></sl-spinner></p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Logs</h2>
+            <sl-progress-bar indeterminate></sl-progress-bar>
+            <div id="logs"></div>
+        </section>
+    </main>
+    
+    <script src="https://cdn.socket.io/4.0.1/socket.io.js"></script>
+    <script src="script.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.0/cdn/shoelace-autoloader.js"></script>
 </body>
 </html>

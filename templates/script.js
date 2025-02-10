@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+/*document.addEventListener("DOMContentLoaded", function() {
     const startBtn = document.getElementById("startMonitoringBtn");
     const stopBtn = document.getElementById("stopMonitoringBtn");
 
@@ -106,4 +106,68 @@ document.addEventListener("DOMContentLoaded", function() {
     fetchLogs();
     fetchFolderContents();
     fetchAllDetails();
+});*/
+
+document.addEventListener("DOMContentLoaded", function() {
+    const startBtn = document.getElementById("startMonitoringBtn");
+    const stopBtn = document.getElementById("stopMonitoringBtn");
+    const idleBadge = document.getElementById("badge-idle");
+    const activeBadge = document.getElementById("badge-active");
+    const errorBadge = document.getElementById("badge-error");
+    const timeToCheckEl = document.getElementById("time_to_check");
+    const statusEl = document.getElementById("status");
+
+    // Establish WebSocket connection
+    const socket = io("http://localhost:5001");
+    const BASE_URL = "http://localhost:5001";
+
+
+    socket.on("update_status", function(data) {
+        // Update status text
+        statusEl.innerText = data.status;
+        timeToCheckEl.innerText = data.time_to_check > 0 ? `Time to check: ${data.time_to_check}s` : "";
+
+        // Update badges
+        idleBadge.style.display = "none";
+        activeBadge.style.display = "none";
+        errorBadge.style.display = "none";
+
+        if (data.status.includes("Idle")) {
+            idleBadge.style.display = "inline-block";
+        } else if (data.status.includes("Monitoring active") || data.status.includes("Checking for new files")) {
+            activeBadge.style.display = "inline-block";
+        } else if (data.status.includes("error") || data.status.includes("stopped due to error")) {
+            errorBadge.style.display = "inline-block";
+        }
+    });
+
+    // Start Monitoring
+    startBtn.addEventListener("click", function() {
+        fetch(`${BASE_URL}/start-monitoring`, { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "monitoring_started") {
+                    startBtn.style.display = "none";
+                    stopBtn.style.display = "inline-block";
+                } else {
+                    alert("Failed to start monitoring");
+                }
+            })
+            .catch(error => console.error("Error starting monitoring:", error));
+    });
+
+    // Stop Monitoring
+    stopBtn.addEventListener("click", function() {
+        fetch(`${BASE_URL}/stop-monitoring`, { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "monitoring_stopped") {
+                    stopBtn.style.display = "none";
+                    startBtn.style.display = "inline-block";
+                } else {
+                    alert("Failed to stop monitoring");
+                }
+            })
+            .catch(error => console.error("Error stopping monitoring:", error));
+    });
 });
