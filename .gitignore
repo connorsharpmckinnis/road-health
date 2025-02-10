@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+default_all_frames.json
+overview.json
+pipeline_timing_log.txt
+/processed_videos
