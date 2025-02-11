@@ -7,6 +7,7 @@ import uvicorn
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from main import App
 
 
 
@@ -18,6 +19,9 @@ class MonitoringApp:
         self.monitoring_status = "Idle"
         self.monitoring_active = False
         self.time_to_check = 0
+
+        # Initialize Main app
+    
 
         # Initialize FastAPI & Socket.IO
         self.app = FastAPI()
@@ -108,37 +112,60 @@ class MonitoringApp:
             self.logger.info(f"Client {sid} disconnected")
 
     async def monitoring_loop(self):
-        """Background loop that monitors for new files."""
+        """Background loop that monitors for new files and stops immediately when requested."""
         while self.monitoring_active:
             for i in range(10, 0, -1):
+                if not self.monitoring_active:  # Check before continuing
+                    self.monitoring_status = "Idle"
+                    break
+
                 self.time_to_check = i
-                self.monitoring_status = "Idle"
+                self.monitoring_status = "Active"
 
                 # Emit update to frontend
                 await self.sio.emit("status_update", {"status": self.monitoring_status, "time_to_check": self.time_to_check})
 
-                await asyncio.sleep(1)  # ✅ Corrected (async sleep)
+                # Check every 0.1s instead of sleeping for a full second
+                for _ in range(2):  
+                    if not self.monitoring_active:  # Check every 0.1s
+                        break
+                    await asyncio.sleep(0.5)  # Smaller sleep interval for responsiveness
+
+            if not self.monitoring_active:  # Check again after loop exit
+                break
 
             self.monitoring_status = "Checking for new files..."
             await self.sio.emit("status_update", {"status": self.monitoring_status, "time_to_check": 0})
 
-            await asyncio.sleep(3)  # ✅ Corrected (async sleep)
+            # Check for new files
+            self.main.box
 
+            # Same approach here: check every 0.1s during the 3s delay
+            for _ in range(6):  
+                if not self.monitoring_active:
+                    break
+                await asyncio.sleep(0.5)
+
+        self.logger.info("Monitoring Stopped Immediately!")
+        self.monitoring_status = "Idle"
         await self.sio.emit("status_update", {"message": "Monitoring Stopped."})
 
     async def start_monitoring(self):
         """Start the monitoring loop."""
+        self.logger.info("✅ start_monitoring() function called!")
         if not self.monitoring_active:
             self.monitoring_active = True
+            self.monitoring_status = "Active"
             self.logger.info("Monitoring started.")
             asyncio.create_task(self.monitoring_loop())
-            await self.sio.emit("status_update", {"message": "Monitoring Started."})
+            await self.sio.emit("status_update", {"message": "Monitoring Started.", "status": self.monitoring_status})
 
     async def stop_monitoring(self):
         """Stop the monitoring loop."""
         self.monitoring_active = False
+        self.monitoring_status = "Idle"
         self.logger.info("Monitoring stopped.")
-        await self.sio.emit("status_update", {"message": "Stopping Monitoring..."})
+        await self.sio.emit("status_update", {"message": "Stopping Monitoring...", "status": self.monitoring_status})
 
     def run(self):
         """Run the FastAPI application with Uvicorn."""
