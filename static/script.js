@@ -8,12 +8,17 @@ const socket = io("http://localhost:5001", {
 
 // Function to update status on the web page
 function updateStatus(data) {
+    console.log("🔹 Updating UI for status:", data.status);
+
     const statusDiv = document.getElementById("status");
-    statusDiv.innerHTML = `<strong>Checking Box in </strong> ${data.time_to_check || 0}...`;
+    
+    if (data.status === "Idle") {
+        statusDiv.innerHTML = `<strong>Status:</strong> Monitoring Stopped.`;
+    } else {
+        statusDiv.innerHTML = `<strong>Checking Box in </strong> ${data.time_to_check || 0}...`;
+    }
 
-    // Update the visibility of the status badges
     updateBadgeVisibility(data.status);
-
 }
 
 // Listen for real-time status updates from the server
@@ -81,9 +86,9 @@ function updateBadgeVisibility(status) {
     // Show only the relevant badge
     if (status === "Idle") {
         badgeIdle.style.display = "inline-block";
-    } else if (status === "Active" || status === "Checking for new files...") {
+    } else if (status === "Monitoring" || status === "Processing" || status == "Active") {
         badgeActive.style.display = "inline-block";
-    } else if (status === "Error") {
+    } else if (status.startsWith("Errored")) {
         badgeError.style.display = "inline-block";
     }
 }

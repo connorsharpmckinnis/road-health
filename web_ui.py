@@ -18,10 +18,7 @@ class MonitoringApp:
         """Initialize the FastAPI app and Socket.IO server."""
         self.monitoring_status = "Idle"
         self.monitoring_active = False
-        self.time_to_check = 0
-
-        # Initialize Main app
-    
+        self.time_to_check = 0    
 
         # Initialize FastAPI & Socket.IO
         self.app = FastAPI()
@@ -53,6 +50,9 @@ class MonitoringApp:
         if not os.path.exists("static"):
             os.makedirs("static")
 
+        # Initialize main app
+        self.main = App()
+
         # Register http routes and websocket events
         self.register_http_routes()
         self.register_socket_events()
@@ -82,9 +82,9 @@ class MonitoringApp:
         async def get_status():
             """Expose monitoring status via HTTP."""
             return {
-                "status": self.monitoring_status,
-                "time_to_check": self.time_to_check,
-                "active": self.monitoring_active,
+                "status": self.main.status,
+                "time_to_check": self.main.time_to_check,
+                "active": self.main.monitoring_active,
             }
 
     def register_socket_events(self):
@@ -94,7 +94,7 @@ class MonitoringApp:
         async def connect(sid, environ):
             """Handle new client connections."""
             self.logger.info(f"Client {sid} connected")
-            await self.sio.emit("status_update", {"message": "Connected to server"}, to=sid)
+            await self.sio.emit("status_update", {"message": "Connected to server", "status": self.main.status}, to=sid)
 
         @self.sio.event
         async def start_monitoring(sid):
@@ -112,60 +112,36 @@ class MonitoringApp:
             self.logger.info(f"Client {sid} disconnected")
 
     async def monitoring_loop(self):
-        """Background loop that monitors for new files and stops immediately when requested."""
-        while self.monitoring_active:
-            for i in range(10, 0, -1):
-                if not self.monitoring_active:  # Check before continuing
-                    self.monitoring_status = "Idle"
-                    break
+        """Run the monitoring loop from main.py asynchronously."""
+        logging.info("Starting monitoring loop asynchronously...")
+        await asyncio.to_thread(self.main.start_monitoring, interval=10)
 
-                self.time_to_check = i
-                self.monitoring_status = "Active"
-
-                # Emit update to frontend
-                await self.sio.emit("status_update", {"status": self.monitoring_status, "time_to_check": self.time_to_check})
-
-                # Check every 0.1s instead of sleeping for a full second
-                for _ in range(2):  
-                    if not self.monitoring_active:  # Check every 0.1s
-                        break
-                    await asyncio.sleep(0.5)  # Smaller sleep interval for responsiveness
-
-            if not self.monitoring_active:  # Check again after loop exit
-                break
-
-            self.monitoring_status = "Checking for new files..."
-            await self.sio.emit("status_update", {"status": self.monitoring_status, "time_to_check": 0})
-
-            # Check for new files
-            self.main.box
-
-            # Same approach here: check every 0.1s during the 3s delay
-            for _ in range(6):  
-                if not self.monitoring_active:
-                    break
-                await asyncio.sleep(0.5)
-
-        self.logger.info("Monitoring Stopped Immediately!")
-        self.monitoring_status = "Idle"
-        await self.sio.emit("status_update", {"message": "Monitoring Stopped."})
+        while self.main.monitoring_active:
+            # Emit current status updates
+            await self.sio.emit("status_update", {
+                "status": self.main.status,
+                "time_to_check": self.main.time_to_check
+            })
+            await asyncio.sleep(1)  # Avoid spamming updates
 
     async def start_monitoring(self):
         """Start the monitoring loop."""
         self.logger.info("✅ start_monitoring() function called!")
-        if not self.monitoring_active:
-            self.monitoring_active = True
-            self.monitoring_status = "Active"
+        if not self.main.monitoring_active:
+            self.logger.info("🔥 Calling start_monitoring() in main.py...")
+            self.main.monitoring_status = "Active"
+            self.main.status = "Active"
             self.logger.info("Monitoring started.")
             asyncio.create_task(self.monitoring_loop())
-            await self.sio.emit("status_update", {"message": "Monitoring Started.", "status": self.monitoring_status})
+            await self.sio.emit("status_update", {"message": "Monitoring Started.", "status": self.main.monitoring_status})
 
     async def stop_monitoring(self):
         """Stop the monitoring loop."""
-        self.monitoring_active = False
-        self.monitoring_status = "Idle"
+        self.main.monitoring_active = False
+        self.main.monitoring_status = "Idle"
+        self.main.status = "Idle"
         self.logger.info("Monitoring stopped.")
-        await self.sio.emit("status_update", {"message": "Stopping Monitoring...", "status": self.monitoring_status})
+        await self.sio.emit("status_update", {"message": "Stopping Monitoring...", "status": self.main.monitoring_status})
 
     def run(self):
         """Run the FastAPI application with Uvicorn."""

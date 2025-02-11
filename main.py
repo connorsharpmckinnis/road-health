@@ -21,6 +21,7 @@ class App():
     def __init__(self):
         self.status = 'Monitoring Inactive'
         self.monitoring_active = False
+        self.monitoring_status = "Idle"
         self.box = None
         self.processor = None
         self.work_order_creator = None
@@ -215,30 +216,43 @@ class App():
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
+        print("Start_monitoring has begun!")
+        self.monitoring_status = "Idle"
         if self.monitoring_active:
             logger.info("Monitoring is already running.")
             return
         
         self.monitoring_active = True
+        self.status = "Active"  # ✅ Set status to Active
+        self.monitoring_status = "Active"  
         logger.info("Monitoring started.")
-        self.status = "Monitoring active - Checking for new files"
+        self.status = "Monitoring"
 
         # The monitoring loop runs synchronously now.
         try:
             while self.monitoring_active:
                 for i in range(interval, 0, -1):
+                    if not self.monitoring_active:  # Stop immediately when requested
+                        logger.info("Monitoring loop interrupted.")
+                        self.status = "Idle"
+                        return
+                    
                     self.time_to_check = i
-                    self.status = "Idle"
+                    self.status = "Bongle Dongle"
+                    self.monitoring_status = "Bongle Dongle"
                     time.sleep(1)
 
                 new_files_to_download = self.check_for_new_files()
                 if len(new_files_to_download) > 0:
+                    self.monitoring_status = "Processing"
+                    self.status = "Processing"
                     self.pipeline(new_files_to_download)
                 else:
-                    self.status = "Idle - No new files detected. Restarting countdown..."
+                    self.status = "Monitoring"
                     logger.info(self.status)
         except Exception as e:
-            self.status = f"Monitoring stopped due to error: {e}"
+            self.status = f"Errored"
+            self.monitoring_status = "Error"
             logger.error(f"Monitoring loop error: {e}")
             self.monitoring_active = False
 
