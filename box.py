@@ -329,6 +329,7 @@ if __name__ == '__main__':
     unprocessed_videos_folder = unprocessed_videos_path
 
     box_items = box_client.list_items_in_folder('0')
+    print(f"All folders accessible by the app: \n\n{box_items}\n\n")
     videos_folder_id = next(item for item in box_items if item['name'] == 'Videos')['id']
     box_client.videos_folder_box_id = videos_folder_id
 

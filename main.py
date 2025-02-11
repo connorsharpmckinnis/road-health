@@ -66,6 +66,7 @@ class App():
     def pipeline(self, new_files_to_download: list=None):
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
+        print(f'{new_files_to_download = }')
         
         if self.download_files(new_files_to_download):
             logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
@@ -258,7 +259,7 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=10)
+    app.start_monitoring(interval=3)
 
 
 """
