@@ -5,3 +5,18 @@
     box-sizing: border-box;
     font-family: 'Arial', sans-serif;
 }
+
+.subsection-status-feed {
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 2px solid #282828;
+    padding: 10px;
+    background-color: #b5b5b5;
+}
+
+.card-status-update {
+    padding: 5px;
+    border-bottom: 2px solid #ddd;
+    font-size: 14px;
+}

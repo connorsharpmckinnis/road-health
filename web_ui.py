@@ -124,6 +124,8 @@ class WebApp:
                 message="Started Monitoring (No actual logic yet)"
             ).jsonify()
 
+            await self.send_status_update(status_update_start)  # Send update to WebSocket clients
+
             return status_update_start  # HTTP response
 
         # Route for stopping monitoring
@@ -139,6 +141,8 @@ class WebApp:
                 status="Idle",
                 message="Stopped Monitoring (No actual logic yet)"
             ).jsonify()
+
+            await self.send_status_update(status_update_stop)  # Send update to WebSocket clients
 
             return status_update_stop
 
@@ -156,9 +160,27 @@ class WebApp:
                 message="Checked for new videos (No actual logic yet)"
             ).jsonify()
 
+            await self.send_status_update(status_update_check)  # Send update to WebSocket clients
+
             return status_update_check
 
         # Route for saving new AI instructions
+        @self.app.post("/save-ai-instructions")
+        async def save_ai_instructions(instructions_field: dict):
+            """Save new AI instructions."""
+            
+            # Logic for saving AI instructions
+
+            status_update_save = StatusUpdate(
+                source="web_ui",
+                level="Program",
+                status="Idle",
+                message=f"Saved new AI instructions (No actual logic yet). Instructions: {instructions_field}"
+            ).jsonify()
+
+            self.send_status_update(status_update_save)  # Send update to WebSocket clients
+
+            return status_update_save
 
 
 
