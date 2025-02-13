@@ -1,5 +1,4 @@
 #processing.py
-import cv2
 import os
 import subprocess
 import xml.etree.ElementTree as ET
@@ -8,14 +7,11 @@ from ai import AI
 import dotenv
 import json
 from simple_salesforce import Salesforce
-import requests
 from math import radians, sin, cos, sqrt, atan2
 from PIL import Image
-import base64
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-import math
 from utils import *
 from logging_config import logger
 from analysis import *
@@ -202,7 +198,7 @@ class Processor():
             logger.error(f"Failed to extract base timestamp from GPX file: {e}")
             raise
 
-    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None):
+    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=713):
         """
         Extract frames at specific intervals from a video using FFmpeg, respecting max_frames.
         Args:
@@ -221,7 +217,7 @@ class Processor():
             self.FFPROBE_PATH,
             "-v", "error",
             "-select_streams", "v:0",
-            "-show_entries", "stream=nb_frames,avg_frame_rate",
+            "-show_entries", "stream=width,height,nb_frames,avg_frame_rate",
             "-of", "json",
             video_path
         ]
@@ -242,14 +238,24 @@ class Processor():
         # Convert frame indices to timestamps
         timestamps = [index / fps for index in target_indices]
 
+        # Get original video width and height
+        video_width = int(metadata["streams"][0]["width"])
+        video_height = int(metadata["streams"][0]["height"])
+
+        # Ensure crop height is valid
+        crop_height = video_height - crop_top
+        if crop_height <= 0:
+            raise ValueError(f"Invalid crop height: {crop_height}. Ensure crop_top is not greater than video height.")
+
         # Build FFmpeg command to extract specific frames using the 'select' filter
         select_filter = "+".join([f"eq(n\\,{index})" for index in target_indices])
+        
         ffmpeg_command = [
             self.FFMPEG_PATH,
             "-i", video_path,
             "-map", "0:v:0",  # Process only the video stream
             "-an",  # Disable audio processing
-            "-vf", f"select='{select_filter}',setpts=N/FRAME_RATE/TB",  # Select specific frames
+            "-vf", f"select='{select_filter}',setpts=N/FRAME_RATE/TB,crop={video_width}:{crop_height}:0:{crop_top}",  # Select specific frames
             "-vsync", "vfr",  # Variable frame rate
             "-frames:v", str(len(target_indices)),  # Stop after extracting the desired frames
             os.path.join(output_folder, "frame_%04d.jpg")  # Save frames sequentially
@@ -269,45 +275,6 @@ class Processor():
         ]
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
         return extracted_frames
-
-    def extract_frames(self, video_path, frame_rate=1, output_folder="frames", max_frames=None) -> list[tuple]:
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-            
-        video = cv2.VideoCapture(video_path)
-        fps = int(video.get(cv2.CAP_PROP_FPS))
-        self.video_fps = fps
-        frame_interval = max(1, round(fps / frame_rate))
-
-        frame_count = 0
-        extracted_frames = []
-        success, frame = video.read()
-
-        while success:
-            if frame_count % frame_interval == 0:
-                if max_frames and len(extracted_frames) >= max_frames:
-                    break
-
-                self._extract_frame(frame, frame_count, fps, output_folder, extracted_frames)  # No need to re-append here
-
-            success, frame = video.read()
-            frame_count += 1
-
-        video.release()
-        print(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
-        logger.info(f"Frames: \n{extracted_frames}")
-        return extracted_frames
-    
-    def _extract_frame(self, frame, frame_count, fps, output_folder: str, extracted_frames: list, crop_top=713):
-        # Calculate timestamp of the frame
-        timestamp = frame_count / fps
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        
-        frame_file = os.path.join(output_folder, f"{today}_frame_{len(extracted_frames)}_{timestamp:.2f}.jpg")
-        cv2.imwrite(frame_file, frame)
-        frame_tuple = (frame_file, timestamp)
-        extracted_frames.append(frame_tuple)  # Save frame path and timestamp
-        return frame_tuple
         
     def create_telemetry_objects(self, extracted_frame_tuples: list): #Runs once, using all extracted_frame_tuples collected in extract_frames
         telemetry_objects = []
