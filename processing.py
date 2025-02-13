@@ -298,10 +298,11 @@ class Processor():
         logger.info(f"Frames: \n{extracted_frames}")
         return extracted_frames
     
-    def _extract_frame(self, frame, frame_count, fps, output_folder: str, extracted_frames: list):
+    def _extract_frame(self, frame, frame_count, fps, output_folder: str, extracted_frames: list, crop_top=713):
         # Calculate timestamp of the frame
         timestamp = frame_count / fps
         today = datetime.datetime.now().strftime("%Y-%m-%d")
+        
         frame_file = os.path.join(output_folder, f"{today}_frame_{len(extracted_frames)}_{timestamp:.2f}.jpg")
         cv2.imwrite(frame_file, frame)
         frame_tuple = (frame_file, timestamp)

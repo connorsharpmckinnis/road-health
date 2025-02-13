@@ -52,6 +52,37 @@ class WorkOrderCreator:
         self.coordinate_variance_growth_factor = 0.001
         self.base_query = "SELECT Id, Name, Geolocation__latitude__s, Geolocation__longitude__s FROM Location__c"
 
+    def process_metadata_files(self):
+        """
+        Process metadata files and create Work Orders for high-confidence potholes.
+        Stores all metadata in a self.all_metadata list for future use.
+        """
+        self.all_metadata = []  # Initialize or reset the list to store all metadata
+
+        for file_name in os.listdir(self.metadata_folder):
+            if not file_name.endswith('.json'):
+                continue
+
+            file_path = os.path.join(self.metadata_folder, file_name)
+            try:
+                with open(file_path, 'r') as f:
+                    metadata = json.load(f)
+                    self.all_metadata.append(metadata)  # Add metadata to the list
+
+                frame_path = metadata.get("frame_path", "Unknown")
+                timestamp = metadata.get("timestamp", "Unknown")
+                ai_analysis = metadata.get("ai_analysis", {})
+                pothole_data = ai_analysis.get("Pothole", {})
+
+                if pothole_data.get("presence") == "yes" and pothole_data.get("confidence", 0) > 0.8:
+                    print(f'I would create a work order for {frame_path}... IF I KNEW HOW')
+                    # self.create_work_order(frame_path, timestamp, pothole_data)
+
+            except Exception as e:
+                print(f"Error processing file {file_name}: {e}")
+
+        print(f"Processed {len(self.all_metadata)} metadata files. Stored in self.all_metadata.")
+    
     def work_order_engine(self):
         """
         Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.

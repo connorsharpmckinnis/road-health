@@ -259,7 +259,7 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=3)
+    app.start_monitoring(interval=5)
 
 
 """
