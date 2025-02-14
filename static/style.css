@@ -6,17 +6,43 @@
     font-family: 'Arial', sans-serif;
 }
 
-.subsection-status-feed {
+.card-section {
     width: 100%;
     max-height: 300px;
     overflow-y: auto;
-    border: 2px solid #282828;
+    border: 2px solid #868686;
     padding: 10px;
-    background-color: #b5b5b5;
+    background-color: #dbdbdb;
 }
 
-.card-status-update {
-    padding: 5px;
-    border-bottom: 2px solid #ddd;
-    font-size: 14px;
+.card {
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 2px solid #33354c;
+    padding: 10px;
+    background-color: #9eb9cf;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+#temp-badge-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+#temp-badge {
+    background-color: #ffcc00;  /* Yellow Badge */
+    color: black;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: none; /* Initially Hidden */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.hidden {
+    display: none;
 }

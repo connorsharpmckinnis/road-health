@@ -12,11 +12,13 @@ import datetime
 from typing import List
 
 
+
 class StatusUpdate():
-    def __init__(self, source, level, status, message, details={}):
+    def __init__(self, source, level, type, status, message, details={}):
         self.timestamp = datetime.datetime.now().isoformat()
         self.source = source
         self.level = level
+        self.type = type
         self.status = status
         self.message = message
         self.details = details
@@ -26,22 +28,12 @@ class StatusUpdate():
             "timestamp": self.timestamp,
             "source": self.source,
             "level": self.level,
+            "type": self.type,
             "status": self.status,
             "message": self.message,
             "details": self.details
         }
-
-
-class Command():
-    def __init__(self, action, parameters={}):
-        self.action = action
-        self.parameters = parameters
-
-    def jsonify(self):
-        return {
-            "action": self.action,
-            "parameters": self.parameters
-        }
+    
 
 class WebApp:
     """Object-Oriented FastAPI and WebSocket Server for Monitoring."""
@@ -53,7 +45,6 @@ class WebApp:
         self.time_to_check = 0  
         self.active_connections: List[WebSocket] = []  # Store connected WebSocket clients
   
-
         # Initialize FastAPI & Socket.IO
         self.app = FastAPI()
         self.sio = socketio.AsyncServer(
@@ -75,7 +66,6 @@ class WebApp:
             allow_headers=["*"],
         )
 
-
         ### WEBSOCKET ENDPOINTS ###
 
         # Socket for status updates (web_ui.py -> script.js -> index.html)
@@ -88,13 +78,13 @@ class WebApp:
             try:
                 while True:
                     await asyncio.sleep(10)  # Keep connection open
-            except Exception:
-                pass  # Ignore disconnection errors
+            except asyncio.CancelledError:
+                print("WebSocket connection closed due to server shutdown.")
+            except Exception as e:
+                logging.error(f"WebSocket error: {e}")
             finally:
-                self.active_connections.remove(websocket)  # Remove disconnected clients
-
-
-        # Other sockets probably
+                if websocket in self.active_connections:
+                    self.active_connections.remove(websocket)
 
 
 
@@ -117,16 +107,9 @@ class WebApp:
             
             # Logic for starting the monitoring loop
 
-            status_update_start = StatusUpdate(
-                source="web_ui",
-                level="Program",
-                status="Active",
-                message="Started Monitoring (No actual logic yet)"
-            ).jsonify()
+            await self.send_status_update(source='start_monitoring()')  # Send update to WebSocket clients
 
-            await self.send_status_update(status_update_start)  # Send update to WebSocket clients
-
-            return status_update_start  # HTTP response
+            return True  # HTTP response
 
         # Route for stopping monitoring
         @self.app.post("/stop-monitoring")
@@ -135,16 +118,9 @@ class WebApp:
             
             # Logic for stopping the monitoring loop
 
-            status_update_stop = StatusUpdate(
-                source="web_ui",
-                level="Program",
-                status="Idle",
-                message="Stopped Monitoring (No actual logic yet)"
-            ).jsonify()
+            await self.send_status_update(source='stop_monitoring()')  # Send update to WebSocket clients
 
-            await self.send_status_update(status_update_stop)  # Send update to WebSocket clients
-
-            return status_update_stop
+            return True
 
         # Route for directly checking for new videos
         @self.app.post("/video-check")
@@ -153,16 +129,9 @@ class WebApp:
             
             # Logic for checking for new videos
 
-            status_update_check = StatusUpdate(
-                source="web_ui",
-                level="Program",
-                status="Idle",
-                message="Checked for new videos (No actual logic yet)"
-            ).jsonify()
+            await self.send_status_update(source='check-for-new-videos()', type='Video', details={"video_file": "Test Video 123"})  # Send update to WebSocket clients
 
-            await self.send_status_update(status_update_check)  # Send update to WebSocket clients
-
-            return status_update_check
+            return True
 
         # Route for saving new AI instructions
         @self.app.post("/save-ai-instructions")
@@ -171,24 +140,58 @@ class WebApp:
             
             # Logic for saving AI instructions
 
-            status_update_save = StatusUpdate(
-                source="web_ui",
-                level="Program",
-                status="Idle",
-                message=f"Saved new AI instructions (No actual logic yet). Instructions: {instructions_field}"
-            ).jsonify()
+            await self.send_status_update(source='save_ai_instructions()', type='Temp')  # Send update to WebSocket clients
 
-            self.send_status_update(status_update_save)  # Send update to WebSocket clients
+            return True
 
-            return status_update_save
+       
+       
+        ### ### HTTP ENDPOINTS FOR TESTS ### ###
 
+        # Route for testing the program status
+        @self.app.post("/test-program-status")
+        async def test_program_status():
+            """Test the program status."""
+            
+            # Logic for testing the program status
 
+            await self.send_status_update(source='test_program_status()', type='Program')
+
+        # Route for testing the video processing status
+        @self.app.post("/test-video-status")
+        async def test_video_status():
+            """Test the video processing status."""
+            
+            # Logic for testing the video processing status
+
+            await self.send_status_update(source='test_video_status()', type='Video', details={"video_file": "Test Video 123", "progress": "50%"})
+
+        # Route for testing the work order status
+        @self.app.post("/test-wo-status")
+        async def test_wo_status():
+            """Test the work order status."""
+            
+            # Logic for testing the work order status
+
+            await self.send_status_update(source='test_wo_status()', type='WorkOrder', details={"video_file": "WO123", "wo_count": "2"})
+
+        # Route for testing the feed status
+        @self.app.post("/test-feed-status")
+        async def test_feed_status():
+            """Test the feed status."""
+            
+            # Logic for testing the feed status
+
+            await self.send_status_update(source='test_feed_status()', type='Feed', message="Action has been taken somewhere", status="Active")
 
 
     # Function that can be called from other modules to send a status update through the WebSocket
-    async def send_status_update(self, status_update: dict):
+    async def send_status_update(self, source:str='Default Source', level:str='Default Level', type:str='Feed', status:str='Default Status', message:str='Default Message', details:dict={}):
             """Broadcast a status update to all connected WebSocket clients."""
             disconnected_clients = []
+            
+            status_update = StatusUpdate(source, level, type, status, message, details).jsonify()
+            
             for websocket in self.active_connections:
                 try:
                     await websocket.send_json(status_update)
@@ -201,7 +204,7 @@ class WebApp:
 
     def run(self):
         """Run the FastAPI application with Uvicorn."""
-        uvicorn.run(self.app, host="0.0.0.0", port=5001, reload=True)        
+        uvicorn.run(self.app, host="0.0.0.0", port=5001, reload=True)  
 
 web_app = WebApp()
 fastapi_app = web_app.app
