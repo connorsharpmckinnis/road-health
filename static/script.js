@@ -19,6 +19,7 @@ const inputAiInstructions = document.getElementById("input-ai-instructions");
 // // // PROGRAM
 const valueProgramStatus = document.getElementById("value-program-status");
 // // // VIDEO PROCESSING CARD SECTION
+const valueVideoStatus = document.getElementById("value-video-status");
 const videoSection = document.getElementById("subsection-video-cards");
 // // // STATUS UPDATE FEED
 const subsectionStatusFeed = document.getElementById("subsection-status-feed")
@@ -167,13 +168,18 @@ statusFeedSocket.onmessage = (event) => {
     } else if (data.type === "Temp") {
         showTempBadge(data.message);
     } else if (data.type === "Video") {
-        updateVideoProcessingCard(data);
+        if (data.level === "Section") {
+            valueVideoStatus.textContent = data.message;
+        } else {
+            updateVideoProcessingCard(data);
+        }
     } else if (data.type == "WorkOrder") {
         updateWorkOrderProcessingCard(data);
+    } else if (data.type === "Program") {
+        valueProgramStatus.textContent = `${data.status} (${data.details.countdown})`;
     } else {
         console.warn("Received unknown update type:", data);
     }
-
 
 };
 

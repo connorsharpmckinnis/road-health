@@ -9,11 +9,13 @@ from analysis import *
 import dotenv
 import logging
 import io
+from web_ui import WebApp, StatusUpdate
+
 
 dotenv.load_dotenv()
 
 class WorkOrderCreator:
-    def __init__(self, username: str=None, password: str=None, security_token: str=None, client_id: str=None, metadata_folder: str=None, telemetry_items: list=None, sandbox: bool=True):
+    def __init__(self, username: str=None, password: str=None, security_token: str=None, client_id: str=None, metadata_folder: str=None, telemetry_items: list=None, sandbox: bool=True, web_app: WebApp=None):
         """
         Initialize the WorkOrderCreator class with Salesforce authentication.
 
@@ -25,6 +27,7 @@ class WorkOrderCreator:
         :param sandbox: Boolean indicating whether to use a Salesforce sandbox.
         """
 
+        self.web_app = web_app
         self.all_metadata = telemetry_items if telemetry_items else []
 
         
@@ -51,6 +54,18 @@ class WorkOrderCreator:
         self.coordinate_variance = 0.0002
         self.coordinate_variance_growth_factor = 0.001
         self.base_query = "SELECT Id, Name, Geolocation__latitude__s, Geolocation__longitude__s FROM Location__c"
+
+    async def send_status_update_to_ui(self, type, level, status, message, details={}):
+        """Send a status update to the UI using WebSockets."""
+        if self.web_app:
+            await self.web_app.send_status_update(
+                source="Salesforce",
+                type=type,
+                level=level,
+                status=status,
+                message=message,
+                details=details
+            )
 
     def process_metadata_files(self):
         """

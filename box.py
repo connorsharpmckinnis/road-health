@@ -11,6 +11,9 @@ import hashlib
 import io
 import datetime
 from utils import unprocessed_videos_path
+from web_ui import WebApp, StatusUpdate
+import asyncio
+
 
 
 # Load environment variables from .env file
@@ -23,7 +26,8 @@ BOX_CLIENT_SECRET = os.getenv("BOX_CLIENT_SECRET")
 BOX_ENTERPRISE_ID = os.getenv("BOX_ENTERPRISE_ID")
 
 class Box():
-    def __init__(self, client_id=None, client_secret=None, enterprise_id=None):
+    def __init__(self, client_id=None, client_secret=None, enterprise_id=None, web_app: WebApp=None):
+        self.web_app = web_app
         self.client_id = client_id or BOX_CLIENT_ID
         self.client_secret = client_secret or BOX_CLIENT_SECRET
         self.enterprise_id = enterprise_id or BOX_ENTERPRISE_ID
@@ -36,10 +40,21 @@ class Box():
         print(f"{self.client = }")
         box_items = self.list_items_in_folder('0')
         videos_folder_id = next(item for item in box_items if item['name'] == 'Videos')['id']
-        self.videos_folder_box_id = videos_folder_id
+        self.videos_folder_box_id = videos_folder_id        
+        
 
 
-
+    async def send_status_update_to_ui(self, type, level, status, message, details={}):
+        """Send a status update to the UI using WebSockets."""
+        if self.web_app:
+            await self.web_app.send_status_update(
+                source="Box",
+                type=type,
+                level=level,
+                status=status,
+                message=message,
+                details=details
+            )
 
     ## SECURITY AND AUTHENTICATION
 

@@ -16,6 +16,9 @@ from utils import *
 from logging_config import logger
 from analysis import *
 from bisect import bisect_left
+from web_ui import WebApp, StatusUpdate
+import asyncio
+
 
 
 
@@ -29,9 +32,10 @@ class Processor():
     TEMP_BIN_FILE = "temp_metadata.bin"
     TEMP_GPX_FILE = "temp_metadata.gpx"
 
-    def __init__(self):
+    def __init__(self, web_app: WebApp=None):
         self.ensure_ffmpeg_installed()
-        self.ai = AI(os.getenv("OPENAI_API_KEY"))
+        self.web_app=web_app
+        self.ai = AI(os.getenv("OPENAI_API_KEY"), web_app=self.web_app)
         self.video_fps = None
         self.analysis_frames_per_second = None
         self.analysis_max_frames = None
@@ -48,6 +52,18 @@ class Processor():
             "Finalization": "Pending"
         }
 
+
+    async def send_status_update_to_ui(self, type, level, status, message, details={}):
+        """Send a status update to the UI using WebSockets."""
+        if self.web_app:
+            await self.web_app.send_status_update(
+                source="Processor",
+                type=type,
+                level=level,
+                status=status,
+                message=message,
+                details=details
+            )
 
     @staticmethod
     def ensure_ffmpeg_installed():

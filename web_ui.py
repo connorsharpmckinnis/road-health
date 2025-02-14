@@ -7,21 +7,29 @@ import uvicorn
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from main import App
 import datetime
 from typing import List
 
 
 
 class StatusUpdate():
-    def __init__(self, source, level, type, status, message, details={}):
+    def __init__(self, source: str="Default Source", level: str="Default Level", type: str="Default Type", status: str="Default Status", message: str="Default Message", details={}):
         self.timestamp = datetime.datetime.now().isoformat()
-        self.source = source
-        self.level = level
-        self.type = type
-        self.status = status
-        self.message = message
-        self.details = details
+        self.source: str = source
+        self.level: str = level
+        self.type: str = type
+        self.status: str = status
+        self.message: str = message
+        self.details: dict = details
+
+
+        if self.type == 'Video':
+            self.details = {"video_file": "Default Video File",
+                            "total_frames": 0,
+                            "frames_processed": 0,
+                            "progress": "0%",
+                            }   
+                         
 
     def jsonify(self):
         return {
@@ -40,19 +48,11 @@ class WebApp:
 
     def __init__(self):
         """Initialize the FastAPI app and Socket.IO server."""
-        self.monitoring_status = "Idle"
-        self.monitoring_active = False
-        self.time_to_check = 0  
         self.active_connections: List[WebSocket] = []  # Store connected WebSocket clients
+
   
         # Initialize FastAPI & Socket.IO
         self.app = FastAPI()
-        self.sio = socketio.AsyncServer(
-            async_mode="asgi",
-            cors_allowed_origins="*",
-            logger=True,
-            engineio_logger=True
-        )
 
         # Serve static files (HTML, CSS, JS)
         self.app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -86,11 +86,6 @@ class WebApp:
                 if websocket in self.active_connections:
                     self.active_connections.remove(websocket)
 
-
-
-
-
-
         
         ### HTTP ENDPOINTS ###
         
@@ -107,7 +102,7 @@ class WebApp:
             
             # Logic for starting the monitoring loop
 
-            await self.send_status_update(source='start_monitoring()')  # Send update to WebSocket clients
+            await self.main_app.start_monitoring(interval=10)
 
             return True  # HTTP response
 
@@ -155,7 +150,7 @@ class WebApp:
             
             # Logic for testing the program status
 
-            await self.send_status_update(source='test_program_status()', type='Program')
+            await web_app.send_status_update(source='test_program_status()', type='Program', status="Button Tested", message="Button Tested (Message Edition)")
 
         # Route for testing the video processing status
         @self.app.post("/test-video-status")
@@ -186,11 +181,16 @@ class WebApp:
 
 
     # Function that can be called from other modules to send a status update through the WebSocket
-    async def send_status_update(self, source:str='Default Source', level:str='Default Level', type:str='Feed', status:str='Default Status', message:str='Default Message', details:dict={}):
+    async def send_status_update(self, status_update_obj=None, source:str='Default Source', level:str='Default Level', type:str='Feed', status:str='Default Status', message:str='Default Message', details:dict={}):
             """Broadcast a status update to all connected WebSocket clients."""
+            
             disconnected_clients = []
             
-            status_update = StatusUpdate(source, level, type, status, message, details).jsonify()
+            if not status_update_obj:
+                status_update = StatusUpdate(source, level, type, status, message, details).jsonify()
+            
+            elif status_update_obj:
+                status_update = status_update_obj.jsonify()
             
             for websocket in self.active_connections:
                 try:
@@ -202,16 +202,31 @@ class WebApp:
             for client in disconnected_clients:
                 self.active_connections.remove(client)    
 
-    def run(self):
-        """Run the FastAPI application with Uvicorn."""
-        uvicorn.run(self.app, host="0.0.0.0", port=5001, reload=True)  
+    async def run(self):
+        """Run the FastAPI application with Uvicorn asynchronously."""
+        config = uvicorn.Config(self.app, host="0.0.0.0", port=5001, reload=True)
+        server = uvicorn.Server(config)
+        await server.serve()  # ✅ Await the async server
+
+    async def start_main_app(self):
+        """Start the main application asynchronously after FastAPI is running."""
+        from main import App
+        self.main_app = App(web_app=self)  # ✅ App now has WebApp access
+        await self.main_app.initialize()  # ✅ Run async init
+
 
 web_app = WebApp()
-fastapi_app = web_app.app
 
+async def main():
+    """Start FastAPI and App in parallel."""
+    # ✅ Start FastAPI
+    fastapi_task = asyncio.create_task(web_app.run())
 
+    # ✅ Start App AFTER FastAPI
+    await asyncio.sleep(2)  # Small delay to ensure FastAPI is running before App starts
+    await web_app.start_main_app()  # ✅ Start App
 
-# Run the app if executed as a script
-if __name__ == "__main__":    
-    uvicorn.run("web_ui:fastapi_app", host="127.0.0.1", port=5001, reload=True)
+    await fastapi_task  # ✅ Keep the event loop alive
 
+if __name__ == "__main__":
+    asyncio.run(main())  # ✅ Run FastAPI and App in parallel
