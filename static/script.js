@@ -46,16 +46,6 @@ async function sendHttpRequest(endpoint, method = "POST", body = null) {
 }
 
 // // WEBSOCKET FUNCTIONS
-// // // ADD STATUS UPDATE TO SUBSECTION-STATUS-FEED (Non-Card)
-function addStatusUpdate(message) {
-    const entry = document.createElement("p");
-    entry.className = "card"
-    entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
-
-    subsectionStatusFeed.appendChild(entry);
-
-    subsectionStatusFeed.scrollTop = subsectionStatusFeed.scrollHeight;
-}
 
 // // // DISPLAY TEMP BADGE FOR 1 SECOND
 function showTempBadge(message) {
@@ -74,14 +64,13 @@ function addStatusUpdateCard(updateData) {
     
     // Create a new card
     const entry = document.createElement("div");
-    newCard.className = "card mb-3";
     entry.className = "card";  // Add CSS later to make it look nice
 
     // Fill in the details from JSON
     entry.innerHTML = `
-        <p class="card-title"><strong>${new Date().toLocaleTimeString()}:</strong> ${updateData.message}</p>
+        <h4 class="card-header">${updateData.message}</h4>
+        <p class="card-title"><strong>${new Date().toLocaleTimeString()}:</strong></p>
         <p class="card-text"><em>Source:</em> ${updateData.source}</p>
-        <p class="card-text"><em>Status:</em> ${updateData.status}</p>
     `;
 
     // Append the new status update
@@ -103,6 +92,11 @@ function updateVideoProcessingCard(updateData) {
     const progress = updateData.details.progress || "N/A";
     const stage = updateData.details.stage || "Unknown";
     const status = updateData.status || "Pending";
+    if (updateData.status != "Complete") {
+        active = `   <p class="spinner-grow text-secondary m-0" role="status"></p>`
+    } else {
+        active = ""
+    }
 
     // Check if a card for this video already exists
     let existingCard = document.getElementById(`video-${videoFile}`);
@@ -110,30 +104,34 @@ function updateVideoProcessingCard(updateData) {
     if (existingCard) {
         // ✅ Update existing card content
         existingCard.innerHTML = `
-            <h3 class="card-title">File: ${videoFile}</h3>
-            <p class="card-text"><em>Status:</em> ${status}</p>
-            <p class="card-text"><em>Stage:</em> ${stage}</p>
-            <div class="progress">
-                <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
-                    ${progress}
-                </div>
+            <h4 class="card-header">${videoFile}</h4>
+            <div class="card-body">
+                <h2 class="card-title"><em>${status}</em>${active}</h2>
+                <p class="card-text"><em>Stage:</em> ${stage}</p>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
+                            ${progress}
+                        </div>
+                    </div>
             </div>
         `;
     } else {
         // ✅ Create a new card if it doesn't exist
         const newCard = document.createElement("div");
-        newCard.className = "card mb-3";
         newCard.className = "card";
         newCard.id = `video-${videoFile}`;
 
+
         newCard.innerHTML = `
-            <h3 class="card-title">File: ${videoFile}</h3>
-            <p class="card-text"><em>Status:</em> ${status}</p>
-            <p class="card-text"><em>Stage:</em> ${stage}</p>
-            <div class="progress">
-                <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
-                    ${progress}
-                </div>
+            <h4 class="card-header">${videoFile}</h4>
+            <div class="card-body">
+                <h2 class="card-title"><em>${status}</em>${active}</h2>
+                <p class="card-text"><em>Stage:</em> ${stage}</p>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
+                            ${progress}
+                        </div>
+                    </div>
             </div>
         `;
 
@@ -148,21 +146,26 @@ function updateWorkOrderProcessingCard(updateData) {
     if (existingCard) {
         // Update existing card
         existingCard.innerHTML = `
-            <h3 class="card-title">File: ${updateData.details.video_file}</h3>
-            <p class="card-text"><em>Status:</em> ${updateData.status}</p>
-            <p class="card-text"><em>Work Orders Created:</em> ${updateData.details.wo_count || "N/A"}</p>
+            <h4 class="card-header">Work Order Created</h4>
+            <div class="card-body">
+                <h2 class="card-title"><em>${updateData.details.video_file}</em></h2>
+                <p class="card-text">Placeholder for frame image display</p>
+                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (44.189204, -73.875371)</p>
+            </div>
         `;
     } else {
         // Create a new card
         const newCard = document.createElement("div");
-        newCard.className = "card mb-3";
         newCard.className = "card";
         newCard.id = `wo-${updateData.details.video_file}`;
 
         newCard.innerHTML = `
-            <h3 class="card-title">File: ${updateData.details.video_file}</h3>
-            <p class="card-text"><em>Status:</em> ${updateData.status}</p>
-            <p class="card-text"><em>Work Orders Created:</em> ${updateData.details.wo_count || "N/A"}</p>
+            <h4 class="card-header">Work Order Created</h4>
+            <div class="card-body">
+                <h2 class="card-title"><em>${updateData.details.video_file}</em></h2>
+                <p class="card-text">Placeholder for frame image display</p>
+                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (44.189204, -73.875371)</p>
+            </div>
         `;
 
         woSection.appendChild(newCard);
