@@ -21,14 +21,6 @@ class StatusUpdate():
         self.status: str = status
         self.message: str = message
         self.details: dict = details
-
-
-        if self.type == 'Video':
-            self.details = {"video_file": "Default Video File",
-                            "total_frames": 0,
-                            "frames_processed": 0,
-                            "progress": "0%",
-                            }   
                          
 
     def jsonify(self):

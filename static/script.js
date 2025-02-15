@@ -74,13 +74,14 @@ function addStatusUpdateCard(updateData) {
     
     // Create a new card
     const entry = document.createElement("div");
+    newCard.className = "card mb-3";
     entry.className = "card";  // Add CSS later to make it look nice
 
     // Fill in the details from JSON
     entry.innerHTML = `
-        <p><strong>${new Date().toLocaleTimeString()}:</strong> ${updateData.message}</p>
-        <p><em>Source:</em> ${updateData.source}</p>
-        <p><em>Status:</em> ${updateData.status}</p>
+        <p class="card-title"><strong>${new Date().toLocaleTimeString()}:</strong> ${updateData.message}</p>
+        <p class="card-text"><em>Source:</em> ${updateData.source}</p>
+        <p class="card-text"><em>Status:</em> ${updateData.status}</p>
     `;
 
     // Append the new status update
@@ -92,25 +93,48 @@ function addStatusUpdateCard(updateData) {
 
 // // // UPDATE OR ADD VIDEO PROCESSING CARD
 function updateVideoProcessingCard(updateData) {
-    const existingCard = document.getElementById(`video-${updateData.details.video_file}`);
+    if (!updateData.details || !updateData.details.video_file) {
+        console.warn("Invalid video update data:", updateData);
+        return;
+    }
+
+    // Extract video filename
+    const videoFile = updateData.details.video_file;
+    const progress = updateData.details.progress || "N/A";
+    const stage = updateData.details.stage || "Unknown";
+    const status = updateData.status || "Pending";
+
+    // Check if a card for this video already exists
+    let existingCard = document.getElementById(`video-${videoFile}`);
 
     if (existingCard) {
-        // Update existing card
+        // ✅ Update existing card content
         existingCard.innerHTML = `
-            <h3>File: ${updateData.details.video_file}</h3>
-            <p><em>Status:</em> ${updateData.status}</p>
-            <p><em>Progress:</em> ${updateData.details.progress || "N/A"}</p>
+            <h3 class="card-title">File: ${videoFile}</h3>
+            <p class="card-text"><em>Status:</em> ${status}</p>
+            <p class="card-text"><em>Stage:</em> ${stage}</p>
+            <div class="progress">
+                <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
+                    ${progress}
+                </div>
+            </div>
         `;
     } else {
-        // Create a new card
+        // ✅ Create a new card if it doesn't exist
         const newCard = document.createElement("div");
+        newCard.className = "card mb-3";
         newCard.className = "card";
-        newCard.id = `video-${updateData.details.video_file}`;
+        newCard.id = `video-${videoFile}`;
 
         newCard.innerHTML = `
-            <h3>File: ${updateData.details.video_file}</h3>
-            <p><em>Status:</em> ${updateData.status}</p>
-            <p><em>Progress:</em> ${updateData.details.progress || "N/A"}</p>
+            <h3 class="card-title">File: ${videoFile}</h3>
+            <p class="card-text"><em>Status:</em> ${status}</p>
+            <p class="card-text"><em>Stage:</em> ${stage}</p>
+            <div class="progress">
+                <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
+                    ${progress}
+                </div>
+            </div>
         `;
 
         videoSection.appendChild(newCard);
@@ -124,20 +148,21 @@ function updateWorkOrderProcessingCard(updateData) {
     if (existingCard) {
         // Update existing card
         existingCard.innerHTML = `
-            <h3>File: ${updateData.details.video_file}</h3>
-            <p><em>Status:</em> ${updateData.status}</p>
-            <p><em>Work Orders Created:</em> ${updateData.details.wo_count || "N/A"}</p>
+            <h3 class="card-title">File: ${updateData.details.video_file}</h3>
+            <p class="card-text"><em>Status:</em> ${updateData.status}</p>
+            <p class="card-text"><em>Work Orders Created:</em> ${updateData.details.wo_count || "N/A"}</p>
         `;
     } else {
         // Create a new card
         const newCard = document.createElement("div");
+        newCard.className = "card mb-3";
         newCard.className = "card";
         newCard.id = `wo-${updateData.details.video_file}`;
 
         newCard.innerHTML = `
-            <h3>File: ${updateData.details.video_file}</h3>
-            <p><em>Status:</em> ${updateData.status}</p>
-            <p><em>Work Orders Created:</em> ${updateData.details.wo_count || "N/A"}</p>
+            <h3 class="card-title">File: ${updateData.details.video_file}</h3>
+            <p class="card-text"><em>Status:</em> ${updateData.status}</p>
+            <p class="card-text"><em>Work Orders Created:</em> ${updateData.details.wo_count || "N/A"}</p>
         `;
 
         woSection.appendChild(newCard);
@@ -176,7 +201,8 @@ statusFeedSocket.onmessage = (event) => {
     } else if (data.type == "WorkOrder") {
         updateWorkOrderProcessingCard(data);
     } else if (data.type === "Program") {
-        valueProgramStatus.textContent = `${data.status} (${data.details.countdown})`;
+        countdown = `(${data.details.countdown || null})`;
+        valueProgramStatus.textContent = `${data.status} ${countdown}`;
     } else {
         console.warn("Received unknown update type:", data);
     }

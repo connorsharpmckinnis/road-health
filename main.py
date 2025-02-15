@@ -87,6 +87,7 @@ class App():
     async def pipeline(self, new_files_to_download: list=None):
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
+        
         # 📣 Send program status update with countdown
         await self.send_status_update_to_ui(
             source='App.pipeline()',
@@ -125,38 +126,26 @@ class App():
                 source='App.pipeline()',
                 level='Card',
                 type='Video',
-                status="Processing",
-                message=f"Processing {file['name']}.",
+                status="Downloading",
+                message=f"Downloading {file}.",
                 details={
-                    "video_file": file['name]'],
+                    "video_file": file,
                     "progress": "0%"
                 }
             )
 
-            self.processing_status[file] = {"stage": "Downloading", "status": f"Downloading {file}..."}
-            logger.info(self.processing_status[file]["status"])
+            self.processing_status['file'] = {"stage": "Downloading", "status": f"Downloading {file}..."}
+            logger.info(self.processing_status['file']["status"])
 
-            self.processing_status[file] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
-            logger.info(self.processing_status[file]["status"])
+            self.processing_status['file'] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
+            logger.info(self.processing_status['file']["status"])
 
-            self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
+            #ASYNCIFY VIDEO PROCESSING IN PROCESSING.PY
+            await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
             self.processed_videos.add(file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
-
-            # 📣 Send video card status update with complete
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="Complete",
-                message=f"Processing {file['name']}.",
-                details={
-                    "video_file": file['name'],
-                    "progress": "100%"
-                }
-            )
 
 
         #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
@@ -165,6 +154,8 @@ class App():
         self.work_order_creator.process_metadata_files()
         if len(self.work_order_creator.all_metadata) > 0:
             logger.info(f"Processed metadata for {len(self.work_order_creator.all_metadata)} files. Runnign through Work Order engine...")
+            
+            # ASYNCIFY WORK ORDER ENGINE IN SALESFORCE.PY
             work_orders_created = self.work_order_creator.work_order_engine()
             logger.info(f"Work Orders created: {work_orders_created}")
 
@@ -172,6 +163,7 @@ class App():
         
         
         #then we'll upload all the frames/json to Box for long-term storage (using metadata templates to store the image telemetry and analysis results)
+        #ASYNCIFY BOX ARCHIVE IN BOX.PY
         box_archive_action = self.box.save_frames_to_long_term_storage()
 
         #Now that all the actions are done, we can clear out the frames and unprocessed_videos folder.
@@ -309,17 +301,6 @@ class App():
                     await self.send_status_update_to_ui(
                         source='App.start_monitoring()',
                         level='Info',
-                        type='Video',
-                        status=self.status,
-                        message=f"Processing {len(new_files_to_download)} files.",
-                        details={
-                            "video_file": 'test test 123'
-                        }
-                    )
-                    # 📣 Send video status alert for new processing of videos
-                    await self.send_status_update_to_ui(
-                        source='App.start_monitoring()',
-                        level='Info',
                         type='Program',
                         status="Processing Files",
                         message=f"Processing {len(new_files_to_download)} files."
@@ -337,17 +318,3 @@ class App():
 if __name__ == "__main__":
     app = App()
     app.start_monitoring(interval=5)
-
-
-"""
-TO DO: 
-- Figure out how to handle the checking of Box for new files vs the downloading of new files from Box. 
--   - Currently, check_for_new_files looks for Box files that aren't in processed_files.log 
--   - AND downloads those files. We probably want to only return something like a list of the new files, then
--   - download those listed filenames in some other function within the pipeline or before the pipeline starts.
--   - Currently the get_files_to_process function gets ALL files in Box that aren't in the unprocessed_videos folder.
--   - This is probably where we should replace it with something that just gets the files returned by the (updated) check_for_new_files function.
-- Figure out how a web-based UI can interact with the monitoring loop. Probably can use a thread to run the
-- monitoring loop and then a different thread run polls against the log file(s) and folder contents or something.
-
-"""

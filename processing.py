@@ -53,11 +53,11 @@ class Processor():
         }
 
 
-    async def send_status_update_to_ui(self, type, level, status, message, details={}):
-        """Send a status update to the UI using WebSockets."""
+    async def send_status_update_to_ui(self, source, type, level, status, message, details={}):
+        """Send a status update to the UI properly using WebSockets."""
         if self.web_app:
             await self.web_app.send_status_update(
-                source="Processor",
+                source=source,
                 type=type,
                 level=level,
                 status=status,
@@ -586,7 +586,7 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6):
+    async def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -601,8 +601,25 @@ class Processor():
             list: Fully processed telemetry objects with analysis results.
         """
         
+
+
+        """
+        TO DO: 
+        - DONE Fix pipeline()'s video card status update to include a details dict with video_file, stage, and progress
+        - DONE Update process_video_pipeline()'s video card status updates to use the file name instead of the whole path (cut out 'unprocessed_videos/')
+        - DONEISH Add a fake progress bar with the fade in/out to the in-progress video cards
+        - Look into adding more deets to the processing (like the total number of frames vs current max frame extracted)
+        - Make the stop-monitoring button actually stop the monitoring loop (immediately is preferred)
+        - Drop the 'check for new videos' button. We don't need it
+        - Add status update card blasts to the work_order_engine() (in salesforce.py)
+        -   - Try to have it display images of created work orders? 
+        - See if I can get control-c to quit the program again (or make a button to shut it all down and close the server)
+        - Start implementing Bootstrap as the html/css framework
+        
+        """
         
         log_file = "pipeline_timing_log.txt"
+        file_name = video_path
         # update the video path to pull from unprocessed_videos/
         video_path = f"unprocessed_videos/{video_path}"
 
@@ -627,6 +644,20 @@ class Processor():
             log_timing("Step 0: Save pipeline settings", stage_start)
 
             # Step 1: Validate the video file
+            # 📣 Send video card status update with metadata
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="In Progress",
+                message=f"Processing {file_name}.",
+                details={
+                    "video_file": file_name,
+                    "stage": "Metadata Extraction",
+                    "progress": "0%"
+                }
+            )
+
             stage_start = time.time()
             logger.info("Step 1: Validate the video file")
             self.validate_video_file(video_path)
@@ -642,6 +673,20 @@ class Processor():
             self.update_stage("Frame Extraction", "In Progress")
 
             # Step 3: Extract frames from the video
+            # 📣 Send video card status update with frame extraction
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="In Progress",
+                message=f"Processing {file_name}.",
+                details={
+                    "video_file": file_name,
+                    "stage": "Frame Extraction",
+                    "progress": "20%"
+                }
+            )
+            
             stage_start = time.time()
             logger.info("Step 3: Extract frames from the video")
             '''extracted_frames = self.extract_frames(
@@ -677,6 +722,20 @@ class Processor():
             self.update_stage("AI Analysis", "In Progress")
 
             # Step 6: Perform AI analysis on telemetry objects
+            # 📣 Send video card status update with analyzing
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="In Progress",
+                message=f"Processing {file_name}.",
+                details={
+                    "video_file": file_name,
+                    "stage": "Image Analysis",
+                    "progress": "80%"
+                }
+            )
+
             logger.info("Step 6: Perform AI analysis on telemetry objects")
             telemetry_objects, file_upload_start, ai_analysis_start = self.get_ai_analyses(telemetry_objects, batch_size=batch_size)
             log_timing("Step 6a: Upload Files to openAI", file_upload_start)
@@ -705,6 +764,20 @@ class Processor():
             logger.info(f"Analyzed {len(telemetry_objects)} frames, covering {self.minutes_analyzed} minutes of footage.")
             with open(log_file, "a") as log:
                 log.write(f"Total pipeline duration: {total_duration:.2f} seconds\n")
+
+            # 📣 Send video card status update with complete
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="Complete",
+                message=f"Processed {file_name}.",
+                details={
+                    "video_file": file_name,
+                    "stage": "Complete",
+                    "progress": "100%"
+                }
+            )
 
             self.update_stage("Finalization", "Complete")
             
