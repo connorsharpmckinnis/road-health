@@ -49,6 +49,36 @@
         <p id="value-video-status">Status</p>
         
         <div id="subsection-video-cards" class="card-section">
+            <div class="row">
+                <div class="col-md-6">
+                    <div id="test-video-card" class="card">
+                        <h4 class="card-header">GX010005.MP4</h4>
+                        <div class="card-body">
+                            <h2 class="card-title"><em>Active</em></h2>
+                            <p class="card-text badge bg-primary">Extracting Frames</p>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%">
+                                        75/110
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div id="test-video-card" class="card">
+                        <h4 class="card-header">GX010006.MP4</h4>
+                        <div class="card-body">
+                            <h2 class="card-title"><em>Inactive</em></h2>
+                            <p class="card-text badge bg-secondary">Waiting</p>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-secondary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 5%">
+                                        0/?
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
         </div>
 
@@ -56,12 +86,32 @@
     <div id="section-work-orders">
         
         <h2>Work Orders</h2>
-        <p>Processing:</p>
-        <p id="value-wo-processing-status">placeholder status</p>
-        <p>Processing details</p>
+        <p id="value-wo-processing-status">placeholder processing status</p>
 
         <div id="subsection-wo-cards" class="card-section">
-
+            <div class="row">
+                <div class="col-md-6">
+                    <div id="test-wo-card" class="card">
+                        <h4 class="card-header">Work Order Created</h4>
+                        <div class="card-body">
+                            <h2 class="card-title"><em>GX010004.MP4 12:33:21</em></h2>
+                            <img src="..." class="card-img-top" alt="Image Placeholder.jpg">
+                            <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div id="test-wo-card" class="card">
+                        <h4 class="card-header">Work Order Created</h4>
+                        <div class="card-body">
+                            <h2 class="card-title"><em>GX010004.MP4 13:21:02</em></h2>
+                            <img src="..." class="card-img-top" alt="Image Placeholder.jpg">
+                            <p class="card-text"><em>440 - 448 Stand-in Boulevard</em> (<a href="/" class="card-link">44.184579, -73.873214</a>)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
         </div>
         
     </div>
@@ -86,6 +136,26 @@
     <div id="section-status-feed">
         <h2>Status Updates</h2>
         <div id="subsection-status-feed" class="card-section">
+            <div class="col">
+                <div class="card">
+                    <div id='test-status-card'>
+                        <h4 class="card-header">Started Monitoring</h4>
+                        <p class="card-title"><strong>10:21 AM</strong></p>
+                        <p class="card-text"><em>Source:</em> main.py/App/start_monitoring()</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div id='test-status-card'>
+                        <h4 class="card-header">Stopped Monitoring</h4>
+                        <p class="card-title"><strong>10:25 AM</strong></p>
+                        <p class="card-text"><em>Source:</em> main.py/App/stop_monitoring()</p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            
+            
             
         </div>
     </div>
