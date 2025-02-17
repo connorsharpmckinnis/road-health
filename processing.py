@@ -654,7 +654,7 @@ class Processor():
                 details={
                     "video_file": file_name,
                     "stage": "Metadata Extraction",
-                    "progress": "0%"
+                    "progress": "20%"
                 }
             )
 
@@ -683,7 +683,7 @@ class Processor():
                 details={
                     "video_file": file_name,
                     "stage": "Frame Extraction",
-                    "progress": "20%"
+                    "progress": "30%"
                 }
             )
             

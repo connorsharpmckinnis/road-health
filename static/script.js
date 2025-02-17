@@ -17,7 +17,7 @@ const inputAiInstructions = document.getElementById("input-ai-instructions");
 
 // // STATUS SECTIONS
 // // // PROGRAM
-const valueProgramStatus = document.getElementById("value-program-status");
+const valueProgramStatus = document.getElementById("badge-program-status");
 // // // VIDEO PROCESSING CARD SECTION
 const valueVideoStatus = document.getElementById("value-video-status");
 const videoSection = document.getElementById("subsection-video-cards");
@@ -49,19 +49,35 @@ async function sendHttpRequest(endpoint, method = "POST", body = null) {
 
 // // // DISPLAY TEMP BADGE FOR 1 SECOND
 function showTempBadge(message) {
-    const badge = document.getElementById("temp-badge");
-    badge.textContent = message;
-    badge.style.display = "block";
-
+    const badge = document.getElementById("badge-box-check");
+    
+    // Wait to show badge for 1 second (until actual 0)
+    
+    badge.hidden = false;
+    
+    
     // Hide badge after 1 second
     setTimeout(() => {
-        badge.style.display = "none";
+        badge.hidden = true;
     }, 1000);
 }
 
 // // // UPDATE PROGRAM STATUS
 function updateProgramStatus(updateData) {
-    valueProgramStatus.textContent = updateData.status;
+    if (updateData.status === "Active") {
+        valueProgramStatus.classList.remove("bg-warning");
+        valueProgramStatus.classList.add("bg-primary");
+        countdown = `(${updateData.details.countdown || null})`;
+        valueProgramStatus.textContent = `${updateData.status} ${countdown}`;
+    } else if (updateData.status === "Processing") {
+        valueProgramStatus.classList.remove("bg-primary");
+        valueProgramStatus.classList.add("bg-success");
+        valueProgramStatus.textContent = "Processing (Monitoring Paused)";
+    } else {
+        valueProgramStatus.classList.remove("bg-primary");
+        valueProgramStatus.classList.add("bg-warning");
+        valueProgramStatus.textContent = updateData.status;
+    }
 }
 
 // // // ADD STATUS UPDATE CARD TO FEED
@@ -217,8 +233,7 @@ statusFeedSocket.onmessage = (event) => {
     } else if (data.type == "WorkOrder") {
         updateWorkOrderProcessingCard(data);
     } else if (data.type === "Program") {
-        countdown = `(${data.details.countdown || null})`;
-        valueProgramStatus.textContent = `${data.status} ${countdown}`;
+        updateProgramStatus(data);
     } else {
         console.warn("Received unknown update type:", data);
     }

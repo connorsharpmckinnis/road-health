@@ -106,8 +106,8 @@ class App():
                 status="In Progress",
                 message=f"Downloading file",
                 details={
-                    "video_file": file,
-                    "progress": "0%"
+                    "video_file": file['name'],
+                    "progress": "20%"
                 }
             )
         
@@ -123,7 +123,7 @@ class App():
                 status="Inactive",
                 message=f"Waiting patiently for its turn",
                 details={
-                    "video_file": file,
+                    "video_file": file['name'],
                     "progress": "0%"
                 }
             )
@@ -158,7 +158,7 @@ class App():
                 message=f"Processing {file}.",
                 details={
                     "video_file": file,
-                    "progress": "0%"
+                    "progress": "20%"
                 }
             )
 
@@ -306,7 +306,7 @@ class App():
                         source='App.start_monitoring()',
                         level='Info',
                         type='Program',
-                        status=self.monitoring_status,
+                        status="Active",
                         message=f"Next check in {i} seconds",
                         details={
                             "countdown": i
@@ -330,7 +330,7 @@ class App():
                         source='App.start_monitoring()',
                         level='Info',
                         type='Program',
-                        status="Processing Files",
+                        status="Processing",
                         message=f"Processing {len(new_files_to_download)} files."
                     )
                     await self.pipeline(new_files_to_download)

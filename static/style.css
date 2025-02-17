@@ -10,9 +10,9 @@
     width: 100%;
     max-height: 300px;
     overflow-y: auto;
-    border: 2px solid #868686;
     padding: 10px;
-    background-color: #dbdbdb;
+    background-color: #ffffff;
+    border-radius: 5px;
 }
 
 .card {
@@ -45,4 +45,35 @@
 
 .hidden {
     display: none;
+}
+
+
+#section-program {
+    background-color: #f8f9fa; /* Light gray */
+    padding: 15px;
+    border-radius: 5px;
+}
+
+#section-controls {
+    background-color: #e9ecef; /* Slightly darker gray */
+    padding: 15px;
+    border-radius: 5px;
+}
+
+#section-videos {
+    background-color: #d1e7dd; /* Light green */
+    padding: 15px;
+    border-radius: 5px;
+}
+
+#section-work-orders {
+    background-color: #cfe2ff; /* Light blue */
+    padding: 15px;
+    border-radius: 5px;
+}
+
+#section-status-feed {
+    background-color: #f8d7da; /* Light red */
+    padding: 15px;
+    border-radius: 5px;
 }
