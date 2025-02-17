@@ -96,9 +96,37 @@ class App():
             status="Downloading Files",
             message=f"Downloading {len(new_files_to_download)} files."
         )
+
+        for file in new_files_to_download:
+            # 📣 Send video card status update with downloading
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="In Progress",
+                message=f"Downloading file",
+                details={
+                    "video_file": file,
+                    "progress": "0%"
+                }
+            )
         
         if self.download_files(new_files_to_download):
             logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
+
+        for file in new_files_to_download:
+            # 📣 Send video card status update with waiting
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="Inactive",
+                message=f"Waiting patiently for its turn",
+                details={
+                    "video_file": file,
+                    "progress": "0%"
+                }
+            )
         
         #check if there are files to process in the unprocessed_videos folder
         files_to_process = os.listdir("unprocessed_videos")
@@ -117,7 +145,7 @@ class App():
             source='App.pipeline()',
             level='Section',
             type='Video',
-            status="Processing Files",
+            status="In Progress",
             message=f"Processing {len(new_files_to_download)} files."
         )
         for file in files_to_process:
@@ -126,8 +154,8 @@ class App():
                 source='App.pipeline()',
                 level='Card',
                 type='Video',
-                status="Downloading",
-                message=f"Downloading {file}.",
+                status="In Progress",
+                message=f"Processing {file}.",
                 details={
                     "video_file": file,
                     "progress": "0%"

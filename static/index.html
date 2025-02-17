@@ -22,8 +22,7 @@
     <div id="section-program">
         <h2>Program Information</h2>
         <h3>Status</h3>
-        <p id="value-program-status "><span class="badge bg-primary">Inactive</span>
-        <p class="spinner-grow text-primary" role="status"></p>
+        <p id="value-program-status" class="badge bg-primary">Inactive</p>
         <h4>Test Status Updates:</h4>
         <div id="subsection-btns-test" class="btn-group-m" role="group" aria-label="Function Test Buttons">
             <button id="btn-test-program-status" type="button" class="btn btn-secondary">Program</button>
@@ -48,38 +47,28 @@
         <h2>Video Processing</h2>
         <p id="value-video-status">Status</p>
         
-        <div id="subsection-video-cards" class="card-section">
-            <div class="row">
-                <div class="col-md-6">
-                    <div id="test-video-card" class="card">
-                        <h4 class="card-header">GX010005.MP4</h4>
-                        <div class="card-body">
-                            <h2 class="card-title"><em>Active</em></h2>
-                            <p class="card-text badge bg-primary">Extracting Frames</p>
-                                <div class="progress">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%">
-                                        75/110
-                                    </div>
-                                </div>
+        <div id="subsection-video-cards" class="row card-section">
+            <div id="test-video-card" class="card col-md-6">
+                <h4 class="card-header">GX010005.MP4</h4>
+                <div class="card-body">
+                    <h2 class="card-title"><em>Active</em></h2>
+                    <p class="card-text badge bg-primary">Extracting Frames</p>
+                        <div id="video-progress-bar" class="progress progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 75%">
+                            75/110
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div id="test-video-card" class="card">
-                        <h4 class="card-header">GX010006.MP4</h4>
-                        <div class="card-body">
-                            <h2 class="card-title"><em>Inactive</em></h2>
-                            <p class="card-text badge bg-secondary">Waiting</p>
-                                <div class="progress">
-                                    <div class="progress-bar progress-bar-striped bg-secondary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 5%">
-                                        0/?
-                                    </div>
-                                </div>
-                        </div>
-                    </div>
                 </div>
             </div>
-            
+            <div id="test-video-card" class="card col-md-6">
+                <h4 class="card-header">GX010006.MP4</h4>
+                <div class="card-body">
+                    <h2 class="card-title"><em>Inactive</em></h2>
+                    <p class="card-text badge bg-secondary">Waiting</p>
+                        <div id="video-progress-bar" class="progress progress-bar progress-bar-striped bg-secondary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 5%">
+                            0/?
+                        </div>
+                </div>
+            </div>
+        
         </div>
 
     <!-- Section for Salesforce-connected work order dispatching information -->
@@ -88,31 +77,25 @@
         <h2>Work Orders</h2>
         <p id="value-wo-processing-status">placeholder processing status</p>
 
-        <div id="subsection-wo-cards" class="card-section">
-            <div class="row">
-                <div class="col-md-6">
-                    <div id="test-wo-card" class="card">
-                        <h4 class="card-header">Work Order Created</h4>
-                        <div class="card-body">
-                            <h2 class="card-title"><em>GX010004.MP4 12:33:21</em></h2>
-                            <img src="..." class="card-img-top" alt="Image Placeholder.jpg">
-                            <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
-                        </div>
+            <div id="subsection-wo-cards" class="row card-section">
+                <div id="test-wo-card" class="card col-md-6">
+                    <h4 class="card-header">Work Order Created</h4>
+                    <div class="card-body">
+                        <h2 class="card-title"><em>GX010004.MP4 12:33:21</em></h2>
+                        <img src="..." class="card-img-top" alt="Image Placeholder.jpg">
+                        <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div id="test-wo-card" class="card">
-                        <h4 class="card-header">Work Order Created</h4>
-                        <div class="card-body">
-                            <h2 class="card-title"><em>GX010004.MP4 13:21:02</em></h2>
-                            <img src="..." class="card-img-top" alt="Image Placeholder.jpg">
-                            <p class="card-text"><em>440 - 448 Stand-in Boulevard</em> (<a href="/" class="card-link">44.184579, -73.873214</a>)</p>
-                        </div>
+                <div id="test-wo-card" class="card col-md-6">
+                    <h4 class="card-header">Work Order Created</h4>
+                    <div class="card-body">
+                        <h2 class="card-title"><em>GX010004.MP4 13:21:02</em></h2>
+                        <img src="..." class="card-img-top" alt="Image Placeholder.jpg">
+                        <p class="card-text"><em>440 - 448 Stand-in Boulevard</em> (<a href="/" class="card-link">44.184579, -73.873214</a>)</p>
                     </div>
                 </div>
+    
             </div>
-        
-        </div>
         
     </div>
 

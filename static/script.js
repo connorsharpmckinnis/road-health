@@ -59,6 +59,11 @@ function showTempBadge(message) {
     }, 1000);
 }
 
+// // // UPDATE PROGRAM STATUS
+function updateProgramStatus(updateData) {
+    valueProgramStatus.textContent = updateData.status;
+}
+
 // // // ADD STATUS UPDATE CARD TO FEED
 function addStatusUpdateCard(updateData) {
     
@@ -92,11 +97,22 @@ function updateVideoProcessingCard(updateData) {
     const progress = updateData.details.progress || "N/A";
     const stage = updateData.details.stage || "Unknown";
     const status = updateData.status || "Pending";
-    if (updateData.status != "Complete") {
-        active = `   <p class="spinner-grow text-secondary m-0" role="status"></p>`
+
+    let activeModifiers = "";
+    let badgeModifiers = "";
+
+    if (updateData.status == "In Progress") {
+        activeModifiers = "progress-bar-striped progress-bar-animated";
+        badgeModifiers = "bg-primary";
+    } else if (updateData.status === "Complete") {
+        activeModifiers = "bg-success";
+        badgeModifiers = "bg-success";
     } else {
-        active = ""
+        activeModifiers = "bg-secondary";
+        badgeModifiers = "bg-secondary";
     }
+
+
 
     // Check if a card for this video already exists
     let existingCard = document.getElementById(`video-${videoFile}`);
@@ -106,31 +122,27 @@ function updateVideoProcessingCard(updateData) {
         existingCard.innerHTML = `
             <h4 class="card-header">${videoFile}</h4>
             <div class="card-body">
-                <h2 class="card-title"><em>${status}</em>${active}</h2>
-                <p class="card-text"><em>Stage:</em> ${stage}</p>
-                    <div class="progress">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
-                            ${progress}
-                        </div>
+                <h2 class="card-title"><em>${status}</em></h2>
+                <p class="card-text badge ${badgeModifiers}">${stage}</p>
+                    <div id="video-progress-bar class="progress progress-bar ${activeModifiers}" role="progressbar" style="width: ${progress};">
+                        ${progress}
                     </div>
             </div>
         `;
     } else {
         // ✅ Create a new card if it doesn't exist
         const newCard = document.createElement("div");
-        newCard.className = "card";
+        newCard.className = "card col-md-6";
         newCard.id = `video-${videoFile}`;
 
 
         newCard.innerHTML = `
             <h4 class="card-header">${videoFile}</h4>
             <div class="card-body">
-                <h2 class="card-title"><em>${status}</em>${active}</h2>
-                <p class="card-text"><em>Stage:</em> ${stage}</p>
-                    <div class="progress">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: ${progress};">
-                            ${progress}
-                        </div>
+                <h2 class="card-title"><em>${status}</em></h2>
+                <p class="card-text badge ${badgeModifiers}">${stage}</p>
+                    <div id="video-progress-bar class="progress progress-bar ${activeModifiers}" role="progressbar" style="width: ${progress};">
+                        ${progress}
                     </div>
             </div>
         `;
@@ -149,22 +161,23 @@ function updateWorkOrderProcessingCard(updateData) {
             <h4 class="card-header">Work Order Created</h4>
             <div class="card-body">
                 <h2 class="card-title"><em>${updateData.details.video_file}</em></h2>
-                <p class="card-text">Placeholder for frame image display</p>
-                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (44.189204, -73.875371)</p>
+                <img src="..." class="card-img-top" alt="Image of the detected issue">
+                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
             </div>
         `;
+
     } else {
         // Create a new card
         const newCard = document.createElement("div");
-        newCard.className = "card";
+        newCard.className = "card col-md-6";
         newCard.id = `wo-${updateData.details.video_file}`;
 
         newCard.innerHTML = `
             <h4 class="card-header">Work Order Created</h4>
             <div class="card-body">
                 <h2 class="card-title"><em>${updateData.details.video_file}</em></h2>
-                <p class="card-text">Placeholder for frame image display</p>
-                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (44.189204, -73.875371)</p>
+                <img src="..." class="card-img-top" alt="Image of the detected issue">
+                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
             </div>
         `;
 
