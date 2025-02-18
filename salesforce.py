@@ -10,6 +10,7 @@ import dotenv
 import logging
 import io
 from web_ui import WebApp, StatusUpdate
+import shutil
 
 
 dotenv.load_dotenv()
@@ -143,12 +144,14 @@ class WorkOrderCreator:
                             # First check if the file exists at its original location
                             if not os.path.exists(frame_path):
                                 # If not found, adjust the path to the new folder
-                                frame_path = os.path.join("processed_frames", os.path.basename(frame_path))
+                                frame_path = os.path.join("frames", os.path.basename(frame_path))
                                 logging.debug(f"Adjusted frame path to: {frame_path}")
 
                             # Check if the file now exists at the adjusted path
                             if os.path.exists(frame_path):
                                 uploaded_image_id, uploaded_content_version_id = self.upload_file_to_salesforce(frame_path, work_order_id)
+                                # Copy the file to the work_order_frames folder
+                                shutil.copy(frame_path, 'work_order_frames')
                             else:
                                 logging.warning(f"File not found in either original or processed folder: {frame_path}")
                         

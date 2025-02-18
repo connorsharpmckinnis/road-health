@@ -204,6 +204,22 @@ batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 
 unprocessed_videos_path = 'unprocessed_videos'
 
+
+"""
+BOX FOLDER STRUCTURE
+Root Folder (0)
+- Videos (303832684570)
+    - Archived Videos (308058834229)
+- Images (308059149587)
+    - Archived Images (308059844499)
+    - Work Order Images (308058285408)
+"""
+box_videos_folder_id = '303832684570'
+box_archived_videos_folder_id = '308058834229'
+box_images_folder_id = '308059149587'
+box_archived_images_folder_id = '308059844499'
+box_work_order_images_folder_id = '308058285408'
+
 def log_event(message):
     print(f"[LOG] {message}")
 

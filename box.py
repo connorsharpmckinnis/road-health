@@ -10,7 +10,7 @@ import base64
 import hashlib
 import io
 import datetime
-from utils import unprocessed_videos_path
+from utils import unprocessed_videos_path, box_archived_images_folder_id, box_archived_videos_folder_id, box_images_folder_id, box_videos_folder_id, box_work_order_images_folder_id
 from web_ui import WebApp, StatusUpdate
 import asyncio
 
@@ -33,8 +33,13 @@ class Box():
         self.enterprise_id = enterprise_id or BOX_ENTERPRISE_ID
         self.client = None
         self.auth = None
-        self.videos_folder_box_id = None
+        self.videos_folder_box_id = box_videos_folder_id
+        self.archived_videos = None
         self.unprocessed_videos_folder = unprocessed_videos_path
+        self.box_archived_images_folder_id = box_archived_images_folder_id
+        self.box_archived_videos_folder_id = box_archived_videos_folder_id
+        self.box_images_folder_id = box_images_folder_id
+        self.box_work_order_images_folder_id = box_work_order_images_folder_id
 
         self.authenticate()
         print(f"{self.client = }")
@@ -272,9 +277,31 @@ class Box():
                     
         return downloaded_files
     
-    def save_frames_to_long_term_storage(self, local_folder=None, destination_folder_id=None):
+    def save_frames_to_long_term_storage(self, destination_folder_id='308059844499'):
         logger.info(f"Placeholder for saving frames to long-term storage.")
-        return 'success'
+        # Get all the image files and json in the local 'frames' folder
+        frames_folder_contents = os.listdir('frames')
+        # Get the videos from Box's Videos folder
+        box_videos_folder_contents = self.list_items_in_folder(self.videos_folder_box_id)
+        box_video_ids = [item['id'] for item in box_videos_folder_contents]
+
+        # Get all the image files in the local 'work_order_frames' folder
+        work_order_frames_folder_contents = os.listdir('work_order_frames')
+        
+        # Move the videos to the 'Archived Videos' folder
+        self.move_files(box_video_ids, self.box_archived_videos_folder_id)
+
+        # Upload the files to Box (future: combine the json and images into a single file via metadata template)
+        for file in frames_folder_contents:
+            file_path = os.path.join('frames', file)
+            self.upload_small_file_to_folder(file_path, destination_folder_id)
+
+        # Upload the work_order_frames files to Box's 'Images / Work Order Images' folder
+        for file in work_order_frames_folder_contents:
+            file_path = os.path.join('work_order_frames', file)
+            self.upload_small_file_to_folder(file_path, self.box_work_order_images_folder_id)
+        # Delete the local files
+        return
 
     def delete_file_by_id(self, file_id):
         """
@@ -335,6 +362,57 @@ class Box():
             logger.error(f"Failed to create collaboration for {user_email}: {e}")
             return None
 
+    def update_file(self, file_id, new_name=None, new_description=None, new_parent_folder_id=None):
+        """
+        Updates the metadata of a file.
+
+        Args:
+            file_id (str): The ID of the file to update.
+            new_name (str): The new name for the file.
+            new_description (str): The new description for the file.
+            new_parent_folder_id (str): The ID of the new parent folder for the file.
+
+        Returns:
+            dict: Information about the updated file.
+        """
+        try:
+
+            #get the file and its metadata if changes aren't being made
+            current_file = self.client.files.get_file_by_id(
+                file_id = file_id, 
+                fields=['name', 'description', 'parent.id']
+            )
+            new_name = new_name or current_file.name
+            new_description = new_description or current_file.description
+            new_parent_folder_id = new_parent_folder_id or current_file.parent.id
+
+            # Update the file's metadata
+            updated_file = self.client.files.update_file_by_id(
+                file_id=file_id, name=new_name, description=new_description, parent=new_parent_folder_id
+            )
+
+            logger.info(f"File '{updated_file.name}' updated successfully with ID: {updated_file.id}")
+            return updated_file
+        except Exception as e:
+            logger.error(f"Failed to update file '{file_id}': {e}")
+            return None
+        
+    def move_file(self, file_id, destination_folder_id):
+        self.update_file(file_id=file_id, destination_folder_id=destination_folder_id)
+
+    def move_files(self, file_ids, destination_folder_id):
+        """
+        Moves multiple files to a new folder.
+
+        Args:
+            file_ids (list): A list of file IDs to move.
+            destination_folder_id (str): The ID of the destination folder.
+        """
+        try:
+            for file_id in file_ids:
+                self.update_file(file_id=file_id, new_parent_folder_id=destination_folder_id)
+        except Exception as e:
+            logger.error(f"Failed to move files: {e}")
 
 if __name__ == '__main__':
 
@@ -345,11 +423,15 @@ if __name__ == '__main__':
 
     box_items = box_client.list_items_in_folder('0')
     print(f"All folders accessible by the app: \n\n{box_items}\n\n")
+    
     videos_folder_id = next(item for item in box_items if item['name'] == 'Videos')['id']
     box_client.videos_folder_box_id = videos_folder_id
 
-    videos_folder_items = box_client.list_items_in_folder(videos_folder_id)
-    print(f'{videos_folder_items = }')
+
+
+
+
+
 
     #box_client.share_folder_with_user_by_email(videos_folder_id, 'connor.mckinnis@carync.gov', role='editor')
 
