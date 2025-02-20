@@ -85,24 +85,30 @@ function addStatusUpdateCard(updateData) {
     
     // Create a new card
     const entry = document.createElement("div");
-    entry.className = "card";  // Add CSS later to make it look nice
+    entry.className = "card feed condensed";  // Add CSS later to make it look nice
 
     // Fill in the details from JSON
     entry.innerHTML = `
-        <h4 class="card-header">${updateData.message}</h4>
-        <p class="card-title"><strong>${new Date().toLocaleTimeString()}:</strong></p>
-        <p class="card-text"><em>Source:</em> ${updateData.source}</p>
+        <div class="card-body">
+            <p class="card-text small">
+                <span class="text-secondary">${new Date().toLocaleTimeString()}</span> | 
+                <span class="text-muted">${updateData.source}</span><br>
+                ${updateData.message}
+            </p>
+        </div>
     `;
 
     // Append the new status update
-    subsectionStatusFeed.appendChild(entry);
+    subsectionStatusFeed.prepend(entry);
 
     // Auto-scroll to the latest update
-    subsectionStatusFeed.scrollTop = subsectionStatusFeed.scrollHeight;
+    subsectionStatusFeed.scrollTop = 0;
 }
 
 // // // UPDATE OR ADD VIDEO PROCESSING CARD
 function updateVideoProcessingCard(updateData) {
+    videoSection.hidden = false;
+    
     if (!updateData.details || !updateData.details.video_file) {
         console.warn("Invalid video update data:", updateData);
         return;
@@ -169,6 +175,8 @@ function updateVideoProcessingCard(updateData) {
 
 // // // UPDATE OR ADD WORK ORDER PROCESSING CARD
 function updateWorkOrderProcessingCard(updateData) {
+    woSection.hidden = false;
+    
     const existingCard = document.getElementById(`wo-${updateData.details.video_file}`);
 
     if (existingCard) {
@@ -244,21 +252,29 @@ statusFeedSocket.onmessage = (event) => {
 btnStartMonitoring.addEventListener("click", () => {
     console.log("Start Monitoring Button Clicked");
     sendHttpRequest("/start-monitoring");
+    updateData = {"message": "Monitoring Started", "source": "Web UI button click: 'btnStartMonitoring'"};
+    addStatusUpdateCard(updateData);
 });
 
 btnStopMonitoring.addEventListener("click", () => {
     console.log("Stop Monitoring Button Clicked");
     sendHttpRequest("/stop-monitoring");
+    updateData = {"message": "Monitoring Stopped", "source": "Web UI button click: 'btnStopMonitoring'"};
+    addStatusUpdateCard(updateData);
 });
 
 btnCheckForChanges.addEventListener("click", () => {
     console.log("Check for Changes Button Clicked");
     sendHttpRequest("/video-check");
+    updateData = {"message": "Video Check Requested", "source": "Web UI button click: 'btnCheckForChanges'"};
+    addStatusUpdateCard(updateData);
 });
 
 btnSaveNewAiInstructions.addEventListener("click", () => {
     console.log("Save New AI Instructions Button Clicked");
     sendHttpRequest("/save-ai-instructions", "POST", { instructions: inputAiInstructions.value });
+    updateData = {"message": "AI Instructions Updated", "source": "Web UI button click: 'btnSaveNewAiInstructions'"};
+    addStatusUpdateCard(updateData);
 });
 
 // // TEST BUTTON EVENT LISTENERS

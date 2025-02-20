@@ -104,8 +104,7 @@ class WebApp:
             """Stop the monitoring process."""
             
             # Logic for stopping the monitoring loop
-
-            await self.send_status_update(source='stop_monitoring()')  # Send update to WebSocket clients
+            self.main_app.monitoring_active = False
 
             return True
 
@@ -115,8 +114,6 @@ class WebApp:
             """Check for new videos."""
             
             # Logic for checking for new videos
-
-            await self.send_status_update(source='check-for-new-videos()', type='Video', details={"video_file": "Test Video 123"})  # Send update to WebSocket clients
 
             return True
 

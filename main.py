@@ -290,9 +290,17 @@ class App():
         try:
             while self.monitoring_active:
                 for i in range(interval, 0, -1):
-                    if not self.monitoring_active:  # Stop immediately when requested
+                    if not self.monitoring_active:
                         logger.info("Monitoring loop interrupted.")
                         self.status = "Idle"
+                        self.monitoring_status = "Idle"
+                        await self.send_status_update_to_ui(
+                            source='App.start_monitoring()',
+                            level='Info',
+                            type='Program',
+                            status="Stopped",
+                            message="Monitoring has been stopped by the user.",
+                        )
                         return
                     
                     
