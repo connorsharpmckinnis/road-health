@@ -85,21 +85,12 @@ class WorkOrderCreator:
                     metadata = json.load(f)
                     self.all_metadata.append(metadata)  # Add metadata to the list
 
-                frame_path = metadata.get("frame_path", "Unknown")
-                timestamp = metadata.get("timestamp", "Unknown")
-                ai_analysis = metadata.get("ai_analysis", {})
-                pothole_data = ai_analysis.get("Pothole", {})
-
-                if pothole_data.get("presence") == "yes" and pothole_data.get("confidence", 0) > 0.8:
-                    print(f'I would create a work order for {frame_path}... IF I KNEW HOW')
-                    # self.create_work_order(frame_path, timestamp, pothole_data)
-
             except Exception as e:
                 print(f"Error processing file {file_name}: {e}")
 
         print(f"Processed {len(self.all_metadata)} metadata files. Stored in self.all_metadata.")
     
-    def work_order_engine(self):
+    async def work_order_engine(self):
         """
         Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.
         """
@@ -107,6 +98,8 @@ class WorkOrderCreator:
             logging.info("Starting Work Order Engine...")
             work_orders_created = 0
             
+            self.process_metadata_files()
+
             # Loop through all metadata items
             for metadata_item in self.all_metadata:
                 ai_analysis = metadata_item.get("analysis_results", {})
@@ -154,6 +147,28 @@ class WorkOrderCreator:
                                 shutil.copy(frame_path, 'work_order_frames')
                             else:
                                 logging.warning(f"File not found in either original or processed folder: {frame_path}")
+
+                            # Send a work order card to the UI with the image
+                            try:
+                                # First convert the image to a base64 string
+                                with open(frame_path, "rb") as image_file:
+                                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+                                await self.send_status_update_to_ui(
+                                    type="WorkOrder",
+                                    level="Info",
+                                    status = "Created",
+                                    message=f"Work Order {work_order_id} created.",
+                                    details = {
+                                        "video_file": metadata_item.get("filename", "Unknown"),
+                                        "work_order_id": work_order_id,
+                                        "image_base64": encoded_string,
+                                        "ai_analysis": ai_analysis
+                                    }
+                                )
+                            except Exception as e:
+                                logging.error(f"Error sending status update to UI: {e}")
+                                
                         
                             # Post the image to Chatter
                             image_content_document_id = self.post_image_to_chatter(work_order_id, uploaded_content_version_id, "Pothole detected in the image.")

@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import datetime
 from typing import List
-
+import base64
 
 
 class StatusUpdate():
@@ -156,8 +156,9 @@ class WebApp:
             """Test the work order status."""
             
             # Logic for testing the work order status
-
-            await self.send_status_update(source='test_wo_status()', type='WorkOrder', details={"video_file": "WO123", "wo_count": "2"})
+            with open("test_frames_folder/frame_0002.jpg", "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                await self.send_status_update(source='test_wo_status()', type='WorkOrder', details={"video_file": "WO123", "work_order_id": "123", "image_base64": encoded_string, "ai_analysis": "Shit's wack"})
 
         # Route for testing the feed status
         @self.app.post("/test-feed-status")

@@ -177,16 +177,25 @@ function updateVideoProcessingCard(updateData) {
 function updateWorkOrderProcessingCard(updateData) {
     woSection.hidden = false;
     
-    const existingCard = document.getElementById(`wo-${updateData.details.video_file}`);
+    const existingCard = document.getElementById(`wo-${updateData.details.work_order_id}`);
+    let imageHTML = "";
+    if (updateData.details.image_base64) {
+        imageHTML = `<img src="data:image/jpeg;base64,${updateData.details.image_base64}" 
+        alt="Image of the detected issue"
+        class="card-img-top"
+        style="width: 300px; height: 130px;"
+        >`;
+    }
 
     if (existingCard) {
         // Update existing card
         existingCard.innerHTML = `
             <h4 class="card-header">Work Order Created</h4>
             <div class="card-body">
-                <h2 class="card-title"><em>${updateData.details.video_file}</em></h2>
-                <img src="..." class="card-img-top" alt="Image of the detected issue">
-                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
+                <h2 class="card-title"><em>${updateData.message}</em></h2>
+                ${imageHTML}
+                <p class="card-text"><em>Id: ${updateData.details.work_order_id}</em></p>
+                <p class="card-text">${updateData.details.ai_analysis}</p>
             </div>
         `;
 
@@ -199,9 +208,10 @@ function updateWorkOrderProcessingCard(updateData) {
         newCard.innerHTML = `
             <h4 class="card-header">Work Order Created</h4>
             <div class="card-body">
-                <h2 class="card-title"><em>${updateData.details.video_file}</em></h2>
-                <img src="..." class="card-img-top" alt="Image of the detected issue">
-                <p class="card-text"><em>150 - 155 Placeholder Drive</em> (<a href="/" class="card-link">44.189204, -73.875371</a>)</p>
+                <h2 class="card-title"><em>${updateData.message}</em></h2>
+                ${imageHTML}
+                <p class="card-text"><em>Id: ${updateData.details.work_order_id}</em></p>
+                <p class="card-text">${updateData.details.ai_analysis}</p>
             </div>
         `;
 

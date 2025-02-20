@@ -190,18 +190,17 @@ class Box():
         """
         try:
             # Open the file and prepare a byte stream
+            new_file_name = os.path.basename(file_path)
+            
             with open(file_path, "rb") as file:
-                file_name = os.path.basename(file_path)
-
-                # Set up the file attributes for the upload
-                attributes = UploadFileAttributes(
-                    name=file_name,
-                    parent=UploadFileAttributesParentField(id=folder_id),
+                uploaded_file = self.client.uploads.upload_file(
+                    UploadFileAttributes(
+                        name=new_file_name, parent=UploadFileAttributesParentField(id="0")
+                    ),
+                    file,
                 )
-
-                # Perform the upload
-                uploaded_file = self.client.uploads.upload_file(attributes, file)
-                logger.info(f"File '{file_name}' uploaded successfully with ID: {uploaded_file.id}")
+        
+                logger.info(f"File '{new_file_name}' uploaded successfully.")
                 return uploaded_file
         except Exception as e:
             logger.error(f"Failed to upload file '{file_path}': {e}")
@@ -428,8 +427,8 @@ if __name__ == '__main__':
     box_client.videos_folder_box_id = videos_folder_id
 
 
-
-
+    uploaded_file = box_client.upload_small_file_to_folder(file_path="test_frames_folder/frame_0002.jpg", folder_id=box_client.box_work_order_images_folder_id)
+    print(f"{uploaded_file = }")
 
 
 

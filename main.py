@@ -179,13 +179,8 @@ class App():
         #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
         self.status = "Processing Salesforce actions..."
         logger.info(self.status)
-        self.work_order_creator.process_metadata_files()
-        if len(self.work_order_creator.all_metadata) > 0:
-            logger.info(f"Processed metadata for {len(self.work_order_creator.all_metadata)} files. Runnign through Work Order engine...")
-            
-            # ASYNCIFY WORK ORDER ENGINE IN SALESFORCE.PY
-            work_orders_created = self.work_order_creator.work_order_engine()
-            logger.info(f"Work Orders created: {work_orders_created}")
+        work_orders_created = await self.work_order_creator.work_order_engine()
+        logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()
         
