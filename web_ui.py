@@ -1,177 +1,222 @@
-'''from flask import Flask, render_template, jsonify
-from logging_config import logger
 import os
-import threading
-from main import App  # Import your existing processing class
-
-app = Flask(__name__)
-
-LOG_FILE = "logs/app.log"
-
-if not os.path.exists("logs"):
-    os.makedirs("logs")
-
-# Global instance of the App class
-main_app = App()
-processing_app = main_app.frame_processor
-
-
-@app.route("/")
-def dashboard():
-    """Renders the dashboard UI"""
-    return render_template("index.html")
-
-
-@app.route("/status")
-def status():
-    """Returns the current system status, including processing state and pending files."""
-    pending_files = len(os.listdir("unprocessed_videos")) if os.path.exists("unprocessed_videos") else 0
-    current_status = getattr(main_app, "status", "Idle - Waiting for next check")
-
-    return jsonify({
-        "status": current_status,
-        "pending_files": pending_files
-    })
-
-
-@app.route("/main-details")
-def main_details():
-    """Returns the main details of the app, such as monitoring state."""
-    return jsonify({
-        "main_status": main_app.status,
-        "main_monitoring_active": main_app.monitoring_active,
-        "time_to_check": main_app.time_to_check,
-        "processing_status": main_app.processing_status
-    })
-
-
-@app.route("/processing-details")
-def processing_details():
-    """Returns the details of the processing pipeline."""
-    return jsonify({
-        "processing_video_fps": processing_app.video_fps,
-        "processing_analysis_frames_per_second": processing_app.analysis_frames_per_second,
-        "processing_analysis_max_frames": processing_app.analysis_max_frames,
-        "processing_analysis_batch_size": processing_app.analysis_batch_size,
-        "processing_seconds_analyzed": processing_app.seconds_analyzed,
-        "processing_minutes_analyzed": processing_app.minutes_analyzed,
-        "processing_status": processing_app.processing_status,
-        "processing_stages": processing_app.processing_stages
-    })
-
-
-@app.route("/folder-contents")
-def folder_contents():
-    """Returns the current contents of the unprocessed and processed video folders."""
-    unprocessed = os.listdir("unprocessed_videos") if os.path.exists("unprocessed_videos") else []
-    processed = os.listdir("processed_videos") if os.path.exists("processed_videos") else []
-
-    return jsonify({
-        "unprocessed_videos": unprocessed,
-        "processed_videos": processed
-    })
-
-
-@app.route("/logs")
-def get_logs():
-    """Returns the last N lines of the log file for UI polling."""
-    if not os.path.exists(LOG_FILE):
-        return jsonify({"logs": []})
-
-    with open(LOG_FILE, "r") as file:
-        lines = file.readlines()[-50:]  # Fetch last 50 log lines
-        return jsonify({"logs": [line.strip() for line in lines]})
-
-
-@app.route("/start-monitoring", methods=["POST"])
-def start_monitoring():
-    """Endpoint to start the monitoring process."""
-    print(f"{main_app.monitoring_active = }")
-    if not main_app.monitoring_active:
-        threading.Thread(target=main_app.start_monitoring, daemon=True).start()
-        return jsonify({"status": "Monitoring started"})
-    else:
-        return jsonify({"status": "Monitoring is already running"})
-
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5001)'''
-
-
-from flask import Flask, render_template, jsonify
-from flask_socketio import SocketIO
-import os
-import time
 import logging
+import asyncio
+import socketio
+from fastapi import FastAPI, WebSocket
+import uvicorn
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+import datetime
+from typing import List
+import base64
 
-app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")  # Enable WebSockets
 
-LOG_FILE = "logs/app.log"
-if not os.path.exists("logs"):
-    os.makedirs("logs")
+class StatusUpdate():
+    def __init__(self, source: str="Default Source", level: str="Default Level", type: str="Default Type", status: str="Default Status", message: str="Default Message", details={}):
+        self.timestamp = datetime.datetime.now().isoformat()
+        self.source: str = source
+        self.level: str = level
+        self.type: str = type
+        self.status: str = status
+        self.message: str = message
+        self.details: dict = details
+                         
 
-logger = logging.getLogger(__name__)
+    def jsonify(self):
+        return {
+            "timestamp": self.timestamp,
+            "source": self.source,
+            "level": self.level,
+            "type": self.type,
+            "status": self.status,
+            "message": self.message,
+            "details": self.details
+        }
+    
 
-# Global variables
-monitoring_active = False
-status = "Idle"
-time_to_check = 0
+class WebApp:
+    """Object-Oriented FastAPI and WebSocket Server for Monitoring."""
 
-@app.route("/")
-def dashboard():
-    return render_template("index.html")
+    def __init__(self):
+        """Initialize the FastAPI app and Socket.IO server."""
+        self.active_connections: List[WebSocket] = []  # Store connected WebSocket clients
 
-@app.route("/status")
-def get_status():
-    return jsonify({
-        "status": status,
-        "time_to_check": time_to_check
-    })
+  
+        # Initialize FastAPI & Socket.IO
+        self.app = FastAPI()
 
-@app.route("/start-monitoring", methods=["POST"])
-def start_monitoring():
-    global monitoring_active
-    if not monitoring_active:
-        monitoring_active = True
-        socketio.start_background_task(monitoring_loop)  # Run in background
-        return jsonify({"status": "monitoring_started"})
-    return jsonify({"status": "already_monitoring"})
+        # Serve static files (HTML, CSS, JS)
+        self.app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.route("/stop-monitoring", methods=["POST"])
-def stop_monitoring():
-    global monitoring_active
-    monitoring_active = False
-    return jsonify({"status": "monitoring_stopped"})
+        # Enable CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
-def monitoring_loop():
-    """Runs the monitoring process and sends updates via WebSocket."""
-    global status, time_to_check, monitoring_active
+        ### WEBSOCKET ENDPOINTS ###
 
-    logger.info("Monitoring started.")
-    status = "Monitoring active - Checking for new files"
+        # Socket for status updates (web_ui.py -> script.js -> index.html)
+        @self.app.websocket("/ws/status-updates")
+        async def websocket_status_updates(websocket: WebSocket):
+            """WebSocket endpoint for pushing status updates to the UI."""
+            await websocket.accept()
+            self.active_connections.append(websocket)
 
-    while monitoring_active:
-        for i in range(10, 0, -1):
-            if not monitoring_active:
-                status = "Idle - Monitoring stopped"
-                socketio.emit("update_status", {"status": status, "time_to_check": 0})
-                return  # Exit loop
+            try:
+                while True:
+                    await asyncio.sleep(10)  # Keep connection open
+            except asyncio.CancelledError:
+                print("WebSocket connection closed due to server shutdown.")
+            except Exception as e:
+                logging.error(f"WebSocket error: {e}")
+            finally:
+                if websocket in self.active_connections:
+                    self.active_connections.remove(websocket)
+
+        
+        ### HTTP ENDPOINTS ###
+        
+        # Route for serving the index.html file
+        @self.app.get("/")
+        async def serve_index():
+            """Serve the main index.html file."""
+            return FileResponse("static/index.html")
+        
+        # Route for starting monitoring
+        @self.app.post("/start-monitoring")
+        async def start_monitoring():
+            """Start the monitoring process."""
             
-            time_to_check = i
-            status = "Idle"
-            
-            # Emit update to frontend
-            socketio.emit("update_status", {"status": status, "time_to_check": time_to_check})
-            
-            time.sleep(1)
+            # Logic for starting the monitoring loop
 
-        status = "Checking for new files..."
-        socketio.emit("update_status", {"status": status, "time_to_check": 0})
-        time.sleep(3)
+            await self.main_app.start_monitoring(interval=10)
 
-    status = "Idle - Monitoring stopped"
-    socketio.emit("update_status", {"status": status, "time_to_check": 0})
+            return True  # HTTP response
+
+        # Route for stopping monitoring
+        @self.app.post("/stop-monitoring")
+        async def stop_monitoring():
+            """Stop the monitoring process."""
+            
+            # Logic for stopping the monitoring loop
+            self.main_app.monitoring_active = False
+
+            return True
+
+        # Route for directly checking for new videos
+        @self.app.post("/video-check")
+        async def check_for_new_videos():
+            """Check for new videos."""
+            
+            # Logic for checking for new videos
+
+            return True
+
+        # Route for saving new AI instructions
+        @self.app.post("/save-ai-instructions")
+        async def save_ai_instructions(instructions_field: dict):
+            """Save new AI instructions."""
+            
+            # Logic for saving AI instructions
+
+            await self.send_status_update(source='save_ai_instructions()', type='Temp')  # Send update to WebSocket clients
+
+            return True
+
+       
+       
+        ### ### HTTP ENDPOINTS FOR TESTS ### ###
+
+        # Route for testing the program status
+        @self.app.post("/test-program-status")
+        async def test_program_status():
+            """Test the program status."""
+            
+            # Logic for testing the program status
+
+            await web_app.send_status_update(source='test_program_status()', type='Program', status="Button Tested", message="Button Tested (Message Edition)")
+
+        # Route for testing the video processing status
+        @self.app.post("/test-video-status")
+        async def test_video_status():
+            """Test the video processing status."""
+            
+            # Logic for testing the video processing status
+
+            await self.send_status_update(source='test_video_status()', type='Video', details={"video_file": "Test Video 123", "progress": "50%"})
+
+        # Route for testing the work order status
+        @self.app.post("/test-wo-status")
+        async def test_wo_status():
+            """Test the work order status."""
+            
+            # Logic for testing the work order status
+            with open("test_frames_folder/frame_0002.jpg", "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                await self.send_status_update(source='test_wo_status()', type='WorkOrder', details={"video_file": "WO123", "work_order_id": "123", "image_base64": encoded_string, "ai_analysis": "Shit's wack"})
+
+        # Route for testing the feed status
+        @self.app.post("/test-feed-status")
+        async def test_feed_status():
+            """Test the feed status."""
+            
+            # Logic for testing the feed status
+
+            await self.send_status_update(source='test_feed_status()', type='Feed', message="Action has been taken somewhere", status="Active")
+
+
+    # Function that can be called from other modules to send a status update through the WebSocket
+    async def send_status_update(self, status_update_obj=None, source:str='Default Source', level:str='Default Level', type:str='Feed', status:str='Default Status', message:str='Default Message', details:dict={}):
+            """Broadcast a status update to all connected WebSocket clients."""
+            
+            disconnected_clients = []
+            
+            if not status_update_obj:
+                status_update = StatusUpdate(source, level, type, status, message, details).jsonify()
+            
+            elif status_update_obj:
+                status_update = status_update_obj.jsonify()
+            
+            for websocket in self.active_connections:
+                try:
+                    await websocket.send_json(status_update)
+                except Exception:
+                    disconnected_clients.append(websocket)
+
+            # Remove disconnected clients
+            for client in disconnected_clients:
+                self.active_connections.remove(client)    
+
+    async def run(self):
+        """Run the FastAPI application with Uvicorn asynchronously."""
+        config = uvicorn.Config(self.app, host="0.0.0.0", port=5001, reload=True)
+        server = uvicorn.Server(config)
+        await server.serve()  # ✅ Await the async server
+
+    async def start_main_app(self):
+        """Start the main application asynchronously after FastAPI is running."""
+        from main import App
+        self.main_app = App(web_app=self)  # ✅ App now has WebApp access
+        await self.main_app.initialize()  # ✅ Run async init
+
+
+web_app = WebApp()
+
+async def main():
+    """Start FastAPI and App in parallel."""
+    # ✅ Start FastAPI
+    fastapi_task = asyncio.create_task(web_app.run())
+
+    # ✅ Start App AFTER FastAPI
+    await asyncio.sleep(2)  # Small delay to ensure FastAPI is running before App starts
+    await web_app.start_main_app()  # ✅ Start App
+
+    await fastapi_task  # ✅ Keep the event loop alive
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, host="0.0.0.0", port=5001)
+    asyncio.run(main())  # ✅ Run FastAPI and App in parallel

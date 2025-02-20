@@ -14,6 +14,8 @@ dotenv.load_dotenv()
 import time
 from datetime import datetime, timedelta, timezone
 from openai.types import FileObject, FileDeleted
+from web_ui import WebApp, StatusUpdate
+import asyncio
 
 AI_LOG_FILE = "logs/ai.log"
 
@@ -34,7 +36,8 @@ logger.addHandler(ai_file_handler)
 
 
 class AI():
-    def __init__(self, api_key):
+    def __init__(self, api_key, web_app: WebApp=None):
+        self.web_app = web_app
         self.api_key = api_key
         openai.api_key = self.api_key
         self.client = OpenAI()
@@ -52,7 +55,19 @@ class AI():
             batch_assistant, batch_assistant_id = self.create_assistant('batch')
             self.batch_assistant = batch_assistant
             set_batch_assistant(batch_assistant_id)
-            
+
+
+    async def send_status_update_to_ui(self, type, level, status, message, details={}):
+        """Send a status update to the UI using WebSockets."""
+        if self.web_app:
+            await self.web_app.send_status_update(
+                source="AI",
+                type=type,
+                level=level,
+                status=status,
+                message=message,
+                details=details
+            )
 
     def create_assistant(self, type=None) -> tuple: #Tuple (self.assistant, self.assistant_id)
         """

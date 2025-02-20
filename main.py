@@ -10,6 +10,8 @@ from logging_config import logger
 import time
 import shutil
 import threading
+from web_ui import StatusUpdate, WebApp
+import asyncio
 
 
 dotenv.load_dotenv()
@@ -18,9 +20,12 @@ dotenv.load_dotenv()
 flask_app = Flask(__name__)
 
 class App():
-    def __init__(self):
-        self.status = 'Monitoring Inactive'
+    def __init__(self, web_app: WebApp):
+        """Initialize App with reference to WebApp."""
+        self.web_app = web_app  # ✅ Store WebApp instance
+        self.status = "Monitoring Inactive"
         self.monitoring_active = False
+        self.monitoring_status = "Idle"
         self.box = None
         self.processor = None
         self.work_order_creator = None
@@ -31,21 +36,26 @@ class App():
         self.time_to_check = None
         self.processing_status = {}
 
+    async def initialize(self):
+        """Run initialization logic and send status updates."""
+        
+        print("Initalizing")
+
+        # ✅ Start up core services (ensure async methods are awaited)
         self.startup_box_client()
         self.startup_processor()
         self.startup_work_order_creator()
         self.load_processed_videos()
 
 
-
     def startup_box_client(self):
-        self.box = Box()
+        self.box = Box(web_app=self.web_app)
 
     def startup_processor(self):
-        self.frame_processor = Processor()
+        self.frame_processor = Processor(web_app=self.web_app)
 
     def startup_work_order_creator(self):
-        self.work_order_creator = WorkOrderCreator()
+        self.work_order_creator = WorkOrderCreator(web_app=self.web_app)
 
     def load_processed_videos(self):
         try:
@@ -57,17 +67,66 @@ class App():
     def load_downloaded_but_unprocessed_videos(self):
         self.downloaded_but_unprocessed = os.listdir("unprocessed_videos")
 
+    async def send_status_update_to_ui(self, source, type, level, status, message, details={}):
+        """Send a status update to the UI properly using WebSockets."""
+        if self.web_app:
+            await self.web_app.send_status_update(
+                source=source,
+                type=type,
+                level=level,
+                status=status,
+                message=message,
+                details=details
+            )
+    
     def save_processed_videos(self):
         """Save processed files to a log to prevent reprocessing."""
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    def pipeline(self, new_files_to_download: list=None):
+    async def pipeline(self, new_files_to_download: list=None):
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
         
+        # 📣 Send program status update with countdown
+        await self.send_status_update_to_ui(
+            source='App.pipeline()',
+            level='Section',
+            type='Video',
+            status="Downloading Files",
+            message=f"Downloading {len(new_files_to_download)} files."
+        )
+
+        for file in new_files_to_download:
+            # 📣 Send video card status update with downloading
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="In Progress",
+                message=f"Downloading file",
+                details={
+                    "video_file": file['name'],
+                    "progress": "20%"
+                }
+            )
+        
         if self.download_files(new_files_to_download):
             logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
+
+        for file in new_files_to_download:
+            # 📣 Send video card status update with waiting
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="Inactive",
+                message=f"Waiting patiently for its turn",
+                details={
+                    "video_file": file['name'],
+                    "progress": "0%"
+                }
+            )
         
         #check if there are files to process in the unprocessed_videos folder
         files_to_process = os.listdir("unprocessed_videos")
@@ -81,14 +140,36 @@ class App():
             logger.info("No files to process. Exiting pipeline.")
             return
 
+        # 📣 Send program status update with countdown
+        await self.send_status_update_to_ui(
+            source='App.pipeline()',
+            level='Section',
+            type='Video',
+            status="In Progress",
+            message=f"Processing {len(new_files_to_download)} files."
+        )
         for file in files_to_process:
-            self.processing_status[file] = {"stage": "Downloading", "status": f"Downloading {file}..."}
-            logger.info(self.processing_status[file]["status"])
+            # 📣 Send video card status update with initial processing
+            await self.send_status_update_to_ui(
+                source='App.pipeline()',
+                level='Card',
+                type='Video',
+                status="In Progress",
+                message=f"Processing {file}.",
+                details={
+                    "video_file": file,
+                    "progress": "20%"
+                }
+            )
 
-            self.processing_status[file] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
-            logger.info(self.processing_status[file]["status"])
+            self.processing_status['file'] = {"stage": "Downloading", "status": f"Downloading {file}..."}
+            logger.info(self.processing_status['file']["status"])
 
-            self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
+            self.processing_status['file'] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
+            logger.info(self.processing_status['file']["status"])
+
+            #ASYNCIFY VIDEO PROCESSING IN PROCESSING.PY
+            await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
             self.processed_videos.add(file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
@@ -98,16 +179,14 @@ class App():
         #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
         self.status = "Processing Salesforce actions..."
         logger.info(self.status)
-        self.work_order_creator.process_metadata_files()
-        if len(self.work_order_creator.all_metadata) > 0:
-            logger.info(f"Processed metadata for {len(self.work_order_creator.all_metadata)} files. Runnign through Work Order engine...")
-            work_orders_created = self.work_order_creator.work_order_engine()
-            logger.info(f"Work Orders created: {work_orders_created}")
+        work_orders_created = await self.work_order_creator.work_order_engine()
+        logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()
         
         
         #then we'll upload all the frames/json to Box for long-term storage (using metadata templates to store the image telemetry and analysis results)
+        #ASYNCIFY BOX ARCHIVE IN BOX.PY
         box_archive_action = self.box.save_frames_to_long_term_storage()
 
         #Now that all the actions are done, we can clear out the frames and unprocessed_videos folder.
@@ -118,37 +197,12 @@ class App():
 
         self.status = "Idle - Waiting for next check"
     
-    '''def get_files_to_process(self, files_to_download: list=None):
-        # Start with listing files that are in the Box folder
-        # Then list the files in unprocessed_videos folder (it's in the current directory)
-        # Then download only the files in the Box folder that aren't also in the unprocessed_videos folder
-        # So that double-downloading doesn't occur
-        box_folder_id = self.box.videos_folder_box_id
-        files_in_box = self.box.list_items_in_folder(box_folder_id)
-        #convert list of dicts to list of strings with just the 'name' key's value
-        files_in_unprocessed_folder = os.listdir("unprocessed_videos")
-        print(f"Files in unprocessed folder: {files_in_unprocessed_folder}")
-        
-        
-        
-        files_to_download = [file for file in files_in_box if file['name'] not in files_in_unprocessed_folder]
-        print(f"Files to download: {files_to_download}")
-        if len(files_to_download) == 0:
-            logger.info("No new files to download.")
-        elif len(files_to_download) > 0:
-            logger.info(f"Files to download: {files_to_download}")
-            for file in files_to_download:
-                logger.info(f"Downloading file: {file}. Please wait...")
-                self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
-                logger.info(f"Downloaded file: {file}")'''
-    
     def download_files(self, files_to_download: list=None) -> bool:
         for file in files_to_download:
                 logger.info(f"Downloading file: {file}. Please wait...")
                 self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
                 logger.info(f"Downloaded file: {file}")
         return True
-
 
     def get_all_files(self):
         # all files from Box (specific callouts to be handled in box.py)
@@ -211,51 +265,87 @@ class App():
         os.remove(f"temp_metadata.gpx")
         os.remove(f"temp_metadata.kml")
 
-    def start_monitoring(self, interval=10):
+    async def start_monitoring(self, interval=10):
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
+        print("Start_monitoring has begun!")
+        self.monitoring_status = "Idle"
         if self.monitoring_active:
             logger.info("Monitoring is already running.")
             return
         
         self.monitoring_active = True
+        self.status = "Active"  # ✅ Set status to Active
+        self.monitoring_status = "Active"  
         logger.info("Monitoring started.")
-        self.status = "Monitoring active - Checking for new files"
+        self.status = "Monitoring"
 
         # The monitoring loop runs synchronously now.
         try:
             while self.monitoring_active:
                 for i in range(interval, 0, -1):
+                    if not self.monitoring_active:
+                        logger.info("Monitoring loop interrupted.")
+                        self.status = "Idle"
+                        self.monitoring_status = "Idle"
+                        await self.send_status_update_to_ui(
+                            source='App.start_monitoring()',
+                            level='Info',
+                            type='Program',
+                            status="Stopped",
+                            message="Monitoring has been stopped by the user.",
+                        )
+                        return
+                    
+                    
+
                     self.time_to_check = i
-                    self.status = "Idle"
-                    time.sleep(1)
+                    self.monitoring_status = "Active"
+                    await asyncio.sleep(1)
+                    
+                    # 📣 Send program status update with countdown
+                    await self.send_status_update_to_ui(
+                        source='App.start_monitoring()',
+                        level='Info',
+                        type='Program',
+                        status="Active",
+                        message=f"Next check in {i} seconds",
+                        details={
+                            "countdown": i
+                        }
+                    )
+                # 📣 Send temp box check
+                await self.send_status_update_to_ui(
+                    source='App.start_monitoring()',
+                    level='Info',
+                    type='Temp',
+                    status="Checking Box for new files...",
+                    message=f"Checking Box for new files...",
+                )
 
                 new_files_to_download = self.check_for_new_files()
                 if len(new_files_to_download) > 0:
-                    self.pipeline(new_files_to_download)
+                    self.status = "Downloading"
+                    
+                    # 📣 Send video status alert for new processing of videos
+                    await self.send_status_update_to_ui(
+                        source='App.start_monitoring()',
+                        level='Info',
+                        type='Program',
+                        status="Processing",
+                        message=f"Processing {len(new_files_to_download)} files."
+                    )
+                    await self.pipeline(new_files_to_download)
                 else:
-                    self.status = "Idle - No new files detected. Restarting countdown..."
+                    self.status = "Monitoring"
                     logger.info(self.status)
         except Exception as e:
-            self.status = f"Monitoring stopped due to error: {e}"
+            self.status = f"Errored"
+            self.monitoring_status = "Error"
             logger.error(f"Monitoring loop error: {e}")
             self.monitoring_active = False
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=10)
-
-
-"""
-TO DO: 
-- Figure out how to handle the checking of Box for new files vs the downloading of new files from Box. 
--   - Currently, check_for_new_files looks for Box files that aren't in processed_files.log 
--   - AND downloads those files. We probably want to only return something like a list of the new files, then
--   - download those listed filenames in some other function within the pipeline or before the pipeline starts.
--   - Currently the get_files_to_process function gets ALL files in Box that aren't in the unprocessed_videos folder.
--   - This is probably where we should replace it with something that just gets the files returned by the (updated) check_for_new_files function.
-- Figure out how a web-based UI can interact with the monitoring loop. Probably can use a thread to run the
-- monitoring loop and then a different thread run polls against the log file(s) and folder contents or something.
-
-"""
+    app.start_monitoring(interval=5)
