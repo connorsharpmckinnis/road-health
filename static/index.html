@@ -4,112 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Road Health Monitor</title>
-    <link rel="stylesheet" href="../static/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../static/style.css">
     <script src="/static/script.js" defer></script>
 </head>
 
 <body>
 
-    <div class="container">
+    <div class="container-fluid">
 
-        <!-- Row 1: Title -->
-        <div class="row justify-content-center">
-            <div class="col-8">
-                <h1>Road Health Monitor</h1>
-            </div>
+        <!-- Title -->
+        <div class="text-center mb-4">
+            <h1>Road Health Monitor</h1>
         </div>
 
 
-        <!-- Row 2: Program Info-->
-        <div class="row">
+        <!-- Program Information -->
+        <section id="section-program" class="section-block">
+            <h2>Program Information</h2>
+            <p id="badge-program-status" class="badge">Inactive</p>
+            <p id="badge-box-check" class="badge" hidden>Checking Box</p>
+            <h4>Test Status Updates:</h4>
+            <div class="btn-group" role="group" aria-label="Function Test Buttons">
+                <button id="btn-test-program-status" type="button" class="btn">Program</button>
+                <button id="btn-test-video-status" type="button" class="btn">Video</button>
+                <button id="btn-test-wo-status" type="button" class="btn">Work Order</button>
+                <button id="btn-test-feed-status" type="button" class="btn">Feed</button>
+            </div>
+        </section>
 
-            <div class="col">
-                <div id="section-program">
-                    <h2>Program Information</h2>
-                    
-                    <p id="badge-program-status" class="col-md-2 badge bg-primary">Inactive</p>
-                    <p id="badge-box-check" class="col-md-2 badge bg-warning" hidden>Checking Box</p>    
-                    
-                    
-                    <div id="subsection-btns-test" class="btn-group-m" role="group" aria-label="Function Test Buttons">
-                        <h4>Test Status Updates:</h4>
-                        <button id="btn-test-program-status" type="button" class="btn btn-secondary">Program</button>
-                        <button id="btn-test-video-status" type="button" class="btn btn-secondary">Video</button>
-                        <button id="btn-test-wo-status" type="button" class="btn btn-secondary">Work Order</button>
-                        <button id="btn-test-feed-status" type="button" class="btn btn-secondary">Feed</button>
-                    </div>
-                </div>
+
+        <!-- Controls -->
+        <section id="section-controls" class="section-block">
+            <h2>Controls</h2>
+            <div class="btn-group" role="group">
+                <button id="btn-start-monitoring" class="btn">Start Monitoring</button>
+                <button id="btn-stop-monitoring" class="btn">Stop Monitoring</button>
+                <button id="btn-check-for-changes" class="btn">Check for New Files</button>
+            </div>
+            <div id="subsection-ai-config" hidden>
+                <h3>AI Configuration</h3>
+                <textarea id="input-ai-instructions" rows="5"></textarea>
+                <button id="btn-save-new-ai-instructions" class="btn">Save New AI instructions</button>
+            </div>
+        </section>
+
+        <!-- Video Processing -->
+        <section id="section-videos" class="section-block">
+            <h2>Video Processing</h2>
+            <p id="value-video-status"></p>
+            <div id="subsection-video-cards" class="card-section">
+
+            </div>
+        </section>
+    
+        <!-- Work Orders -->
+        <section id="section-work-orders" class="section-block">
+            <h2>Work Orders</h2>
+            <div id="subsection-wo-cards" class="card-section">
+
+            </div>
+        </section>
         
+        <!-- Status Updates -->
+        <section id="section-status" class="section-block">
+            <h2>Status Updates</h2>
+            <div id="subsection-status-feed" class="card-section">
+
             </div>
-        </div>
-
-
-        <!-- Row 3: Controls -->
-        <div class="row">
-
-            <div class="col">
-                <div id="section-controls">
-            
-                    <h2>Controls</h2>
-                    <div class="btn-group-m" role="group">
-                        <button id="btn-start-monitoring" class="btn btn-secondary">Start Monitoring</button>
-                        <button id="btn-stop-monitoring" class="btn btn-secondary">Stop Monitoring</button>
-                        <button id="btn-check-for-changes" class="btn btn-secondary">Check for New Files</button>
-                    </div>
-        
-                    <div id="subsection-ai-config" hidden>
-                        <h3>AI Configuration</h3>
-                        <textarea name="AI Instructions" id="input-ai-instructions" class="form-control" rows="5"></textarea>
-                        <button id="btn-save-new-ai-instructions" class="btn btn-primary">Save New AI instructions</button>
-                    </div>
-                    
-                </div>
-            </div>
-
-            
-        </div>
-
-        <!-- Row 4: Video Processing -->
-
-
-        <div class="row">
-            <div class="col">
-                <!-- Section for video processing information -->
-                <div id="section-videos">
-                    <h2>Video Processing</h2>
-                    <div id="subsection-video-cards" class="row card-section" hidden>
-                        
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 5: Work Orders -->
-        <div class="row">
-            <div class="col-12">
-                <!-- Section for Salesforce-connected work order dispatching information -->
-                <div id="section-work-orders">
-                                        
-                    <h2>Work Orders</h2>
-                        <div id="subsection-wo-cards" class="row card-section" hidden>
-
-                        </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Row 6: Status Feed -->
-        <div class="row">
-            <div class="col-12">
-                <div id="section-status">
-                    <h2>Status Updates</h2>
-                    <div id="subsection-status-feed" class="card-section col">
-                                                    
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section>
         
         
         

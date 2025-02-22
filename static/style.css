@@ -1,114 +1,122 @@
-/* General Styles */
-* {
+/* Unified dark background and text */
+html, body {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    background-color: #121212;
+    color: #e0e0e0;
     font-family: 'Arial', sans-serif;
-}
-
-.card-section {
-    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Container spacing */
+  .container-fluid {
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  /* Simplified layout for sections */
+  .section-block {
+    background-color: #1e1e1e;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #3a3a3a;
+  }
+  
+  /* Card sections */
+  .card-section {
+    background-color: #1e1e1e;
+    border-radius: 5px;
+    /* border: 1px solid #444444; */
+    padding: 20px;
     max-height: 300px;
     overflow-y: auto;
-    padding: 10px;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 5px;
-}
+  }
 
+  /* Unified Card Style */
 .card {
-    width: 100%;
-    max-height: 300px;
-    overflow-y: auto;
-    border: 2px solid #33354c;
-    padding: 5px;
-    background-color: #9eb9cf;
-    border-radius: 5px;
-    margin-bottom: 10px;
+    background-color: #2b2b2b;
+    border-radius: 8px;
+    border: 1px solid #444444;
+    padding: 20px;
+    margin: 10px 0;
+    color: #e0e0e0;
+    opacity: 0;
+    transition: opacity 0.25s linear;
 }
 
-/* Condensed Status Update Card Styling */
-#section-status-feed .card.feed.condensed {
-    font-size: 12px; /* Smaller text */
-    background-color: #f9f9f9; /* Lighter background */
-    color: #666; /* Softer text color */
-    border: 1px solid #ddd; /* Light border */
-    margin: 3px 0; /* Tighter margin */
-    padding: 5px; /* Less padding */
+.card.visible {
+    opacity: 1;
 }
 
-#section-status-feed .card.feed.condensed .card-text {
-    margin: 0;
-    line-height: 1.2;
-}
-
-#section-status-feed .card.feed.condensed .text-muted {
-    font-size: 11px;
-    color: #999;
-}
-
-#section-status-feed .card.feed.condensed .text-secondary {
-    font-size: 11px;
-    color: #777;
-}
-
-#temp-badge-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-}
-
-#temp-badge {
-    background-color: #ffcc00;  /* Yellow Badge */
-    color: black;
-    padding: 10px 20px;
-    border-radius: 5px;
+.card-header {
+    background-color: #333333;
+    border-bottom: 1px solid #444444;
+    padding: 10px;
     font-weight: bold;
-    display: none; /* Initially Hidden */
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    font-size: 1.2em;
 }
 
-.hidden {
-    display: none;
-}
-
-
-#section-program {
-    background-color: #f8f9fa; /* Light gray */
+.card-body {
     padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
 }
 
-#section-controls {
-    background-color: #e9ecef; /* Slightly darker gray */
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
+.card-text, .card-title {
+    color: #e0e0e0;
+    margin: 5px 0;
+}
+  
+  /* Badges and cards share a coherent dark palette */
+  .badge {
+    background-color: #333333;
+    border: 2px solid #444444;
+    padding: 6px 12px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  /* Buttons */
+  .btn {
+    background-color: #333333;
+    color: #e0e0e0;
+    border: 1px solid #555555;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-right: 5px;
+  }
+  
+  .btn:hover {
+    background-color: #444444;
+    cursor: pointer;
+  }
 
+  /* Progress Bar */
+.progress-bar {
+    background-color: #555555;
+    height: 20px;
+    border-radius: 4px;
+    transition: width 0.4s;
 }
 
-#section-videos {
-    background-color: #d1e7dd; /* Light green */
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-
+.progress-bar.bg-primary {
+    background-color: #64b5f6;
 }
 
-#section-work-orders {
-    background-color: #cfe2ff; /* Light blue */
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-
+.progress-bar.bg-success {
+    background-color: #81c784;
 }
 
-#section-status-feed {
-    background-color: #f8d7da; /* Light red */
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-
+.progress-bar.bg-secondary {
+    background-color: #9e9e9e;
 }
-
+  
+  /* Links */
+  a {
+    color: #64b5f6;
+    text-decoration: none;
+  }
+  a:hover {
+    color: #90caf9;
+  }

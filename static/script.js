@@ -80,143 +80,102 @@ function updateProgramStatus(updateData) {
     }
 }
 
-// // // ADD STATUS UPDATE CARD TO FEED
-function addStatusUpdateCard(updateData) {
-    
-    // Create a new card
-    const entry = document.createElement("div");
-    entry.className = "card feed condensed";  // Add CSS later to make it look nice
-
-    // Fill in the details from JSON
-    entry.innerHTML = `
+// Helper to create a card and prepend it to the container with a fade-in effect
+function createCard(id, header, bodyContent, container, imageHTML = "") {
+    let card = document.getElementById(id);
+    const cardHTML = `
+        <h4 class="card-header">${header}</h4>
         <div class="card-body">
-            <p class="card-text small">
-                <span class="text-secondary">${new Date().toLocaleTimeString()}</span> | 
-                <span class="text-muted">${updateData.source}</span><br>
-                ${updateData.message}
-            </p>
+            ${imageHTML}
+            ${bodyContent}
         </div>
     `;
+     
+    if (card) {
+        card.classList.remove("visible"); // Reset visibility for re-animation
+        void card.offsetWidth; // Force reflow to trigger transition
+        card.innerHTML = cardHTML;
+    } else {
+        card = document.createElement("div");
+        card.className = "card col-md-6"; // Initially not 'visible' for transition
+        card.id = id;
+        card.innerHTML = cardHTML;
+        container.prepend(card);
+    }
 
-    // Append the new status update
-    subsectionStatusFeed.prepend(entry);
+    // Apply the 'visible' class to trigger the transition after a short delay
+    setTimeout(() => {
+        card.classList.add("visible");
+    }, 10);
+}
 
-    // Auto-scroll to the latest update
+// Helper to create badge with status styles
+function getBadgeClass(status) {
+    switch (status) {
+        case "In Progress": return "badge bg-primary";
+        case "Complete": return "badge bg-success";
+        default: return "badge bg-secondary";
+    }
+}
+
+// Add status update card to feed
+function addStatusUpdateCard(updateData) {
+    const content = `
+        <p class="card-text">
+            <span class="text-white">${updateData.source}</span> | 
+            <span class="text-white">${updateData.message}</span>
+            
+        </p>
+    `;
+    createCard(`status-${Date.now()}`, new Date().toLocaleTimeString(), content, subsectionStatusFeed);
     subsectionStatusFeed.scrollTop = 0;
 }
 
-// // // UPDATE OR ADD VIDEO PROCESSING CARD
+// Update or add video processing card
 function updateVideoProcessingCard(updateData) {
-    videoSection.hidden = false;
-    
-    if (!updateData.details || !updateData.details.video_file) {
-        console.warn("Invalid video update data:", updateData);
-        return;
-    }
+    if (!updateData.details?.video_file) return;
 
-    // Extract video filename
     const videoFile = updateData.details.video_file;
-    const progress = updateData.details.progress || "N/A";
-    const stage = updateData.details.stage || "Unknown";
+    const progress = updateData.details.progress || "0%";
     const status = updateData.status || "Pending";
+    const stage = updateData.details.stage || "Unknown";
 
-    let activeModifiers = "";
-    let badgeModifiers = "";
-
-    if (updateData.status == "In Progress") {
-        activeModifiers = "progress-bar-striped progress-bar-animated";
-        badgeModifiers = "bg-primary";
-    } else if (updateData.status === "Complete") {
-        activeModifiers = "bg-success";
-        badgeModifiers = "bg-success";
-    } else {
-        activeModifiers = "bg-secondary";
-        badgeModifiers = "bg-secondary";
-    }
-
-
-
-    // Check if a card for this video already exists
-    let existingCard = document.getElementById(`video-${videoFile}`);
-
-    if (existingCard) {
-        // ✅ Update existing card content
-        existingCard.innerHTML = `
-            <h4 class="card-header">${videoFile}</h4>
-            <div class="card-body">
-                <h2 class="card-title"><em>${status}</em></h2>
-                <p class="card-text badge ${badgeModifiers}">${stage}</p>
-                    <div id="video-progress-bar class="progress progress-bar ${activeModifiers}" role="progressbar" style="width: ${progress};">
-                        ${progress}
-                    </div>
+    const progressBar = `
+        <div class="progress">
+            <div class="progress-bar ${getBadgeClass(status)}" 
+                 role="progressbar" 
+                 style="width: ${progress};">
+                ${progress}
             </div>
-        `;
-    } else {
-        // ✅ Create a new card if it doesn't exist
-        const newCard = document.createElement("div");
-        newCard.className = "card col-md-6";
-        newCard.id = `video-${videoFile}`;
+        </div>
+    `;
 
+    const content = `
+        <h2 class="card-title"><em>${status}</em></h2>
+        <p class="${getBadgeClass(status)}">${stage}</p>
+        ${progressBar}
+    `;
 
-        newCard.innerHTML = `
-            <h4 class="card-header">${videoFile}</h4>
-            <div class="card-body">
-                <h2 class="card-title"><em>${status}</em></h2>
-                <p class="card-text badge ${badgeModifiers}">${stage}</p>
-                    <div id="video-progress-bar class="progress progress-bar ${activeModifiers}" role="progressbar" style="width: ${progress};">
-                        ${progress}
-                    </div>
-            </div>
-        `;
-
-        videoSection.appendChild(newCard);
-    }
+    createCard(`video-${videoFile}`, videoFile, content, videoSection);
 }
 
-// // // UPDATE OR ADD WORK ORDER PROCESSING CARD
+// Update or add work order processing card
 function updateWorkOrderProcessingCard(updateData) {
-    woSection.hidden = false;
-    
-    const existingCard = document.getElementById(`wo-${updateData.details.work_order_id}`);
-    let imageHTML = "";
-    if (updateData.details.image_base64) {
-        imageHTML = `<img src="data:image/jpeg;base64,${updateData.details.image_base64}" 
-        alt="Image of the detected issue"
-        class="card-img-top"
-        style="width: 300px; height: 130px;"
-        >`;
-    }
+    const woId = updateData.details.work_order_id;
+    const imageHTML = updateData.details.image_base64 
+        ? `<img src="data:image/jpeg;base64,${updateData.details.image_base64}" 
+                 alt="Image of the detected issue"
+                 class="card-img-top" 
+                 style="width: 300px; height: 130px;">`
+        : "";
 
-    if (existingCard) {
-        // Update existing card
-        existingCard.innerHTML = `
-            <h4 class="card-header">Work Order Created</h4>
-            <div class="card-body">
-                <h2 class="card-title"><em>${updateData.message}</em></h2>
-                ${imageHTML}
-                <p class="card-text"><em>Id: ${updateData.details.work_order_id}</em></p>
-                <p class="card-text">${updateData.details.ai_analysis}</p>
-            </div>
-        `;
+    const content = `
+        <h2 class="card-title"><em>${updateData.message}</em></h2>
+        <p class="card-text"><em>Id: ${woId}</em></p>
+        <p class="card-text">${updateData.details.ai_analysis}</p>
+    `;
 
-    } else {
-        // Create a new card
-        const newCard = document.createElement("div");
-        newCard.className = "card col-md-6";
-        newCard.id = `wo-${updateData.details.video_file}`;
-
-        newCard.innerHTML = `
-            <h4 class="card-header">Work Order Created</h4>
-            <div class="card-body">
-                <h2 class="card-title"><em>${updateData.message}</em></h2>
-                ${imageHTML}
-                <p class="card-text"><em>Id: ${updateData.details.work_order_id}</em></p>
-                <p class="card-text">${updateData.details.ai_analysis}</p>
-            </div>
-        `;
-
-        woSection.appendChild(newCard);
-    }
+    createCard(`wo-${woId}`, "Work Order Created", content, woSection, imageHTML);
 }
 
 
@@ -264,6 +223,8 @@ btnStartMonitoring.addEventListener("click", () => {
     sendHttpRequest("/start-monitoring");
     updateData = {"message": "Monitoring Started", "source": "Web UI button click: 'btnStartMonitoring'"};
     addStatusUpdateCard(updateData);
+    btnStartMonitoring.disabled = true;
+    btnStopMonitoring.disabled = false;
 });
 
 btnStopMonitoring.addEventListener("click", () => {
@@ -271,6 +232,8 @@ btnStopMonitoring.addEventListener("click", () => {
     sendHttpRequest("/stop-monitoring");
     updateData = {"message": "Monitoring Stopped", "source": "Web UI button click: 'btnStopMonitoring'"};
     addStatusUpdateCard(updateData);
+    btnStartMonitoring.disabled = false;
+    btnStopMonitoring.disabled = true;
 });
 
 btnCheckForChanges.addEventListener("click", () => {
