@@ -81,8 +81,11 @@ function updateProgramStatus(updateData) {
 }
 
 // Helper to create a card and prepend it to the container with a fade-in effect
-function createCard(id, header, bodyContent, container, imageHTML = "") {
+function createCard(id, header, bodyContent, container, imageHTML = "", url = "") {
     let card = document.getElementById(id);
+    if (url !== "") {
+        bodyContent += `<a href="${url}" class="btn btn-primary">View Details</a>`;
+    }
     const cardHTML = `
         <h4 class="card-header">${header}</h4>
         <div class="card-body">
@@ -139,6 +142,7 @@ function updateVideoProcessingCard(updateData) {
     const progress = updateData.details.progress || "0%";
     const status = updateData.status || "Pending";
     const stage = updateData.details.stage || "Unknown";
+    const url = updateData.details.url || "";
 
     let activeModifiers = "";
     if (updateData.status == "In Progress") {
@@ -168,7 +172,7 @@ function updateVideoProcessingCard(updateData) {
         ${progressBar}
     `;
 
-    createCard(`video-${videoFile}`, videoFile, content, videoSection);
+    createCard(`video-${videoFile}`, videoFile, content, videoSection, url=url);
 }
 
 // Update or add work order processing card

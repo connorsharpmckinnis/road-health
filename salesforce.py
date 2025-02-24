@@ -39,6 +39,7 @@ class WorkOrderCreator:
         client_id = client_id if client_id is not None else os.getenv('SALESFORCE_CONSUMER_KEY')
         
         domain = "test" if sandbox else "login"  # Use 'test' for sandbox, 'login' for production
+        self.sf_domain = "--sahara.sandbox" if domain == "test" else ""
 
         self.metadata_folder = metadata_folder if metadata_folder is not None else 'frames'
 
@@ -163,7 +164,8 @@ class WorkOrderCreator:
                                         "video_file": metadata_item.get("filename", "Unknown"),
                                         "work_order_id": work_order_id,
                                         "image_base64": encoded_string,
-                                        "ai_analysis": ai_analysis
+                                        "ai_analysis": ai_analysis,
+                                        "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
                                     }
                                 )
                             except Exception as e:
