@@ -27,6 +27,9 @@ html, body {
   
   /* Card sections */
   .card-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+    gap: 16px;
     background-color: #1e1e1e;
     border-radius: 5px;
     /* border: 1px solid #444444; */
@@ -34,6 +37,10 @@ html, body {
     max-height: 300px;
     overflow-y: auto;
   }
+
+#subsection-status-feed {
+    grid-template-columns: 1fr !important;
+}
 
   /* Unified Card Style */
 .card {
@@ -93,11 +100,21 @@ html, body {
   }
 
   /* Progress Bar */
+/* Ensure progress bar is tall enough */
+.progress {
+    height: 30px; /* Adjust height as needed */
+    border-radius: 8px;
+    background-color: #2b2b2b;
+}
+
+/* Center text within the progress bar */
 .progress-bar {
-    background-color: #555555;
-    height: 20px;
-    border-radius: 4px;
-    transition: width 0.4s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: white; /* Ensure text color is visible */
 }
 
 .progress-bar.bg-primary {

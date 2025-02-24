@@ -140,11 +140,23 @@ function updateVideoProcessingCard(updateData) {
     const status = updateData.status || "Pending";
     const stage = updateData.details.stage || "Unknown";
 
+    let activeModifiers = "";
+    if (updateData.status == "In Progress") {
+        activeModifiers = "progress-bar-striped progress-bar-animated bg-primary";
+    } else if (updateData.status === "Complete") {
+        activeModifiers = "bg-success";
+    } else {
+        activeModifiers = "bg-secondary";
+    }
+
     const progressBar = `
-        <div class="progress">
-            <div class="progress-bar ${getBadgeClass(status)}" 
-                 role="progressbar" 
-                 style="width: ${progress};">
+        <div class="progress" style="height: 30px;">
+            <div class="progress-bar ${activeModifiers}" 
+                role="progressbar" 
+                style="width: ${progress};"
+                aria-valuenow="${parseInt(progress)}"
+                aria-valuemin="0" 
+                aria-valuemax="100">
                 ${progress}
             </div>
         </div>
