@@ -291,3 +291,63 @@ btnFeedTest.addEventListener("click", () => {
     console.log("Test Feed Status Button Clicked");
     sendHttpRequest("/test-feed-status");
 });
+
+// INFO SECTION SHENANIGANS
+
+function showInfo(section) {
+    const infoPanel = document.getElementById('info-panel');
+    const infoContent = document.getElementById('info-content');
+
+    // Check if the panel is already open with the same content
+    if (infoPanel.classList.contains('active') && infoContent.dataset.currentSection === section) {
+        // If so, close it instead of reopening
+        infoPanel.classList.remove('active');
+        return;
+    }
+
+    // Define content for each section
+    const content = {
+        'program-info': `
+            <h2>Program Information</h2>
+            <p>The Road Health Analyzer evaluates road conditions using video footage collected by solid waste trucks. 
+            It identifies: <ul> <li>Potholes</li><li>Line cracks</li><li>'Alligator' cracking</li><li>Debris</li></ul> and automatically generates AssetOptics-based Work Orders in Salesforce when a pothole is detected for proactive maintenance and awareness.</p>
+        `,
+        'video-processing': `
+            <h2>Video Processing</h2>
+            <p>Video processing involves analyzing footage frame-by-frame to detect road issues. Going from raw video to flagged potholes is a complex process:</p>
+            <ul>
+            <li>Store video in Box</li>
+            <li>Extract GPS coordinate path</li>
+            <li>Extract frames from footage</li>
+            <li>Match frames to closest GPS point</li>
+            <li>Prepare images in batches for the AI</li>
+            <li>Process structured AI responses</li>
+            <li>Assign analyses to correct frames</li>
+            <li>Select frames marked 'likely pothole' (>= 0.9)</li>
+            </ul>
+            <p>Work Order generation is a separate process, allowing similar AI systems to integrate with multiple different next-step systems</p>
+        `,
+        'work-orders': `
+            <h2>Work Orders</h2>
+            <p>Generated work orders are automatically sent to the maintenance team based on detected road issues, 
+            ensuring quick and effective response.</p>
+        `,
+        'controls': `
+            <h2>Controls</h2>
+            <p>These buttons control what is called the 'monitoring loop,' a long-term script that periodically checks Box for new files.</p>
+            <p>This process will be replaced by a system that analyzes a wi-fi network at Public Works to look for the automatic connection of a GoPro upon arrival</p>
+        `
+    };
+
+    // Set the content based on the section requested
+    infoContent.innerHTML = content[section] || '<p>No information available.</p>';
+    infoContent.dataset.currentSection = section; // Store the current section
+    
+    // Show the panel
+    infoPanel.classList.add('active');
+}
+
+// Close the info panel
+document.getElementById('btn-close-info').onclick = () => {
+    document.getElementById('info-panel').classList.remove('active');
+};
