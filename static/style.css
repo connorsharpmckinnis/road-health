@@ -43,9 +43,8 @@ html, body {
 
 /* Card Styling */
 .card {
-    background-color: #2b2b2b;
+    background-color: #333333;
     border-radius: 8px;
-    border: 1px solid #444444;
     padding: 20px;
     margin: 10px 0;
     color: #e0e0e0;
@@ -58,8 +57,7 @@ html, body {
 }
 
 .card-header {
-    background-color: #333333;
-    border-bottom: 1px solid #444444;
+    border-bottom: 0px solid #444444;
     padding: 10px;
     font-weight: bold;
     font-size: 1.2em;
@@ -171,7 +169,9 @@ a:hover {
     position: fixed;
     top: 0;
     right: 0;
-    width: 350px;
+    width: 25vw; /* Responsive width */
+    max-width: 80vwpx; /* Prevents the panel from getting too wide */
+    min-width: 200px; /* Prevents the panel from getting too narrow */
     height: 100%;
     background-color: #1e1e1e;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
@@ -180,10 +180,38 @@ a:hover {
     transition: transform 0.3s ease;
     z-index: 1000;
     overflow-y: auto;
+    resize: horizontal; /* Allow manual resizing */
 }
 
 .info-panel.active {
     transform: translateX(0);
+}
+
+/* Add a handle for resizing */
+.resize-handle {
+    position: absolute;
+    top: 0;
+    left: -5px;
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 1001;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Dynamic text sizing */
+.info-panel p, .info-panel h2, .info-panel h3 {
+    font-size: calc(1em + 0.35vw); /* Dynamically adjust font size */
+    line-height: 1.5;
+    color: #f9f9f9;
+}
+
+.info-panel li, .info-panel code-text {
+    font-size: calc(1em + 0.3vw); /* Dynamically adjust font size */
+    line-height: 1.5;
+    margin-bottom: 8px;
+    list-style-type: disc;
+    padding-left: 20px;
 }
 
 .btn-close {
@@ -200,3 +228,78 @@ a:hover {
 .info-content h2 {
     margin-top: 0;
 }
+
+.video-processing {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+.code-block {
+    margin-top: 20px;
+    background-color: #2d2d2d;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: #eee;
+    overflow-x: auto;
+}
+
+.code-block h3 {
+    color: #ddd;
+    margin-bottom: 8px;
+}
+
+pre {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    white-space: break-spaces;
+    word-break: break-word;
+}
+
+code-text {
+    color: #89e928; /* Soft green for code text */
+    line-height: 1.75;
+}
+
+section {
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+
+
+p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+    color: #f9f9f9;
+}
+
+ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+ul li {
+    margin-bottom: 8px;
+}
+
+img {
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    height: auto;
+}
+
+.future-vision h3 {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #f9f9f9;
+}
+

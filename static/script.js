@@ -295,7 +295,35 @@ btnFeedTest.addEventListener("click", () => {
 // INFO SECTION SHENANIGANS
 
 function showInfo(section) {
-    const infoPanel = document.getElementById('info-panel');
+    const infoPanel = document.querySelector('.info-panel');
+    const resizeHandle = document.createElement('div');
+    resizeHandle.classList.add('resize-handle');
+    infoPanel.appendChild(resizeHandle);
+
+    // Make the panel resizable
+    resizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        document.addEventListener('mousemove', resizePanel);
+        document.addEventListener('mouseup', () => {
+            document.removeEventListener('mousemove', resizePanel);
+        });
+    });
+
+    function resizePanel(e) {
+        const newWidth = window.innerWidth - e.clientX;
+        // Allow resizing between 200px and 80% of the viewport width
+        const maxWidth = window.innerWidth * 0.8; // 80% of viewport
+        if (newWidth > 200 && newWidth < maxWidth) {
+            infoPanel.style.width = `${newWidth}px`;
+        }
+    }
+
+    // Optional: Dynamically adjust font size based on panel width
+    window.addEventListener('resize', () => {
+        const panelWidth = infoPanel.clientWidth;
+        const newFontSize = Math.max(14, Math.min(24, panelWidth / 20));
+        infoPanel.style.fontSize = `${newFontSize}px`;
+    });
     const infoContent = document.getElementById('info-content');
 
     // Check if the panel is already open with the same content
@@ -308,34 +336,162 @@ function showInfo(section) {
     // Define content for each section
     const content = {
         'program-info': `
-            <h2>Program Information</h2>
-            <p>The Road Health Analyzer evaluates road conditions using video footage collected by solid waste trucks. 
-            It identifies: <ul> <li>Potholes</li><li>Line cracks</li><li>'Alligator' cracking</li><li>Debris</li></ul> and automatically generates AssetOptics-based Work Orders in Salesforce when a pothole is detected for proactive maintenance and awareness.</p>
+            <section class="program-info">
+                <h2>Program Information</h2>
+                <div class="program-description">
+                    <p>
+                        The Road Health Analyzer evaluates road conditions using video footage collected by solid waste trucks.
+                        By leveraging AI and automated analysis, this system reduces the need for manual road inspections, allowing 
+                        Public Works teams to focus resources on targeted repairs and maintenance.
+                    </p>
+                    <p>
+                        Future expansions can apply this design to other use-cases such as signage issues, green space monitoring, 
+                        or event management.
+                    </p>
+                </div>
+                
+                <div class="system-features">
+                    <h3>Identified Road Issues:</h3>
+                    <ul>
+                        <li>Potholes</li>
+                        <li>Line cracks</li>
+                        <li>'Alligator' cracking</li>
+                        <li>Debris</li>
+                    </ul>
+                    <p>
+                        The system automatically generates AssetOptics-based Work Orders in Salesforce when a pothole is detected, 
+                        enabling proactive maintenance and awareness.
+                    </p>
+                </div>
+                
+                <div class="image-container">
+                    <img src="/static/road-health-pothole-image.jpg" 
+                        alt="Pothole Image" 
+                        style="width:100%; height:auto; border-radius:8px;">
+                </div>
+            </section>
         `,
         'video-processing': `
-            <h2>Video Processing</h2>
-            <p>Video processing involves analyzing footage frame-by-frame to detect road issues. Going from raw video to flagged potholes is a complex process:</p>
-            <ul>
-            <li>Store video in Box</li>
-            <li>Extract GPS coordinate path</li>
-            <li>Extract frames from footage</li>
-            <li>Match frames to closest GPS point</li>
-            <li>Prepare images in batches for the AI</li>
-            <li>Process structured AI responses</li>
-            <li>Assign analyses to correct frames</li>
-            <li>Select frames marked 'likely pothole' (>= 0.9)</li>
-            </ul>
-            <p>Work Order generation is a separate process, allowing similar AI systems to integrate with multiple different next-step systems</p>
+            <section>
+                <h2>Video Processing</h2>
+                
+                <p>
+                    Video processing involves analyzing footage frame-by-frame to detect road issues. 
+                    Going from raw video to flagged potholes is a complex process:
+                </p>
+                
+                <div class="process-steps">
+                    <h3>Processing Steps:</h3>
+                    <ul>
+                        <li>Store video in Box</li>
+                        <li>Extract GPS coordinate path</li>
+                        <li>Extract frames from footage</li>
+                        <li>Match frames to closest GPS point</li>
+                        <li>Prepare images in batches for the AI</li>
+                        <li>Process structured AI responses</li>
+                        <li>Assign analyses to correct frames</li>
+                        <li>Select frames marked 'likely pothole' (≥ 0.9)</li>
+                    </ul>
+                </div>
+                
+                <p>
+                    Future projects can take advantage of the easy instruction- and response-switching system to quickly configure 
+                    an AI analyzer to look at new types of data (images, text, audio) and look for new things 
+                    (people, objects, specific words, etc.).
+                </p>
+                
+                <div class="code-block">
+                    <h3>Example AI Instruction & Response Policy:</h3>
+                    <pre>
+            <code-text>
+Instruction: "Please analyze these images and share your expert road health analyses, adhering to the JSON schema provided."
+
+Response policy: 
+    "required": [
+        "file_id",
+        "pothole",
+        "pothole_confidence",
+        "alligator_cracking",
+        "alligator_cracking_confidence",
+        "line_cracking",
+        "line_cracking_confidence",
+        "debris",
+        "debris_confidence",
+        "summary",
+        "road_health_index"
+    ]
+            </code-text>
+                    </pre>
+                </div>
+            </section>
         `,
         'work-orders': `
-            <h2>Work Orders</h2>
-            <p>Generated work orders are automatically sent to the maintenance team based on detected road issues, 
-            ensuring quick and effective response.</p>
+            <section class="work-orders">
+    <h2>Work Orders</h2>
+
+    <div class="work-order-description">
+        <p>
+            When a pothole is confidently detected by the AI, a Work Order is created automatically in Salesforce, 
+            allowing Public Works teams to efficiently evaluate and proactively dispatch repair crews. 
+            This automation helps reduce manual reporting and speeds up the maintenance response process.
+        </p>
+        <p>
+            Salesforce's AssetOptics Work Orders include:
+        </p>
+        <ul>
+            <li><strong>AI Analysis:</strong> Automated analysis of road images to identify maintenance needs.</li>
+            <li><strong>Precise Location:</strong> The exact location of the pothole, accurate to a 9x9' area.</li>
+            <li><strong>Street Segment Information:</strong> The nearest Salesforce street segment Location.</li>
+            <li><strong>Visual Evidence:</strong> The image of the detected road issue, provided directly in the work order.</li>
+        </ul>
+    </div>
+
+    <div class="work-order-image">
+        <img src="/static/road-health-wo-screenshot.png" 
+             alt="Work Order Screenshot" 
+             style="width:100%; height:auto; border-radius:8px;">
+    </div>
+
+    <div class="work-order-automation">
+        <p>
+            The system's automations streamline notifications, review processes, and dispatch or dismissal actions. 
+            This ensures Public Works staff can handle tasks efficiently within their existing Salesforce app, 
+            minimizing training requirements and maximizing productivity.
+        </p>
+        <p>
+            <strong>Future Potential:</strong> The same automation system can be extended to support other 
+            maintenance tasks, such as addressing debris, evaluating sidewalk conditions, or identifying signage issues.
+        </p>
+    </div>
+</section>
         `,
         'controls': `
-            <h2>Controls</h2>
-            <p>These buttons control what is called the 'monitoring loop,' a long-term script that periodically checks Box for new files.</p>
-            <p>This process will be replaced by a system that analyzes a wi-fi network at Public Works to look for the automatic connection of a GoPro upon arrival</p>
+            <section class="controls">
+    <h2>Controls</h2>
+
+    <div class="controls-description">
+        <p>
+            During the pilot phase, the system operates on a periodic check cycle, ensuring new videos are processed 
+            as soon as possible. This approach provides near-real-time analysis while maintaining a straightforward 
+            setup that supports proof-of-concept testing.
+        </p>
+        <p>
+            The long-term vision involves a fully automated upload and processing system, triggered automatically 
+            when GoPro devices connect to the Public Works Wi-Fi network upon vehicle return to base. 
+            This upgrade will create a seamless and hands-off data ingestion process, enhancing overall efficiency.
+        </p>
+    </div>
+
+    <div class="future-vision">
+        <h3>Future Automation Plans:</h3>
+        <ul>
+            <li><strong>GoPro Integration:</strong> Automatic detection of GoPro devices via Wi-Fi connections.</li>
+            <li><strong>Real-Time Processing:</strong> Immediate initiation of video analysis upon data upload.</li>
+            <li><strong>Smart Triggers:</strong> Enable data analysis only when specific conditions are met (e.g., vehicle in depot).</li>
+            <li><strong>Scalability:</strong> The system's modular design will allow adding new monitoring devices with minimal setup.</li>
+        </ul>
+    </div>
+</section>
         `
     };
 
