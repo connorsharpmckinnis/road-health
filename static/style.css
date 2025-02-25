@@ -1,4 +1,4 @@
-/* Unified dark background and text */
+/* General Layout and Background */
 html, body {
     margin: 0;
     padding: 0;
@@ -8,41 +8,40 @@ html, body {
     color: #e0e0e0;
     font-family: 'Arial', sans-serif;
     overflow-x: hidden;
-  }
-  
-  /* Container spacing */
-  .container-fluid {
+}
+
+/* Container */
+.container-fluid {
     padding: 20px;
     min-height: 100vh;
-  }
-  
-  /* Simplified layout for sections */
-  .section-block {
+}
+
+/* Section Styles */
+.section-block {
     background-color: #1e1e1e;
     padding: 20px;
     margin-bottom: 20px;
     border-radius: 5px;
     border: 1px solid #3a3a3a;
-  }
-  
-  /* Card sections */
-  .card-section {
+}
+
+/* Card Layout */
+.card-section {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
     gap: 16px;
     background-color: #1e1e1e;
     border-radius: 5px;
-    /* border: 1px solid #444444; */
     padding: 20px;
     max-height: 300px;
     overflow-y: auto;
-  }
+}
 
 #subsection-status-feed {
     grid-template-columns: 1fr !important;
 }
 
-  /* Unified Card Style */
+/* Card Styling */
 .card {
     background-color: #2b2b2b;
     border-radius: 8px;
@@ -74,47 +73,75 @@ html, body {
     color: #e0e0e0;
     margin: 5px 0;
 }
-  
-  /* Badges and cards share a coherent dark palette */
-  .badge {
+
+/* Badges */
+.badge {
     background-color: #333333;
     border: 2px solid #444444;
     padding: 6px 12px;
     border-radius: 4px;
     display: inline-block;
-  }
-  
-  /* Buttons */
-  .btn {
+    color: #e0e0e0;
+}
+
+/* Buttons */
+.btn {
     background-color: #333333;
     color: #e0e0e0;
-    border: 1px solid #555555;
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: 10px;
     margin-right: 5px;
-  }
-  
-  .btn:hover {
+    border: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn:hover {
     background-color: #444444;
     cursor: pointer;
-  }
+}
 
-  /* Progress Bar */
-/* Ensure progress bar is tall enough */
+/* Info Button (Question Mark) */
+.btn-info-toggle {
+    background-color: #6c757d; /* Initial gray */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 6px 10px;
+    font-weight: bold;
+    font-size: 1em;
+    line-height: 1;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-info-toggle:hover {
+    background-color: #0056b3; /* Blue on hover */
+    color: white;
+}
+
+.btn-info-toggle:active {
+    background-color: #004494; /* Darker blue on click */
+    color: white;
+}
+
+.btn-info-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Progress Bar */
 .progress {
-    height: 30px; /* Adjust height as needed */
+    height: 30px;
     border-radius: 8px;
     background-color: #2b2b2b;
 }
 
-/* Center text within the progress bar */
 .progress-bar {
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     font-size: 14px;
-    color: white; /* Ensure text color is visible */
+    color: white;
 }
 
 .progress-bar.bg-primary {
@@ -128,17 +155,18 @@ html, body {
 .progress-bar.bg-secondary {
     background-color: #9e9e9e;
 }
-  
-  /* Links */
-  a {
+
+/* Links */
+a {
     color: #64b5f6;
     text-decoration: none;
-  }
-  a:hover {
-    color: #90caf9;
-  }
+}
 
-  /* Slide-In Info Panel */
+a:hover {
+    color: #90caf9;
+}
+
+/* Slide-In Info Panel */
 .info-panel {
     position: fixed;
     top: 0;
@@ -171,18 +199,4 @@ html, body {
 
 .info-content h2 {
     margin-top: 0;
-}
-
-.btn-info {
-    background-color: #007bff;
-    border: none;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.btn-info:hover {
-    background-color: #0056b3;
 }
