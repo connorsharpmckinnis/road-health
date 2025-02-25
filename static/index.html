@@ -18,13 +18,27 @@
             <h1>Road Health Monitor</h1>
         </div>
 
+        <!-- Slide-In Info Panel -->
+        <div id="info-panel" class="info-panel">
+            <button id="btn-close-info" class="btn-close">&times;</button>
+            <div id="info-content" class="info-content">
+                <!-- Dynamic content will be injected here -->
+                 <p>TEST TEST TEST of the dynamic info panel. Hear ye, hear ye!</p>
+            </div>
+        </div>
+
 
         <!-- Program Information -->
         <section id="section-program" class="section-block">
-            <h2>Program Information</h2>
+            <h2>
+               Program Information
+               <button class="btn btn-info btn-sm" onclick="showInfo('program-info')">?</button>
+            </h2>
+            
             <p id="badge-program-status" class="badge">Inactive</p>
             <p id="badge-box-check" class="badge" hidden>Checking Box</p>
             <h4>Test Status Updates:</h4>
+            
             <div class="btn-group" role="group" aria-label="Function Test Buttons">
                 <button id="btn-test-program-status" type="button" class="btn">Program</button>
                 <button id="btn-test-video-status" type="button" class="btn">Video</button>
@@ -36,7 +50,11 @@
 
         <!-- Controls -->
         <section id="section-controls" class="section-block">
-            <h2>Controls</h2>
+            <h2>
+                Controls
+                <button class="btn btn-info btn-sm" onclick="showInfo('controls')">?</button>
+            </h2>
+            
             <div class="btn-group" role="group">
                 <button id="btn-start-monitoring" class="btn">Start Monitoring</button>
                 <button id="btn-stop-monitoring" class="btn">Stop Monitoring</button>
@@ -51,8 +69,13 @@
 
         <!-- Video Processing -->
         <section id="section-videos" class="section-block">
-            <h2>Video Processing</h2>
+            <h2>
+                Video Processing
+                <button class="btn btn-info btn-sm" onclick="showInfo('video-processing')">?</button>
+            </h2>
+            
             <p id="value-video-status"></p>
+            
             <div id="subsection-video-cards" class="card-section">
 
             </div>
@@ -60,7 +83,10 @@
     
         <!-- Work Orders -->
         <section id="section-work-orders" class="section-block">
-            <h2>Work Orders</h2>
+            <h2>
+                Work Orders
+                <button class="btn btn-info btn-sm" onclick="showInfo('work-orders')">?</button>
+            </h2>
             <div id="subsection-wo-cards" class="card-section">
 
             </div>
