@@ -188,7 +188,7 @@ class App():
         
         #then we'll upload all the frames/json to Box for long-term storage (using metadata templates to store the image telemetry and analysis results)
         #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        box_archive_action = self.box.save_frames_to_long_term_storage()
+        box_archive_action = await self.box.save_frames_to_long_term_storage()
 
         #Now that all the actions are done, we can clear out the frames and unprocessed_videos folder.
         #For unprocessed_videos, make sure to only delete the files that are also in the processed_files list

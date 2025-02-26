@@ -10,9 +10,10 @@ import base64
 import hashlib
 import io
 import datetime
-from utils import unprocessed_videos_path, box_archived_images_folder_id, box_archived_videos_folder_id, box_images_folder_id, box_videos_folder_id, box_work_order_images_folder_id
+from utils import unprocessed_videos_path, box_archived_images_folder_id, box_archived_videos_folder_id, box_images_folder_id, box_videos_folder_id, box_work_order_images_folder_id, box_road_health_folder_id
 from web_ui import WebApp, StatusUpdate
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 
 
@@ -40,12 +41,10 @@ class Box():
         self.box_archived_videos_folder_id = box_archived_videos_folder_id
         self.box_images_folder_id = box_images_folder_id
         self.box_work_order_images_folder_id = box_work_order_images_folder_id
+        self.box_road_health_folder_id = box_road_health_folder_id
 
         self.authenticate()
-        print(f"{self.client = }")
-        box_items = self.list_items_in_folder('0')
-        videos_folder_id = next(item for item in box_items if item['name'] == 'Videos')['id']
-        self.videos_folder_box_id = videos_folder_id        
+        print(f"{self.client = }")     
         
 
 
@@ -179,7 +178,7 @@ class Box():
             logger.error(f"Failed to list items in folder '{folder_id}': {e}")
             return []
 
-    def upload_small_file_to_folder(self, file_path, folder_id):
+    def upload_small_file_to_folder(self, file_path, folder_id="0", new_name=None):
         """
         Uploads a <50MB file to the specified folder.
         Args:
@@ -189,13 +188,15 @@ class Box():
             dict: Information about the uploaded file.
         """
         try:
-            # Open the file and prepare a byte stream
-            new_file_name = os.path.basename(file_path)
+            if not new_name:
+                new_file_name = os.path.basename(file_path)
+            else:
+                new_file_name = new_name
             
             with open(file_path, "rb") as file:
                 uploaded_file = self.client.uploads.upload_file(
                     UploadFileAttributes(
-                        name=new_file_name, parent=UploadFileAttributesParentField(id="0")
+                        name=new_file_name, parent=UploadFileAttributesParentField(id=folder_id)
                     ),
                     file,
                 )
@@ -276,31 +277,39 @@ class Box():
                     
         return downloaded_files
     
-    def save_frames_to_long_term_storage(self, destination_folder_id='308059844499'):
-        logger.info(f"Placeholder for saving frames to long-term storage.")
+    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499'):
+        logger.info(f"Saving frames to long-term storage...")
+
         # Get all the image files and json in the local 'frames' folder
         frames_folder_contents = os.listdir('frames')
+
         # Get the videos from Box's Videos folder
         box_videos_folder_contents = self.list_items_in_folder(self.videos_folder_box_id)
         box_video_ids = [item['id'] for item in box_videos_folder_contents]
 
         # Get all the image files in the local 'work_order_frames' folder
         work_order_frames_folder_contents = os.listdir('work_order_frames')
-        
+
         # Move the videos to the 'Archived Videos' folder
         self.move_files(box_video_ids, self.box_archived_videos_folder_id)
 
-        # Upload the files to Box (future: combine the json and images into a single file via metadata template)
-        for file in frames_folder_contents:
-            file_path = os.path.join('frames', file)
-            self.upload_small_file_to_folder(file_path, destination_folder_id)
+        # Generate a timestamp for unique filenames
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H")
+
+        # Prepare file paths
+        frames_folder_contents = os.listdir('frames')
+        file_paths = [os.path.join('frames', file) for file in frames_folder_contents]
+
+        # Use the new multithreaded upload function
+        await self.upload_files_to_box_folder(file_paths, destination_folder_id, prefix_timestamp=timestamp)
 
         # Upload the work_order_frames files to Box's 'Images / Work Order Images' folder
         for file in work_order_frames_folder_contents:
             file_path = os.path.join('work_order_frames', file)
-            self.upload_small_file_to_folder(file_path, self.box_work_order_images_folder_id)
-        # Delete the local files
-        return
+            new_file_name = f"{timestamp}_{file}"
+            self.upload_small_file_to_folder(file_path=file_path, folder_id=self.box_work_order_images_folder_id, new_name=new_file_name)
+
+        logger.info("Long-term storage process completed.")
 
     def delete_file_by_id(self, file_id):
         """
@@ -363,35 +372,57 @@ class Box():
 
     def update_file(self, file_id, new_name=None, new_description=None, new_parent_folder_id=None):
         """
-        Updates the metadata of a file.
+        Updates the metadata of a file, including renaming, updating the description,
+        or moving it to a new parent folder using the Box Python SDK.
 
         Args:
             file_id (str): The ID of the file to update.
-            new_name (str): The new name for the file.
-            new_description (str): The new description for the file.
-            new_parent_folder_id (str): The ID of the new parent folder for the file.
+            new_name (str, optional): The new name for the file.
+            new_description (str, optional): The new description for the file.
+            new_parent_folder_id (str, optional): The ID of the new parent folder for the file.
 
         Returns:
             dict: Information about the updated file.
         """
         try:
-
-            #get the file and its metadata if changes aren't being made
+            # Get the current file and its metadata
             current_file = self.client.files.get_file_by_id(
-                file_id = file_id, 
-                fields=['name', 'description', 'parent.id']
+                file_id, fields=["name", "description", "parent"]
             )
+
+            # Fallback to existing values if new values are not provided
             new_name = new_name or current_file.name
             new_description = new_description or current_file.description
             new_parent_folder_id = new_parent_folder_id or current_file.parent.id
 
-            # Update the file's metadata
+            logger.info(f"Updating file '{file_id}' - "
+                        f"Name: '{current_file.name}' -> '{new_name}', "
+                        f"Description: '{current_file.description}' -> '{new_description}', "
+                        f"Parent ID: '{current_file.parent.id}' -> '{new_parent_folder_id}'")
+
+            # Prepare parameters for the update
+            update_params = {}
+
+            if new_name and new_name != current_file.name:
+                update_params['name'] = new_name
+            if new_description and new_description != current_file.description:
+                update_params['description'] = new_description
+            if new_parent_folder_id and new_parent_folder_id != current_file.parent.id:
+                update_params['parent'] = {'id': new_parent_folder_id}
+
+            if not update_params:
+                logger.info(f"No updates needed for file '{file_id}'.")
+                return current_file
+
+            # Perform the update using the Box SDK
             updated_file = self.client.files.update_file_by_id(
-                file_id=file_id, name=new_name, description=new_description, parent=new_parent_folder_id
+                file_id=file_id,
+                **update_params
             )
 
             logger.info(f"File '{updated_file.name}' updated successfully with ID: {updated_file.id}")
             return updated_file
+
         except Exception as e:
             logger.error(f"Failed to update file '{file_id}': {e}")
             return None
@@ -413,6 +444,30 @@ class Box():
         except Exception as e:
             logger.error(f"Failed to move files: {e}")
 
+    async def upload_files_to_box_folder(self, file_paths, destination_folder_id, prefix_timestamp=None, max_workers=5):
+        """
+        Uploads multiple small files (<50MB each) to a specified Box folder concurrently.
+
+        Args:
+            file_paths (list): A list of file paths to upload.
+            destination_folder_id (str): The ID of the Box folder to upload files to.
+            prefix_timestamp (str, optional): A timestamp prefix for filenames to avoid conflicts.
+            max_workers (int, optional): The maximum number of threads to use for concurrent uploads.
+        """
+        logger.info(f"Uploading {len(file_paths)} files to Box folder ID '{destination_folder_id}' using multithreading...")
+
+        async def upload_file(file_path):
+            """Helper function to upload a single file asynchronously."""
+            new_file_name = f"{prefix_timestamp}_{os.path.basename(file_path)}" if prefix_timestamp else os.path.basename(file_path)
+            await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
+
+        # Create upload tasks for each file
+        tasks = [upload_file(file_path) for file_path in file_paths]
+
+        # Execute the tasks concurrently
+        await asyncio.gather(*tasks)
+        logger.info("All files uploaded successfully.")
+
 if __name__ == '__main__':
 
     # Initialize the Box client
@@ -420,15 +475,15 @@ if __name__ == '__main__':
 
     unprocessed_videos_folder = unprocessed_videos_path
 
-    box_items = box_client.list_items_in_folder('0')
-    print(f"All folders accessible by the app: \n\n{box_items}\n\n")
+    root_items = box_client.list_items_in_folder('0')
+    print(f'{len(root_items) = }')
     
-    videos_folder_id = next(item for item in box_items if item['name'] == 'Videos')['id']
-    box_client.videos_folder_box_id = videos_folder_id
+    road_health_items = box_client.list_items_in_folder(box_client.box_road_health_folder_id)
+    print(f'{len(road_health_items) = }')
 
+   
 
-    uploaded_file = box_client.upload_small_file_to_folder(file_path="test_frames_folder/frame_0002.jpg", folder_id=box_client.box_work_order_images_folder_id)
-    print(f"{uploaded_file = }")
+    
 
 
 

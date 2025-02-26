@@ -172,7 +172,7 @@ function updateVideoProcessingCard(updateData) {
         ${progressBar}
     `;
 
-    createCard(`video-${videoFile}`, videoFile, content, videoSection, url=url);
+    createCard(`video-${videoFile}`, videoFile, content, videoSection, url);
 }
 
 // Update or add work order processing card
