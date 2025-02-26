@@ -29,10 +29,10 @@ html, body {
 .card-section {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
-    gap: 16px;
+    gap: 6px;
     background-color: #1e1e1e;
     border-radius: 5px;
-    padding: 20px;
+    padding: 8px;
     max-height: 300px;
     overflow-y: auto;
 }
@@ -45,7 +45,7 @@ html, body {
 .card {
     background-color: #333333;
     border-radius: 8px;
-    padding: 20px;
+    padding: 10px;
     margin: 10px 0;
     color: #e0e0e0;
     opacity: 0;
