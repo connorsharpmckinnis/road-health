@@ -184,11 +184,17 @@ function updateWorkOrderProcessingCard(updateData) {
                  class="card-img-top" 
                  style="width: 300px; height: 130px;">`
         : "";
+    
+    const url = updateData.details.url || "#";
+
 
     const content = `
         <h2 class="card-title"><em>${updateData.message}</em></h2>
         <p class="card-text"><em>Id: ${woId}</em></p>
-        <p class="card-text">${updateData.details.ai_analysis}</p>
+        <p class="card-text">${updateData.details.ai_analysis_str}</p>
+        <a href="${url}" target="_blank" class="btn btn-primary mt-2">
+            View in Salesforce
+        </a>
     `;
 
     createCard(`wo-${woId}`, "Work Order Created", content, woSection, imageHTML);

@@ -155,6 +155,11 @@ class WorkOrderCreator:
                                 with open(frame_path, "rb") as image_file:
                                     encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
+                                # Break ai_analysis into separate strings for structuring into the card
+                                ai_analysis_str = ""
+                                for key, value in ai_analysis.items():
+                                    ai_analysis_str += f"{key}: {value}\n"
+
                                 await self.send_status_update_to_ui(
                                     type="WorkOrder",
                                     level="Info",
@@ -164,7 +169,7 @@ class WorkOrderCreator:
                                         "video_file": metadata_item.get("filename", "Unknown"),
                                         "work_order_id": work_order_id,
                                         "image_base64": encoded_string,
-                                        "ai_analysis": ai_analysis,
+                                        "ai_analysis": ai_analysis_str,
                                         "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
                                     }
                                 )
