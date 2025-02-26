@@ -42,6 +42,7 @@ class WebApp:
         """Initialize the FastAPI app and Socket.IO server."""
         self.active_connections: List[WebSocket] = []  # Store connected WebSocket clients
 
+        self.work_order_count = 0
   
         # Initialize FastAPI & Socket.IO
         self.app = FastAPI()
@@ -154,11 +155,16 @@ class WebApp:
         @self.app.post("/test-wo-status")
         async def test_wo_status():
             """Test the work order status."""
-            
+            self.work_order_count += 1
+            dummy_ai_analysis = {"pothole": "Yes", "pothole_confidence": "95%", "line_cracking": "Yes", "line_cracking_confidence": "90%"}
+            ai_analysis_str = ""
+            for key, value in dummy_ai_analysis.items():
+                                    ai_analysis_str += f"{key}: {value}\n"
+            print(f"{ai_analysis_str = }")
             # Logic for testing the work order status
             with open("test_frames_folder/frame_0002.jpg", "rb") as image_file:
                 encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                await self.send_status_update(source='test_wo_status()', type='WorkOrder', details={"video_file": "WO123", "work_order_id": "123", "image_base64": encoded_string, "ai_analysis": "Shit's wack"})
+                await self.send_status_update(source='test_wo_status()', type='WorkOrder', status="Created", message="Work Order 01Test12301 created.", details={"video_file": "WO123", "work_order_id": f"123-{self.work_order_count}", "image_base64": encoded_string, "ai_analysis_str": ai_analysis_str, "url": "https://carync--sahara.sandbox.lightning.force.com/lightning/r/sm1a__WorkOrder__c/aDeVF0000001HjZ0AU/view"})
 
         # Route for testing the feed status
         @self.app.post("/test-feed-status")

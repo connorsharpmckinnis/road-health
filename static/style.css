@@ -28,12 +28,11 @@ html, body {
 /* Card Layout */
 .card-section {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
     background-color: #1e1e1e;
     border-radius: 5px;
-    padding: 8px;
-    max-height: 300px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
@@ -45,8 +44,8 @@ html, body {
 .card {
     background-color: #333333;
     border-radius: 8px;
-    padding: 10px;
-    margin: 10px 0;
+    padding: 8px; /* Reduce internal padding */
+    margin: 2px 0; /* Reduce vertical margin */
     color: #e0e0e0;
     opacity: 0;
     transition: opacity 0.25s linear;
