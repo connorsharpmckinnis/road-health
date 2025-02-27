@@ -169,7 +169,7 @@ class WorkOrderCreator:
                                         "video_file": metadata_item.get("filename", "Unknown"),
                                         "work_order_id": work_order_id,
                                         "image_base64": encoded_string,
-                                        "ai_analysis": ai_analysis_str,
+                                        "ai_analysis_str": ai_analysis_str,
                                         "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
                                     }
                                 )

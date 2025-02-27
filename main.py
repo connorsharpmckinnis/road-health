@@ -107,7 +107,8 @@ class App():
                 message=f"Downloading file",
                 details={
                     "video_file": file['name'],
-                    "progress": "20%"
+                    "progress": "20%",
+                    "stage": "Downloading"
                 }
             )
         
