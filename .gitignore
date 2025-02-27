@@ -173,3 +173,12 @@ default_all_frames.json
 overview.json
 pipeline_timing_log.txt
 /processed_videos
+/logs
+/frames
+/extracted_frames
+/work_order_frames
+/unprocessed_videos
+/test_frames_folder/frame_0002.jpg
+/test_frames_folder
+.bin
+.log

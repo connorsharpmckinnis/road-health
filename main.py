@@ -112,7 +112,8 @@ class App():
                 }
             )
         
-        if self.download_files(new_files_to_download):
+        download_files_result = await self.download_files(new_files_to_download)
+        if download_files_result:
             logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
 
         for file in new_files_to_download:
@@ -199,11 +200,51 @@ class App():
 
         self.status = "Idle - Waiting for next check"
     
-    def download_files(self, files_to_download: list=None) -> bool:
+    '''def download_files(self, files_to_download: list=None) -> bool:
         for file in files_to_download:
                 logger.info(f"Downloading file: {file}. Please wait...")
                 self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
                 logger.info(f"Downloaded file: {file}")
+        return True'''
+    
+    async def download_files(self, files_to_download: list = None) -> bool:
+        for file in files_to_download:
+            file_path = os.path.join(self.box.unprocessed_videos_folder, file['name'])
+            if os.path.exists(file_path):
+                logger.info(f"File already exists: {file['name']}. Skipping download.")
+                
+                # Simulate download status for the UI
+                await self.send_status_update_to_ui(
+                    source='App.download_files()',
+                    level='Card',
+                    type='Video',
+                    status="Already Downloaded",
+                    message=f"File {file['name']} already exists. Skipping download.",
+                    details={
+                        "video_file": file['name'],
+                        "progress": "30%",
+                        "stage": "Downloading"
+                    }
+                )
+                continue
+
+            logger.info(f"Downloading file: {file['name']}. Please wait...")
+            self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
+            logger.info(f"Downloaded file: {file['name']}")
+
+            # Send status update to UI after successful download
+            await self.send_status_update_to_ui(
+                source='App.download_files()',
+                level='Card',
+                type='Video',
+                status="Download Complete",
+                message=f"File {file['name']} downloaded successfully.",
+                details={
+                    "video_file": file['name'],
+                    "progress": "30%",
+                    "stage": "Downloading"
+                }
+            )
         return True
 
     def get_all_files(self):
