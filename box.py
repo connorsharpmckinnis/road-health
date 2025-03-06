@@ -1,7 +1,7 @@
 #box_watcher.py
 import requests
 from logging_config import logger
-from box_sdk_gen import BoxClient, BoxDeveloperTokenAuth, BoxCCGAuth, CCGConfig, UploadFileAttributes, UploadFileAttributesParentField, CreateCollaborationItem, CreateCollaborationItemTypeField, CreateCollaborationAccessibleBy, CreateCollaborationAccessibleByTypeField, CreateCollaborationRole
+from box_sdk_gen import BoxClient, BoxDeveloperTokenAuth, BoxCCGAuth, CCGConfig, UploadFileAttributes, UploadFileAttributesParentField, CreateCollaborationItem, CreateCollaborationItemTypeField, CreateCollaborationAccessibleBy, CreateCollaborationAccessibleByTypeField, CreateCollaborationRole, AddShareLinkToFileSharedLink, AddShareLinkToFileSharedLinkAccessField
 from boxsdk.config import API
 import os
 from dotenv import load_dotenv
@@ -231,6 +231,14 @@ class Box():
     def get_file_size(self, file_path):
         return os.path.getsize(file_path)
     
+    def get_direct_shared_link(self, file_id) -> str: #returns the string URL of the shared link (direct edition) for use in Salesforce displays and elsewhere
+        fileFull = self.client.shared_links_files.add_share_link_to_file(file_id,"shared_link",shared_link=AddShareLinkToFileSharedLink(
+            access=AddShareLinkToFileSharedLinkAccessField.OPEN,),
+        )
+        fileDirectSharedLink = fileFull.shared_link.download_url
+        print(f'{fileDirectSharedLink = }')
+        return fileDirectSharedLink
+    
     def download_file(self, file_id, file_name=None, folder_path=None):
         """
         Downloads a file from Box by its file ID and saves it locally.
@@ -277,39 +285,53 @@ class Box():
                     
         return downloaded_files
     
-    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499'):
+    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499', source_normals_folder='frames', source_wos_folder='work_order_frames'):
         logger.info(f"Saving frames to long-term storage...")
 
         # Get all the image files and json in the local 'frames' folder
-        frames_folder_contents = os.listdir('frames')
+        frames_folder_contents = os.listdir(source_normals_folder)
 
         # Get the videos from Box's Videos folder
         box_videos_folder_contents = self.list_items_in_folder(self.videos_folder_box_id)
         box_video_ids = [item['id'] for item in box_videos_folder_contents]
 
         # Get all the image files in the local 'work_order_frames' folder
-        work_order_frames_folder_contents = os.listdir('work_order_frames')
+        work_order_frames_folder_contents = os.listdir(source_wos_folder)
 
         # Move the videos to the 'Archived Videos' folder
         self.move_files(box_video_ids, self.box_archived_videos_folder_id)
 
         # Generate a timestamp for unique filenames
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H_%M")
 
         # Prepare file paths
-        frames_folder_contents = os.listdir('frames')
-        file_paths = [os.path.join('frames', file) for file in frames_folder_contents]
+        frames_folder_contents = os.listdir(source_normals_folder)
+        file_paths = [os.path.join(source_normals_folder, file) for file in frames_folder_contents]
 
         # Use the new multithreaded upload function
-        await self.upload_files_to_box_folder(file_paths, destination_folder_id, prefix_timestamp=timestamp)
+        uploaded_file_objects = await self.upload_files_to_box_folder(file_paths, destination_folder_id, prefix_timestamp=timestamp)
+        
+        # Dictionary to track uploaded file IDs
+        uploaded_wo_files = {}
 
         # Upload the work_order_frames files to Box's 'Images / Work Order Images' folder
-        for file in work_order_frames_folder_contents:
-            file_path = os.path.join('work_order_frames', file)
-            new_file_name = f"{timestamp}_{file}"
-            self.upload_small_file_to_folder(file_path=file_path, folder_id=self.box_work_order_images_folder_id, new_name=new_file_name)
+        wo_file_paths = [os.path.join(source_wos_folder, file) for file in work_order_frames_folder_contents]
+        uploaded_wo_file_objects = await self.upload_files_to_box_folder(wo_file_paths, self.box_work_order_images_folder_id, prefix_timestamp=timestamp)
+        print(f'{uploaded_wo_file_objects = }')
+        if uploaded_wo_file_objects:
+            for file_obj in uploaded_wo_file_objects:
+                if file_obj.entries and len(file_obj.entries) > 0:
+                    file_entry = file_obj.entries[0]  # Extract the first entry
+                    original_filename = file_entry.name.split("_", 2)[-1]  # Remove timestamp
+                    uploaded_wo_files[original_filename] = file_entry.id  # Store filename -> file_id
+                else:
+                    logger.warning(f"No valid file entries found in response: {file_obj}")
+        print(f'{uploaded_wo_files = }')
 
         logger.info("Long-term storage process completed.")
+
+        return uploaded_wo_files
+        
 
     def delete_file_by_id(self, file_id):
         """
@@ -455,11 +477,14 @@ class Box():
             max_workers (int, optional): The maximum number of threads to use for concurrent uploads.
         """
         logger.info(f"Uploading {len(file_paths)} files to Box folder ID '{destination_folder_id}' using multithreading...")
+        uploaded_files = []
 
         async def upload_file(file_path):
             """Helper function to upload a single file asynchronously."""
             new_file_name = f"{prefix_timestamp}_{os.path.basename(file_path)}" if prefix_timestamp else os.path.basename(file_path)
-            await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
+            file_obj = await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
+            if file_obj:
+                uploaded_files.append(file_obj)
 
         # Create upload tasks for each file
         tasks = [upload_file(file_path) for file_path in file_paths]
@@ -467,9 +492,9 @@ class Box():
         # Execute the tasks concurrently
         await asyncio.gather(*tasks)
         logger.info("All files uploaded successfully.")
+        return uploaded_files
 
-if __name__ == '__main__':
-
+async def main():
     # Initialize the Box client
     box_client = Box(BOX_CLIENT_ID, BOX_CLIENT_SECRET, BOX_ENTERPRISE_ID)
 
@@ -477,10 +502,21 @@ if __name__ == '__main__':
 
     root_items = box_client.list_items_in_folder('0')
     print(f'{len(root_items) = }')
-    
+
     road_health_items = box_client.list_items_in_folder(box_client.box_road_health_folder_id)
     print(f'{len(road_health_items) = }')
 
+    test_files = os.listdir('test_frames_folder')
+    print(f'{test_files = }')
+
+    # Run the async function properly
+    uploaded_files = await box_client.save_frames_to_long_term_storage(source_wos_folder='test_frames_folder')
+
+    print(f"Uploaded files: {uploaded_files}")
+
+# Run the async main function
+if __name__ == '__main__':
+    asyncio.run(main())
    
 
     

@@ -18,6 +18,7 @@ from analysis import *
 from bisect import bisect_left
 from web_ui import WebApp, StatusUpdate
 import asyncio
+import shutil
 
 
 
@@ -450,6 +451,10 @@ class Processor():
         Args:
             telemetry_objects (list): List of telemetry objects.
         """
+
+        work_order_folder = "work_order_frames"
+        os.makedirs(work_order_folder, exist_ok=True)
+
         for obj in telemetry_objects:
             json_path = os.path.splitext(obj.filepath)[0] + ".json"  # Replace .jpg with .json
             telemetry_data = {
@@ -463,6 +468,22 @@ class Processor():
             }
             with open(json_path, "w") as json_file:
                 json.dump(telemetry_data, json_file, indent=4)
+
+            # Check pothole criteria
+            ai_analysis = obj.analysis_results or {}
+            pothole = ai_analysis.get("pothole", "no")
+            pothole_confidence = ai_analysis.get("pothole_confidence", 0)
+
+            if pothole == "yes" and pothole_confidence >= 0.9:
+                # Copy frame and metadata JSON to work_order_frames/
+                work_order_json_path = os.path.join(work_order_folder, os.path.basename(json_path))
+                work_order_frame_path = os.path.join(work_order_folder, os.path.basename(obj.filepath))
+
+                shutil.copy2(json_path, work_order_json_path)
+                shutil.copy2(obj.filepath, work_order_frame_path)
+
+                logger.info(f"Copied {obj.filename} to work_order_frames/ (Pothole confidence: {pothole_confidence})")
+
         logger.info(f"Saved {len(telemetry_objects)} telemetry objects as JSON files.")
 
     def save_overview_json(self, telemetry_objects: list, output_path="overview.json"):

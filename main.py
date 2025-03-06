@@ -178,19 +178,22 @@ class App():
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
 
-
         #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
         self.status = "Processing Salesforce actions..."
         logger.info(self.status)
-        work_orders_created = await self.work_order_creator.work_order_engine()
+
+        self.status = "Saving images to Box..."
+        logger.info(self.status)
+
+        #ASYNCIFY BOX ARCHIVE IN BOX.PY
+        box_wo_files = await self.box.save_frames_to_long_term_storage()
+        print(f'box_wo_files from main.py: {box_wo_files = }')
+
+
+        work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, box_wo_files=box_wo_files)
         logger.info(f"Work Orders created: {work_orders_created}")
 
-        self.save_processed_videos()
-        
-        
-        #then we'll upload all the frames/json to Box for long-term storage (using metadata templates to store the image telemetry and analysis results)
-        #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        box_archive_action = await self.box.save_frames_to_long_term_storage()
+        self.save_processed_videos()        
 
         #Now that all the actions are done, we can clear out the frames and unprocessed_videos folder.
         #For unprocessed_videos, make sure to only delete the files that are also in the processed_files list

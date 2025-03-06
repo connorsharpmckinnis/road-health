@@ -91,7 +91,7 @@ class WorkOrderCreator:
 
         print(f"Processed {len(self.all_metadata)} metadata files. Stored in self.all_metadata.")
     
-    async def work_order_engine(self):
+    async def work_order_engine(self, box_client, box_wo_files = {}):
         """
         Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.
         """
@@ -120,10 +120,19 @@ class WorkOrderCreator:
                     description = self.create_description_package(
                         metadata_item, closest_location, closest_distance
                     )
+                    # Extract the filename from metadata for Box lookup
+                    metadata_filename = os.path.basename(metadata_item.get("filepath", ""))
+                    file_id = box_wo_files.get(metadata_filename)
+
+                    if file_id:
+                        box_file_url = "https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg"
+                        # Get direct download link from Box
+                        box_file_url = box_client.get_direct_shared_link(file_id)
+                        logging.info(f"Box direct link for {metadata_filename}: {box_file_url}")
 
                     # Create a Work Order
                     work_order_subject = f"Pothole Detected - Confidence {pothole_confidence*100:.1f}%"
-                    work_order_id = self.create_work_order(metadata_item, work_order_subject, description, closest_location)
+                    work_order_id = self.create_work_order(metadata_item, work_order_subject, description, closest_location, box_file_url)
 
                     if work_order_id:
                         work_orders_created += 1
@@ -266,7 +275,7 @@ class WorkOrderCreator:
 
         return closest_location, min_distance
             
-    def create_work_order(self, metadata_item, subject, description, location_id=None):
+    def create_work_order(self, metadata_item, subject, description, location_id=None, box_file_url=None):
         """
         Create a Work Order in Salesforce.
 
@@ -294,7 +303,8 @@ class WorkOrderCreator:
                 'Division__c': 'Operations',  # Hardcoded division for now
                 'Location__c': location_id_string,
                 'sm1a__Geolocation__Latitude__s': lat,
-                'sm1a__Geolocation__Longitude__s': lon
+                'sm1a__Geolocation__Longitude__s': lon,
+                'Subject_Image_URL__c': box_file_url
             }
 
             # Create the Work Order
