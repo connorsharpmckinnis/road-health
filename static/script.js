@@ -100,7 +100,7 @@ function createCard(id, header, bodyContent, container, imageHTML = "", url = ""
         card.innerHTML = cardHTML;
     } else {
         card = document.createElement("div");
-        card.className = "card col-md-6"; // Initially not 'visible' for transition
+        card.className = "card"; // Initially not 'visible' for transition
         card.id = id;
         card.innerHTML = cardHTML;
         container.prepend(card);

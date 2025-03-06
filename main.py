@@ -107,11 +107,13 @@ class App():
                 message=f"Downloading file",
                 details={
                     "video_file": file['name'],
-                    "progress": "20%"
+                    "progress": "20%",
+                    "stage": "Downloading"
                 }
             )
         
-        if self.download_files(new_files_to_download):
+        download_files_result = await self.download_files(new_files_to_download)
+        if download_files_result:
             logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
 
         for file in new_files_to_download:
@@ -176,19 +178,22 @@ class App():
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
 
-
         #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
         self.status = "Processing Salesforce actions..."
         logger.info(self.status)
+
+        self.status = "Saving images to Box..."
+        logger.info(self.status)
+
+        #ASYNCIFY BOX ARCHIVE IN BOX.PY
+        box_wo_files = await self.box.save_frames_to_long_term_storage()
+        print(f'box_wo_files from main.py: {box_wo_files = }')
+
+
         work_orders_created = await self.work_order_creator.work_order_engine()
         logger.info(f"Work Orders created: {work_orders_created}")
 
-        self.save_processed_videos()
-        
-        
-        #then we'll upload all the frames/json to Box for long-term storage (using metadata templates to store the image telemetry and analysis results)
-        #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        box_archive_action = await self.box.save_frames_to_long_term_storage()
+        self.save_processed_videos()        
 
         #Now that all the actions are done, we can clear out the frames and unprocessed_videos folder.
         #For unprocessed_videos, make sure to only delete the files that are also in the processed_files list
@@ -198,11 +203,51 @@ class App():
 
         self.status = "Idle - Waiting for next check"
     
-    def download_files(self, files_to_download: list=None) -> bool:
+    '''def download_files(self, files_to_download: list=None) -> bool:
         for file in files_to_download:
                 logger.info(f"Downloading file: {file}. Please wait...")
                 self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
                 logger.info(f"Downloaded file: {file}")
+        return True'''
+    
+    async def download_files(self, files_to_download: list = None) -> bool:
+        for file in files_to_download:
+            file_path = os.path.join(self.box.unprocessed_videos_folder, file['name'])
+            if os.path.exists(file_path):
+                logger.info(f"File already exists: {file['name']}. Skipping download.")
+                
+                # Simulate download status for the UI
+                await self.send_status_update_to_ui(
+                    source='App.download_files()',
+                    level='Card',
+                    type='Video',
+                    status="Already Downloaded",
+                    message=f"File {file['name']} already exists. Skipping download.",
+                    details={
+                        "video_file": file['name'],
+                        "progress": "30%",
+                        "stage": "Downloading"
+                    }
+                )
+                continue
+
+            logger.info(f"Downloading file: {file['name']}. Please wait...")
+            self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
+            logger.info(f"Downloaded file: {file['name']}")
+
+            # Send status update to UI after successful download
+            await self.send_status_update_to_ui(
+                source='App.download_files()',
+                level='Card',
+                type='Video',
+                status="Download Complete",
+                message=f"File {file['name']} downloaded successfully.",
+                details={
+                    "video_file": file['name'],
+                    "progress": "30%",
+                    "stage": "Downloading"
+                }
+            )
         return True
 
     def get_all_files(self):
@@ -230,7 +275,7 @@ class App():
         new_files = [
             file for file in files_in_box 
             if file['name'] not in self.processed_videos  # Not processed
-            and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
+            #and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
             and file['name'] not in files_in_processed_videos_folder # Not already dwnldld and processed
         ]
 

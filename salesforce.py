@@ -144,8 +144,6 @@ class WorkOrderCreator:
                             # Check if the file now exists at the adjusted path
                             if os.path.exists(frame_path):
                                 uploaded_image_id, uploaded_content_version_id = self.upload_file_to_salesforce(frame_path, work_order_id)
-                                # Copy the file to the work_order_frames folder
-                                shutil.copy(frame_path, 'work_order_frames')
                             else:
                                 logging.warning(f"File not found in either original or processed folder: {frame_path}")
 
@@ -169,7 +167,7 @@ class WorkOrderCreator:
                                         "video_file": metadata_item.get("filename", "Unknown"),
                                         "work_order_id": work_order_id,
                                         "image_base64": encoded_string,
-                                        "ai_analysis": ai_analysis_str,
+                                        "ai_analysis_str": ai_analysis_str,
                                         "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
                                     }
                                 )
@@ -266,7 +264,7 @@ class WorkOrderCreator:
 
         return closest_location, min_distance
             
-    def create_work_order(self, metadata_item, subject, description, location_id=None):
+    def create_work_order(self, metadata_item, subject, description, location_id=None, box_file_url='https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg'):
         """
         Create a Work Order in Salesforce.
 
@@ -294,7 +292,8 @@ class WorkOrderCreator:
                 'Division__c': 'Operations',  # Hardcoded division for now
                 'Location__c': location_id_string,
                 'sm1a__Geolocation__Latitude__s': lat,
-                'sm1a__Geolocation__Longitude__s': lon
+                'sm1a__Geolocation__Longitude__s': lon,
+                'Subject_Image_URL__c': box_file_url
             }
 
             # Create the Work Order
