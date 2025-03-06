@@ -18,7 +18,6 @@ from web_ui import WebApp, StatusUpdate
 import asyncio
 
 AI_LOG_FILE = "logs/ai.log"
-TOKEN_USAGE_LOG_FILE = "logs/token_usage.log"
 
 # Create a new handler for AI logs
 ai_file_handler = logging.FileHandler(AI_LOG_FILE)
@@ -192,15 +191,6 @@ class AI():
                     thread_id=thread_id,
                     assistant_id=self.batch_assistant_id
                 )
-
-                # Extract token usage if available
-                total_tokens = run.usage.total_tokens if run.usage else 0
-                
-                # Log thread ID and token usage
-                with open(TOKEN_USAGE_LOG_FILE, "a") as f:
-                    f.write(f"{datetime.now(timezone.utc)} - Thread ID: {thread_id}, Tokens Used: {total_tokens}\n")
-
-                logger.ai(f"Run completed for thread {thread_id} with {total_tokens} tokens used.")
                 return run
             except Exception as e:
                 logger.ai(f"Failed to create and poll run: {e}")

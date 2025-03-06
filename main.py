@@ -275,7 +275,7 @@ class App():
         new_files = [
             file for file in files_in_box 
             if file['name'] not in self.processed_videos  # Not processed
-            #and file['name'] not in files_in_unprocessed_folder  # Not already downloaded # Commented out so that I can pre-load videos for demo purposes. 
+            and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
             and file['name'] not in files_in_processed_videos_folder # Not already dwnldld and processed
         ]
 

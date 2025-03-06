@@ -180,5 +180,5 @@ pipeline_timing_log.txt
 /unprocessed_videos
 /test_frames_folder/frame_0002.jpg
 /test_frames_folder
-*.bin
+.bin
 .log
