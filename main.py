@@ -190,7 +190,7 @@ class App():
         print(f'box_wo_files from main.py: {box_wo_files = }')
 
 
-        work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, box_wo_files=box_wo_files)
+        work_orders_created = await self.work_order_creator.work_order_engine()
         logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()        
@@ -275,7 +275,7 @@ class App():
         new_files = [
             file for file in files_in_box 
             if file['name'] not in self.processed_videos  # Not processed
-            and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
+            #and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
             and file['name'] not in files_in_processed_videos_folder # Not already dwnldld and processed
         ]
 

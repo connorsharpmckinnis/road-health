@@ -91,7 +91,7 @@ class WorkOrderCreator:
 
         print(f"Processed {len(self.all_metadata)} metadata files. Stored in self.all_metadata.")
     
-    async def work_order_engine(self, box_client, box_wo_files = {}):
+    async def work_order_engine(self):
         """
         Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.
         """
@@ -120,19 +120,10 @@ class WorkOrderCreator:
                     description = self.create_description_package(
                         metadata_item, closest_location, closest_distance
                     )
-                    # Extract the filename from metadata for Box lookup
-                    metadata_filename = os.path.basename(metadata_item.get("filepath", ""))
-                    file_id = box_wo_files.get(metadata_filename)
-
-                    if file_id:
-                        box_file_url = "https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg"
-                        # Get direct download link from Box
-                        box_file_url = box_client.get_direct_shared_link(file_id)
-                        logging.info(f"Box direct link for {metadata_filename}: {box_file_url}")
 
                     # Create a Work Order
                     work_order_subject = f"Pothole Detected - Confidence {pothole_confidence*100:.1f}%"
-                    work_order_id = self.create_work_order(metadata_item, work_order_subject, description, closest_location, box_file_url)
+                    work_order_id = self.create_work_order(metadata_item, work_order_subject, description, closest_location)
 
                     if work_order_id:
                         work_orders_created += 1
@@ -153,8 +144,6 @@ class WorkOrderCreator:
                             # Check if the file now exists at the adjusted path
                             if os.path.exists(frame_path):
                                 uploaded_image_id, uploaded_content_version_id = self.upload_file_to_salesforce(frame_path, work_order_id)
-                                # Copy the file to the work_order_frames folder
-                                shutil.copy(frame_path, 'work_order_frames')
                             else:
                                 logging.warning(f"File not found in either original or processed folder: {frame_path}")
 
@@ -275,7 +264,7 @@ class WorkOrderCreator:
 
         return closest_location, min_distance
             
-    def create_work_order(self, metadata_item, subject, description, location_id=None, box_file_url=None):
+    def create_work_order(self, metadata_item, subject, description, location_id=None, box_file_url='https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg'):
         """
         Create a Work Order in Salesforce.
 
