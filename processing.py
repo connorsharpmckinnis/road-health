@@ -464,6 +464,8 @@ class Processor():
                 "lat": obj.lat,
                 "lon": obj.lon,
                 "openai_file_id": obj.openai_file_id,
+                "box_file_id": obj.box_file_id,
+                "box_file_url": obj.box_file_url,
                 "analysis_results": obj.analysis_results,
             }
             with open(json_path, "w") as json_file:
@@ -476,10 +478,8 @@ class Processor():
 
             if pothole == "yes" and pothole_confidence >= 0.9:
                 # Copy frame and metadata JSON to work_order_frames/
-                work_order_json_path = os.path.join(work_order_folder, os.path.basename(json_path))
                 work_order_frame_path = os.path.join(work_order_folder, os.path.basename(obj.filepath))
 
-                shutil.copy2(json_path, work_order_json_path)
                 shutil.copy2(obj.filepath, work_order_frame_path)
 
                 logger.info(f"Copied {obj.filename} to work_order_frames/ (Pothole confidence: {pothole_confidence})")
@@ -622,23 +622,6 @@ class Processor():
             list: Fully processed telemetry objects with analysis results.
         """
         
-
-
-        """
-        TO DO: 
-        - DONE Fix pipeline()'s video card status update to include a details dict with video_file, stage, and progress
-        - DONE Update process_video_pipeline()'s video card status updates to use the file name instead of the whole path (cut out 'unprocessed_videos/')
-        - DONEISH Add a fake progress bar with the fade in/out to the in-progress video cards
-        - Look into adding more deets to the processing (like the total number of frames vs current max frame extracted)
-        - Make the stop-monitoring button actually stop the monitoring loop (immediately is preferred)
-        - Drop the 'check for new videos' button. We don't need it
-        - Add status update card blasts to the work_order_engine() (in salesforce.py)
-        -   - Try to have it display images of created work orders? 
-        - See if I can get control-c to quit the program again (or make a button to shut it all down and close the server)
-        - Start implementing Bootstrap as the html/css framework
-        
-        """
-        
         log_file = "pipeline_timing_log.txt"
         file_name = video_path
         # update the video path to pull from unprocessed_videos/
@@ -710,12 +693,7 @@ class Processor():
             
             stage_start = time.time()
             logger.info("Step 3: Extract frames from the video")
-            '''extracted_frames = self.extract_frames(
-                video_path=video_path, 
-                frame_rate=frame_rate, 
-                max_frames=max_frames
-            )
-            '''
+            
             extracted_frames = self.extract_frames_ffmpeg(
                 video_path=video_path,
                 frame_rate=frame_rate,
@@ -816,6 +794,8 @@ class TelemetryObject:
         self.lat = lat
         self.lon = lon
         self.openai_file_id: str = None
+        self.box_file_id: str = None
+        self.box_file_url: str = None
         self.analysis_results: dict = {}
 
     def to_dict(self):
@@ -825,6 +805,8 @@ class TelemetryObject:
                 'lat': self.lat,
                 'lon': self.lon,
                 'openai_file_id': self.openai_file_id,
+                'box_file_id': self.box_file_id,
+                'box_file_url': self.box_file_url,
                 'analysis_results': self.analysis_results
                 }
 
@@ -833,6 +815,12 @@ class TelemetryObject:
 
     def add_analysis_results(self, analysis):
         self.analysis_results = analysis
+    
+    def add_box_file_id(self, file_id):
+        self.box_file_id = file_id
+    
+    def add_box_file_url(self, url):
+        self.box_file_url = url
 
 if __name__ == "__main__":
     # Example video file path

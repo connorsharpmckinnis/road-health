@@ -12,6 +12,7 @@ import shutil
 import threading
 from web_ui import StatusUpdate, WebApp
 import asyncio
+import json
 
 
 dotenv.load_dotenv()
@@ -172,7 +173,7 @@ class App():
             logger.info(self.processing_status['file']["status"])
 
             #ASYNCIFY VIDEO PROCESSING IN PROCESSING.PY
-            await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
+            telemetry_objects = await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
             self.processed_videos.add(file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
@@ -186,11 +187,10 @@ class App():
         logger.info(self.status)
 
         #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        box_wo_files = await self.box.save_frames_to_long_term_storage()
-        print(f'box_wo_files from main.py: {box_wo_files = }')
+        telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects)
+        print(f'box_wo_files from main.py: {telemetry_objects = }')
 
-
-        work_orders_created = await self.work_order_creator.work_order_engine()
+        work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
         logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()        
@@ -202,13 +202,6 @@ class App():
         self.clear_folders()
 
         self.status = "Idle - Waiting for next check"
-    
-    '''def download_files(self, files_to_download: list=None) -> bool:
-        for file in files_to_download:
-                logger.info(f"Downloading file: {file}. Please wait...")
-                self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
-                logger.info(f"Downloaded file: {file}")
-        return True'''
     
     async def download_files(self, files_to_download: list = None) -> bool:
         for file in files_to_download:
@@ -275,7 +268,7 @@ class App():
         new_files = [
             file for file in files_in_box 
             if file['name'] not in self.processed_videos  # Not processed
-            #and file['name'] not in files_in_unprocessed_folder  # Not already downloaded
+            #and file['name'] not in files_in_unprocessed_folder  # Not already downloaded # De-comment when pre-downloaded files are removed
             and file['name'] not in files_in_processed_videos_folder # Not already dwnldld and processed
         ]
 
