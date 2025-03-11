@@ -394,8 +394,7 @@ class WorkOrderCreator:
             f"Assessment Results:\n"
             + "\n".join(assessment_details) + "\n\n"
             f"To route to the best-estimated location of the pothole, click this link:\n"
-            f"{maps_url}\n\n"
-            f"For reference, check out the image file in the Related tab."
+            f"{maps_url}"
         )
 
 
