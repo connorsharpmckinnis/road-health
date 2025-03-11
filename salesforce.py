@@ -11,6 +11,7 @@ import logging
 import io
 from web_ui import WebApp, StatusUpdate
 import shutil
+import re
 
 
 dotenv.load_dotenv()
@@ -91,7 +92,7 @@ class WorkOrderCreator:
 
         print(f"Processed {len(self.all_metadata)} metadata files. Stored in self.all_metadata.")
     
-    async def work_order_engine(self):
+    async def work_order_engine(self, box_client, telemetry_objects:list=None):
         """
         Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.
         """
@@ -99,85 +100,66 @@ class WorkOrderCreator:
             logging.info("Starting Work Order Engine...")
             work_orders_created = 0
             
-            self.process_metadata_files()
+            for object in telemetry_objects:
+                print('Dot notation!')
+                print(f'{object.filename = }')
+                print(f'{object.filepath = }')
+                print(f'{object.timestamp = }')
+                print(f'{object.lat = }')
+                print(f'{object.lon = }')
+                print(f'{object.openai_file_id = }')
+                print(f'{object.box_file_id = }')
+                print(f'{object.box_file_url = }')
+                print(f'{object.analysis_results = }')
+                print(f'\n\n\nToDict() Edition!')
+                print(f'{object.to_dict() = }')
 
-            # Loop through all metadata items
-            for metadata_item in self.all_metadata:
-                ai_analysis = metadata_item.get("analysis_results", {})
-                pothole = ai_analysis.get("pothole", "no")
-                pothole_confidence = ai_analysis.get("pothole_confidence", 0)
-
-                logging.debug(f"pothole = {pothole} ({pothole_confidence})")
-
-                # Check if the metadata item meets the pothole criteria
+                analysis_results = object.analysis_results
+                pothole = analysis_results.get("pothole", "no")
+                pothole_confidence = analysis_results.get("pothole_confidence", 0)
                 if pothole == "yes" and pothole_confidence > 0.9:
-                    logging.info(f"Processing metadata item: {metadata_item.get('filename', 'Unknown')}")
+                    logging.info(f"Processing metadata item: {object.filename}")
+                    closest_location, closest_distance = self.get_closest_location(object.to_dict())
 
-                    # Get the closest location
-                    closest_location, closest_distance = self.get_closest_location(metadata_item)
-
-                    # Create the description package
                     description = self.create_description_package(
-                        metadata_item, closest_location, closest_distance
+                        object.to_dict(), closest_location, closest_distance
                     )
 
-                    # Create a Work Order
+                    box_url = object.box_file_url
                     work_order_subject = f"Pothole Detected - Confidence {pothole_confidence*100:.1f}%"
-                    work_order_id = self.create_work_order(metadata_item, work_order_subject, description, closest_location)
+                    work_order_id = self.create_work_order(object.to_dict(), work_order_subject, description, closest_location, box_file_url=box_url)
 
                     if work_order_id:
                         work_orders_created += 1
                         # Create a related Work Task
                         self.create_work_task(work_order_id)
 
-                        # Upload the image to the Files related list
-                        frame_path = metadata_item.get("filepath", None)
-                        logging.debug(f'Frame Path from engine perspective: {frame_path = }')
-                        # Updated file path handling in work_order_engine
-                        if frame_path:
-                            # First check if the file exists at its original location
-                            if not os.path.exists(frame_path):
-                                # If not found, adjust the path to the new folder
-                                frame_path = os.path.join("frames", os.path.basename(frame_path))
-                                logging.debug(f"Adjusted frame path to: {frame_path}")
+                        # Send a work order card to the UI with the image
+                        try:
+                            # First convert the image to a base64 string
+                            with open(object.filepath, "rb") as image_file:
+                                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
-                            # Check if the file now exists at the adjusted path
-                            if os.path.exists(frame_path):
-                                uploaded_image_id, uploaded_content_version_id = self.upload_file_to_salesforce(frame_path, work_order_id)
-                            else:
-                                logging.warning(f"File not found in either original or processed folder: {frame_path}")
+                            # Break ai_analysis into separate strings for structuring into the card
+                            ai_analysis_str = ""
+                            for key, value in analysis_results.items():
+                                ai_analysis_str += f"{key}: {value}\n"
 
-                            # Send a work order card to the UI with the image
-                            try:
-                                # First convert the image to a base64 string
-                                with open(frame_path, "rb") as image_file:
-                                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-
-                                # Break ai_analysis into separate strings for structuring into the card
-                                ai_analysis_str = ""
-                                for key, value in ai_analysis.items():
-                                    ai_analysis_str += f"{key}: {value}\n"
-
-                                await self.send_status_update_to_ui(
-                                    type="WorkOrder",
-                                    level="Info",
-                                    status = "Created",
-                                    message=f"Work Order {work_order_id} created.",
-                                    details = {
-                                        "video_file": metadata_item.get("filename", "Unknown"),
-                                        "work_order_id": work_order_id,
-                                        "image_base64": encoded_string,
-                                        "ai_analysis_str": ai_analysis_str,
-                                        "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
-                                    }
-                                )
-                            except Exception as e:
-                                logging.error(f"Error sending status update to UI: {e}")
-                                
-                        
-                            # Post the image to Chatter
-                            image_content_document_id = self.post_image_to_chatter(work_order_id, uploaded_content_version_id, "Pothole detected in the image.")
-                            logging.debug(f'image_content_document_id = {image_content_document_id}')
+                            await self.send_status_update_to_ui(
+                                type="WorkOrder",
+                                level="Info",
+                                status = "Created",
+                                message=f"Work Order {work_order_id} created.",
+                                details = {
+                                    "video_file": object.filename,
+                                    "work_order_id": work_order_id,
+                                    "image_base64": encoded_string,
+                                    "ai_analysis_str": ai_analysis_str,
+                                    "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
+                                }
+                            )
+                        except Exception as e:
+                            logging.error(f"Error sending status update to UI: {e}")
 
                     else:
                         logging.error("Failed to create Work Order. Skipping further actions for this metadata item.")
@@ -188,7 +170,7 @@ class WorkOrderCreator:
         except Exception as e:
             logging.error(f"An error occurred in the Work Order Engine: {e}")
             return work_orders_created
-    
+
     def get_nearby_street_segments(self, metadata_item): # Subprocess
         print(f"DEBUG: Running get_nearby_street_segments")
         # starts a get_street_segments() run to get records from SF where:
@@ -245,6 +227,9 @@ class WorkOrderCreator:
     
     def expand_coordinate_variance(self):
         self.coordinate_variance += 0.0005
+
+    def remove_timestamp(self, filename):
+        return re.sub(r'^\d{8}_\d{2}_\d{2}_', '', filename)
     
     def get_closest_location(self, metadata_item): # Main Process
         print(f"DEBUG: Running get_closest_location")
@@ -558,10 +543,5 @@ if __name__ == '__main__':
     security_token = os.getenv('SALESFORCE_SECURITY_TOKEN')
     client_id = os.getenv('SALESFORCE_CONSUMER_KEY')
     is_sandbox = True
-    
-    with open('all_frame_analyses.json', 'r') as file:
-        telem_items = json.load(file)
-    print(f"{username = }\n{password = }\n{security_token = }\n{client_id = }\n{telem_items = }")
 
-    w_o_creator = WorkOrderCreator(username=username, password=password, security_token=security_token, client_id=client_id, telemetry_items=telem_items, sandbox=is_sandbox)
-    w_o_creator.work_order_engine()
+    w_o_creator = WorkOrderCreator(username=username, password=password, security_token=security_token, client_id=client_id, sandbox=is_sandbox)

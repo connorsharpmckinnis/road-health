@@ -202,6 +202,7 @@ class Box():
                 )
         
                 logger.info(f"File '{new_file_name}' uploaded successfully.")
+                print(f'from upload_small_file_to_folder: {uploaded_file = }')
                 return uploaded_file
         except Exception as e:
             logger.error(f"Failed to upload file '{file_path}': {e}")
@@ -285,52 +286,33 @@ class Box():
                     
         return downloaded_files
     
-    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499', source_normals_folder='frames', source_wos_folder='work_order_frames'):
-        logger.info(f"Saving frames to long-term storage...")
+    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None):
+        telemetry_objects = telemetry_objects or []
 
-        # Get all the image files and json in the local 'frames' folder
-        frames_folder_contents = os.listdir(source_normals_folder)
-
+        #upload images referenced by the telem objects to Box
+        #update the telem objects with their respective Box file ids
+        #Return list of newly box-id-added telem objects
+        #Maybe also update it with the reference url at the same time, since the telem object has a box_file_url attribute now
+        #Later we'll go through the telem objects and update the work order objects with the box file ids
+        logger.info(f"Moving videos from the active folder to the archive...")
         # Get the videos from Box's Videos folder
         box_videos_folder_contents = self.list_items_in_folder(self.videos_folder_box_id)
         box_video_ids = [item['id'] for item in box_videos_folder_contents]
-
-        # Get all the image files in the local 'work_order_frames' folder
-        work_order_frames_folder_contents = os.listdir(source_wos_folder)
-
         # Move the videos to the 'Archived Videos' folder
         self.move_files(box_video_ids, self.box_archived_videos_folder_id)
+
+
+        logger.info(f"Saving frames to long-term storage...")
 
         # Generate a timestamp for unique filenames
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H_%M")
 
-        # Prepare file paths
-        frames_folder_contents = os.listdir(source_normals_folder)
-        file_paths = [os.path.join(source_normals_folder, file) for file in frames_folder_contents]
-
         # Use the new multithreaded upload function
-        uploaded_file_objects = await self.upload_files_to_box_folder(file_paths, destination_folder_id, prefix_timestamp=timestamp)
-        
-        # Dictionary to track uploaded file IDs
-        uploaded_wo_files = {}
-
-        # Upload the work_order_frames files to Box's 'Images / Work Order Images' folder
-        wo_file_paths = [os.path.join(source_wos_folder, file) for file in work_order_frames_folder_contents]
-        uploaded_wo_file_objects = await self.upload_files_to_box_folder(wo_file_paths, self.box_work_order_images_folder_id, prefix_timestamp=timestamp)
-        print(f'{uploaded_wo_file_objects = }')
-        if uploaded_wo_file_objects:
-            for file_obj in uploaded_wo_file_objects:
-                if file_obj.entries and len(file_obj.entries) > 0:
-                    file_entry = file_obj.entries[0]  # Extract the first entry
-                    original_filename = file_entry.name.split("_", 2)[-1]  # Remove timestamp
-                    uploaded_wo_files[original_filename] = file_entry.id  # Store filename -> file_id
-                else:
-                    logger.warning(f"No valid file entries found in response: {file_obj}")
-        print(f'{uploaded_wo_files = }')
+        updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
 
         logger.info("Long-term storage process completed.")
 
-        return uploaded_wo_files
+        return updated_telemetry_objects
         
 
     def delete_file_by_id(self, file_id):
@@ -466,7 +448,7 @@ class Box():
         except Exception as e:
             logger.error(f"Failed to move files: {e}")
 
-    async def upload_files_to_box_folder(self, file_paths, destination_folder_id, prefix_timestamp=None, max_workers=5):
+    async def upload_files_to_box_folder(self, destination_folder_id, prefix_timestamp=None, max_workers=5, file_paths=None, telemetry_objects: list=None):
         """
         Uploads multiple small files (<50MB each) to a specified Box folder concurrently.
 
@@ -476,23 +458,43 @@ class Box():
             prefix_timestamp (str, optional): A timestamp prefix for filenames to avoid conflicts.
             max_workers (int, optional): The maximum number of threads to use for concurrent uploads.
         """
-        logger.info(f"Uploading {len(file_paths)} files to Box folder ID '{destination_folder_id}' using multithreading...")
-        uploaded_files = []
+        updated_telemetry_objects = []
+        logger.info(f"Uploading {len(telemetry_objects)} files to Box folder ID '{destination_folder_id}' using multithreading...")
+        
+        async def upload_file(telem_obj):
+            """Uploads a file and updates its Box file ID."""
+            try:
+                file_path = telem_obj.filepath
+                new_file_name = f"{prefix_timestamp}_{os.path.basename(file_path)}" if prefix_timestamp else os.path.basename(file_path)
 
-        async def upload_file(file_path):
-            """Helper function to upload a single file asynchronously."""
-            new_file_name = f"{prefix_timestamp}_{os.path.basename(file_path)}" if prefix_timestamp else os.path.basename(file_path)
-            file_obj = await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
-            if file_obj:
-                uploaded_files.append(file_obj)
+                # Upload the file to Box
+                fake_file_obj = await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
+                real_file_obj = fake_file_obj.entries[0]
+                if real_file_obj:
+                    box_file_id = real_file_obj.id
+                    
+                    box_file_url = self.get_direct_shared_link(box_file_id)  # Optional: Store Box direct URL
+                    print(f'{box_file_id = }')
+                    print(f'{box_file_url = }')
+                    telem_obj.add_box_file_id(box_file_id)
+                    telem_obj.add_box_file_url(box_file_url)
 
-        # Create upload tasks for each file
-        tasks = [upload_file(file_path) for file_path in file_paths]
+                    print(f'{telem_obj.to_dict() = }')
+                    
+                    logger.info(f"Updated TelemetryObject: {telem_obj} -> \n{telem_obj.to_dict()}")
+
+                    updated_telemetry_objects.append(telem_obj)
+            except Exception as e:
+                logger.error(f"Failed to upload file '{telem_obj.filepath}': {e}")
+
+        # Create upload tasks for each telemetry object
+        tasks = [upload_file(telem_obj) for telem_obj in telemetry_objects]
 
         # Execute the tasks concurrently
         await asyncio.gather(*tasks)
+
         logger.info("All files uploaded successfully.")
-        return uploaded_files
+        return updated_telemetry_objects
 
 async def main():
     # Initialize the Box client
