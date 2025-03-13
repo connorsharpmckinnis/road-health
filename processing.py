@@ -824,19 +824,24 @@ class TelemetryObject:
 
 if __name__ == "__main__":
     # Example video file path
-    video_file = "GX010007.mp4"
+    video_file = "GX010004.mp4"
 
     # Initialize the Processor
     processor = Processor()
 
     # Execute the pipeline
     start_time = time.time()
-    telemetry_objects = processor.process_video_pipeline(
-        video_path=video_file, 
-        frame_rate=1, 
-        max_frames=15,
-        batch_size=5
+    
+    # Run the async process_video_pipeline function
+    telemetry_objects = asyncio.run(
+        processor.process_video_pipeline(
+            video_path=video_file, 
+            frame_rate=1, 
+            max_frames=15,
+            batch_size=5
+        )
     )
+    
     end_time = time.time()
 
     # Print execution time
