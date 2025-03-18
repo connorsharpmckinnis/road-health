@@ -9,6 +9,7 @@ import json
 from simple_salesforce import Salesforce
 from math import radians, sin, cos, sqrt, atan2
 from PIL import Image
+import exifread
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -33,7 +34,7 @@ class Processor():
     TEMP_BIN_FILE = "temp_metadata.bin"
     TEMP_GPX_FILE = "temp_metadata.gpx"
 
-    def __init__(self, web_app: WebApp=None):
+    def __init__(self, web_app: WebApp=None, mode="video"):
         self.ensure_ffmpeg_installed()
         self.web_app=web_app
         self.ai = AI(os.getenv("OPENAI_API_KEY"), web_app=self.web_app)
@@ -52,6 +53,7 @@ class Processor():
             "AI Analysis": "Pending",
             "Finalization": "Pending"
         }
+        self.mode = mode
 
 
     async def send_status_update_to_ui(self, source, type, level, status, message, details={}):
@@ -89,7 +91,7 @@ class Processor():
         try:
             # Extract binary metadata
             subprocess.run(
-                [Processor.FFMPEG_PATH, "-y", "-i", mp4_file_path, "-codec", "copy", "-map", "0:3", "-f", "rawvideo", Processor.TEMP_BIN_FILE],
+                [Processor.FFMPEG_PATH, "-y", "-i", mp4_file_path, "-codec", "copy", "-map", "0:2", "-f", "rawvideo", Processor.TEMP_BIN_FILE],
                 check=True
             )
             logger.info(f"Extracted binary metadata to {Processor.TEMP_BIN_FILE}.")
@@ -98,6 +100,11 @@ class Processor():
             # Generate GPX file
             gpx_prefix = os.path.splitext(Processor.TEMP_GPX_FILE)[0]
             logger.info(f"GPX prefix: {gpx_prefix}")
+            gopro2gpx_path = shutil.which("gopro2gpx")
+
+            if not gopro2gpx_path:
+                raise FileNotFoundError("gopro2gpx not found. Ensure the virtual environment is activated!")
+
             result = subprocess.run(
                 ["gopro2gpx", "-s", "-vv", mp4_file_path, gpx_prefix]
             )
@@ -215,6 +222,68 @@ class Processor():
             logger.error(f"Failed to extract base timestamp from GPX file: {e}")
             raise
 
+    def extract_all_frames_ffmpeg(self, video_path, output_folder="frames", crop_top=0):
+        """
+        Extracts **all** frames from a video using FFmpeg.
+        
+        Args:
+            video_path (str): Path to the video file.
+            output_folder (str): Directory to save extracted frames.
+            crop_top (int): Number of pixels to crop from the top.
+        
+        Returns:
+            list[tuple]: List of tuples containing frame file paths and timestamps.
+        """
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+        # Get video metadata using FFprobe
+        command = [
+            self.FFPROBE_PATH,
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height,nb_frames,avg_frame_rate",
+            "-of", "json",
+            video_path
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        metadata = json.loads(result.stdout)
+
+        # Get video width and height
+        video_width = int(metadata["streams"][0]["width"])
+        video_height = int(metadata["streams"][0]["height"])
+
+        # Ensure crop height is valid
+        crop_height = video_height - crop_top
+        if crop_height <= 0:
+            raise ValueError(f"Invalid crop height: {crop_height}. Ensure crop_top is not greater than video height.")
+
+        # Extract **all** frames using FFmpeg
+        ffmpeg_command = [
+            self.FFMPEG_PATH,
+            "-i", video_path,  # Input video
+            "-vsync", "0",  # Extract every frame
+            "-frame_pts", "1",  # Preserve frame order
+            "-vf", f"crop={video_width}:{crop_height}:0:{crop_top}",  # Crop if needed
+            "-q:v", "2",  # High-quality frames
+            os.path.join(output_folder, "frame_%04d.jpg")  # Save frames sequentially
+        ]
+
+        try:
+            subprocess.run(ffmpeg_command, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"FFmpeg failed with error: {e}")
+            raise RuntimeError("Failed to extract frames using FFmpeg.")
+
+        # Generate frame file paths
+        extracted_frames = [
+            (os.path.join(output_folder, f"frame_{i+1:04d}.jpg"), i)  # No timestamps, just frame index
+            for i in range(len(os.listdir(output_folder)))
+        ]
+
+        logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
+        return extracted_frames
+    
     def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=713):
         """
         Extract frames at specific intervals from a video using FFmpeg, respecting max_frames.
@@ -607,7 +676,7 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    async def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6):
+    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="video"):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -622,6 +691,7 @@ class Processor():
             list: Fully processed telemetry objects with analysis results.
         """
         
+        self.mode = mode
         log_file = "pipeline_timing_log.txt"
         file_name = video_path
         # update the video path to pull from unprocessed_videos/
@@ -648,19 +718,6 @@ class Processor():
             log_timing("Step 0: Save pipeline settings", stage_start)
 
             # Step 1: Validate the video file
-            # 📣 Send video card status update with metadata
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="In Progress",
-                message=f"Processing {file_name}.",
-                details={
-                    "video_file": file_name,
-                    "stage": "Metadata Extraction",
-                    "progress": "20%"
-                }
-            )
 
             stage_start = time.time()
             logger.info("Step 1: Validate the video file")
@@ -677,28 +734,21 @@ class Processor():
             self.update_stage("Frame Extraction", "In Progress")
 
             # Step 3: Extract frames from the video
-            # 📣 Send video card status update with frame extraction
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="In Progress",
-                message=f"Processing {file_name}.",
-                details={
-                    "video_file": file_name,
-                    "stage": "Frame Extraction",
-                    "progress": "30%"
-                }
-            )
             
             stage_start = time.time()
             logger.info("Step 3: Extract frames from the video")
-            
-            extracted_frames = self.extract_frames_ffmpeg(
-                video_path=video_path,
-                frame_rate=frame_rate,
-                max_frames=max_frames
-            )
+            if self.mode == "timelapse":
+                extracted_frames = self.extract_all_frames_ffmpeg(
+                    video_path=video_path,
+                    output_folder="frames",
+                    crop_top=713  # Crop top for GoPro videos
+                )
+            elif self.mode == "video":
+                extracted_frames = self.extract_frames_ffmpeg(
+                    video_path=video_path,
+                    frame_rate=frame_rate,
+                    max_frames=max_frames
+                )
             log_timing("Step 3: Extract frames from the video", stage_start)
 
             self.update_stage("Frame Extraction", "Complete")
@@ -721,19 +771,6 @@ class Processor():
             self.update_stage("AI Analysis", "In Progress")
 
             # Step 6: Perform AI analysis on telemetry objects
-            # 📣 Send video card status update with analyzing
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="In Progress",
-                message=f"Processing {file_name}.",
-                details={
-                    "video_file": file_name,
-                    "stage": "Image Analysis",
-                    "progress": "80%"
-                }
-            )
 
             logger.info("Step 6: Perform AI analysis on telemetry objects")
             telemetry_objects, file_upload_start, ai_analysis_start = self.get_ai_analyses(telemetry_objects, batch_size=batch_size)
@@ -763,20 +800,6 @@ class Processor():
             logger.info(f"Analyzed {len(telemetry_objects)} frames, covering {self.minutes_analyzed} minutes of footage.")
             with open(log_file, "a") as log:
                 log.write(f"Total pipeline duration: {total_duration:.2f} seconds\n")
-
-            # 📣 Send video card status update with complete
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="Complete",
-                message=f"Processed {file_name}.",
-                details={
-                    "video_file": file_name,
-                    "stage": "Complete",
-                    "progress": "100%"
-                }
-            )
 
             self.update_stage("Finalization", "Complete")
             
@@ -824,23 +847,19 @@ class TelemetryObject:
 
 if __name__ == "__main__":
     # Example video file path
-    video_file = "GX010004.mp4"
+    video_file = "GX010224.MP4"
+    photo_folder = "unprocessed_photos"
 
     # Initialize the Processor
     processor = Processor()
+    processor.mode = "timelapse"
 
     # Execute the pipeline
     start_time = time.time()
     
-    # Run the async process_video_pipeline function
-    telemetry_objects = asyncio.run(
-        processor.process_video_pipeline(
-            video_path=video_file, 
-            frame_rate=1, 
-            max_frames=15,
-            batch_size=5
-        )
-    )
+    telem_objs = processor.process_video_pipeline(video_path=video_file, frame_rate=1, max_frames=10, batch_size=3)
+    print(f'Telemetry objects: {telem_objs}')
+ 
     
     end_time = time.time()
 

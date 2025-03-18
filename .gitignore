@@ -182,3 +182,6 @@ pipeline_timing_log.txt
 /test_frames_folder
 .bin
 .log
+/unprocessed_photos
+.gpx
+.kml

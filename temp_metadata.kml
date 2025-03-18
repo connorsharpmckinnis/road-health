@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <kml xmlns="http://www.opengis.net/kml/2.2"> <Document>
+    <name>Demo</name>
+    <description>Description Demo</description>
+    <Style id="yellowLineGreenPoly">
+        <LineStyle>
+            <color>FF1400BE</color>
+            <width>4</width>
+            </LineStyle>
+        <PolyStyle>
+            <color>7f00ff00</color>
+        </PolyStyle>
+    </Style>
+    <Placemark>
+        <name>Track Title</name>
+        <description>Track Description</description>
+        <styleUrl>#yellowLineGreenPoly</styleUrl>
+        <LineString>
+            <extrude>1</extrude>
+            <tessellate>1</tessellate>
+            <altitudeMode>absolute</altitudeMode>
+            <coordinates>
+                -78.7798126,35.7897521,166.819
+-78.77974,35.7896632,164.272
+-78.7797061,35.7895806,166.189
+-78.7797122,35.7894935,167.196
+-78.7797574,35.7894144,166.476
+-78.7798644,35.7894257,169.947
+-78.7799844,35.7894408,167.79
+-78.7800788,35.7894472,166.24
+-78.779949,35.7894357,170.861
+-78.779836,35.7894223,168.83
+-78.7797375,35.7894153,163.541
+-78.7796944,35.7894951,161.868
+-78.7796698,35.7895888,160.582
+-78.7797362,35.789658,158.94
+-78.7797523,35.7896811,159.442
+            </coordinates>
+        </LineString>
+    </Placemark>
+    </Document>
+    </kml>
+    
