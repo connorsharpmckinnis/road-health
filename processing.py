@@ -20,6 +20,7 @@ from bisect import bisect_left
 from web_ui import WebApp, StatusUpdate
 import asyncio
 import shutil
+import geojson
 
 
 
@@ -814,8 +815,8 @@ class TelemetryObject:
         self.filename = filename
         self.filepath = filepath
         self.timestamp = timestamp
-        self.lat = lat
-        self.lon = lon
+        self.lat = lat # y
+        self.lon = lon # x
         self.openai_file_id: str = None
         self.box_file_id: str = None
         self.box_file_url: str = None
@@ -845,9 +846,33 @@ class TelemetryObject:
     def add_box_file_url(self, url):
         self.box_file_url = url
 
+    def to_geojson(self):
+        """Convert telemetry object to a GeoJSON Feature."""
+        if self.lon is None or self.lat is None:
+            raise ValueError(f"Telemetry object {self.filename} is missing coordinates.")
+
+        geojson_object = None
+        geom = geojson.Point((self.lon, self.lat))
+        props = {
+            "filename": self.filename,
+            "filepath": self.filepath,
+            "timestamp": self.timestamp,
+            "openai_file_id": self.openai_file_id,
+            "box_file_id": self.box_file_id,
+            "box_file_url": self.box_file_url,
+            "ai_analysis": self.analysis_results,
+        }
+
+        geojson_object = geojson.Feature(
+            geometry=geom,
+            properties=props
+        )
+
+        return geojson_object
+
 if __name__ == "__main__":
     # Example video file path
-    video_file = "GX010224.MP4"
+    video_file = "GX010229.MP4"
     photo_folder = "unprocessed_photos"
 
     # Initialize the Processor

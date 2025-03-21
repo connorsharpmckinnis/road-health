@@ -101,18 +101,6 @@ class WorkOrderCreator:
             work_orders_created = 0
             
             for object in telemetry_objects:
-                print('Dot notation!')
-                print(f'{object.filename = }')
-                print(f'{object.filepath = }')
-                print(f'{object.timestamp = }')
-                print(f'{object.lat = }')
-                print(f'{object.lon = }')
-                print(f'{object.openai_file_id = }')
-                print(f'{object.box_file_id = }')
-                print(f'{object.box_file_url = }')
-                print(f'{object.analysis_results = }')
-                print(f'\n\n\nToDict() Edition!')
-                print(f'{object.to_dict() = }')
 
                 analysis_results = object.analysis_results
                 pothole = analysis_results.get("pothole", "no")
@@ -215,11 +203,8 @@ class WorkOrderCreator:
         lon_max = meta_lon + self.coordinate_variance
         conditions = f"WHERE (RecordTypeId = '0124u000000ciJTAAY' OR RecordTypeId = '0124u000000ciJSAAY') AND Geolocation__latitude__s >= {lat_min} AND Geolocation__latitude__s <= {lat_max} AND Geolocation__longitude__s >= {lon_min} AND Geolocation__longitude__s <= {lon_max}"
 
-        print(f"DEBUG: {conditions = }")
         
-        print(f"DEBUG: Querying Salesforce...")
         results = self.sf.query(f"SELECT Id, Name, Geolocation__latitude__s, Geolocation__longitude__s FROM Location__c {conditions}")
-        print(f"DEBUG: {results = }")
         results = results['records']
         if len(results) == 0:
             results = None
@@ -232,20 +217,14 @@ class WorkOrderCreator:
         return re.sub(r'^\d{8}_\d{2}_\d{2}_', '', filename)
     
     def get_closest_location(self, metadata_item): # Main Process
-        print(f"DEBUG: Running get_closest_location")
         locations = self.get_nearby_street_segments(metadata_item)
-        print(f"DEBUG: {len(locations) = }")
         closest_location = None
         min_distance = float('inf')
         for loc in locations:
-            print(f"DEBUG: {loc['Name'] = }")
             distance = self.calculate_distance(metadata_item, loc)
             if distance < min_distance:
                 min_distance = distance
                 closest_location = loc
-
-        print(f"DEBUG: {closest_location = }")
-        print(f"DEBUG: {min_distance = }")
 
         return closest_location, min_distance
             
@@ -266,10 +245,6 @@ class WorkOrderCreator:
             lon = float(lon_str)
 
             location_id_string = location_id.get('Id')
-
-            print(f'DEBUG: FROM CREATE_WORK_ORDER: {metadata_item = }')
-            print(f'DEBUG: FROM CREATE_WORK_ORDER: {lat = }, {lon = }')
-            print(f'DEBUG: {location_id = }')
 
             work_order = {
                 'sm1a__Description__c': subject,

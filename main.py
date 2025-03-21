@@ -188,7 +188,6 @@ class App():
 
         #ASYNCIFY BOX ARCHIVE IN BOX.PY
         telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects)
-        print(f'box_wo_files from main.py: {telemetry_objects = }')
 
         work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
         logger.info(f"Work Orders created: {work_orders_created}")
