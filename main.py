@@ -173,7 +173,7 @@ class App():
             logger.info(self.processing_status['file']["status"])
 
             #ASYNCIFY VIDEO PROCESSING IN PROCESSING.PY
-            telemetry_objects = await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5)
+            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode="timelapse")
             self.processed_videos.add(file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
@@ -188,7 +188,6 @@ class App():
 
         #ASYNCIFY BOX ARCHIVE IN BOX.PY
         telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects)
-        print(f'box_wo_files from main.py: {telemetry_objects = }')
 
         work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
         logger.info(f"Work Orders created: {work_orders_created}")
