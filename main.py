@@ -21,7 +21,7 @@ dotenv.load_dotenv()
 flask_app = Flask(__name__)
 
 class App():
-    def __init__(self, web_app: WebApp):
+    def __init__(self, web_app: WebApp=None):
         """Initialize App with reference to WebApp."""
         self.web_app = web_app  # ✅ Store WebApp instance
         self.status = "Monitoring Inactive"
