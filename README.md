@@ -116,6 +116,6 @@ GPS-connected cameras create photo timelapses with 1 frame captured for every X 
 
 ### ✉️ Contact / Contributing
 
-This project is maintained by [Town of Cary, NC]. For feedback, ideas, or partnership discussions, reach out to Connor McKinnis (connor.mckinnis@carync.gov). I know very little about what I'm doing, so feedback in simple terms is greatly appreciated. 
+This project is maintained by Connor McKinnis at the Town of Cary, NC, USA. For feedback, ideas, or partnership discussions, reach out to Connor McKinnis (connor.mckinnis@carync.gov). I know very little about what I'm doing, so feedback in simple terms is greatly appreciated. 
 
 (Internal use only at this stage. Contribution guidelines and license will be added post-pilot.)
