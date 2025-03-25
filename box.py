@@ -1,7 +1,7 @@
 #box_watcher.py
 import requests
 from logging_config import logger
-from box_sdk_gen import BoxClient, BoxDeveloperTokenAuth, BoxCCGAuth, CCGConfig, UploadFileAttributes, UploadFileAttributesParentField, CreateCollaborationItem, CreateCollaborationItemTypeField, CreateCollaborationAccessibleBy, CreateCollaborationAccessibleByTypeField, CreateCollaborationRole, AddShareLinkToFileSharedLink, AddShareLinkToFileSharedLinkAccessField
+from box_sdk_gen import BoxClient, BoxDeveloperTokenAuth, BoxCCGAuth, CCGConfig, UploadFileAttributes, UploadFileAttributesParentField, CreateCollaborationItem, CreateCollaborationItemTypeField, CreateCollaborationAccessibleBy, CreateCollaborationAccessibleByTypeField, CreateCollaborationRole, AddShareLinkToFileSharedLink, AddShareLinkToFileSharedLinkAccessField, CreateFileMetadataByIdScope, GetMetadataTemplateScope
 from boxsdk.config import API
 import os
 from dotenv import load_dotenv
@@ -42,6 +42,7 @@ class Box():
         self.box_images_folder_id = box_images_folder_id
         self.box_work_order_images_folder_id = box_work_order_images_folder_id
         self.box_road_health_folder_id = box_road_health_folder_id
+        self.box_metadata_template_key = "folderWatcherMetadata"
 
         self.authenticate()
         print(f"{self.client = }")     
@@ -513,6 +514,19 @@ class Box():
                 # Upload the file to Box
                 fake_file_obj = await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
                 real_file_obj = fake_file_obj.entries[0]
+
+                # Build metadata dict from telem_obj
+                telem_metadata = telem_obj.to_metadata_dict()  # You define this method on your TelemetryObject
+
+                # Attach metadata to file
+                await asyncio.to_thread(
+                    self.client.file_metadata.create_file_metadata_by_id,
+                    real_file_obj.id,
+                    CreateFileMetadataByIdScope.ENTERPRISE,
+                    self.box_metadata_template_key,
+                    telem_metadata
+                )
+
                 if real_file_obj:
                     box_file_id = real_file_obj.id
                     
@@ -528,7 +542,6 @@ class Box():
             except Exception as e:
                 logger.error(f"Failed to upload file '{telem_obj.filepath}': {e}")
 
-        # Create upload tasks for each telemetry object
         tasks = [upload_file(telem_obj) for telem_obj in telemetry_objects]
 
         # Execute the tasks concurrently
@@ -549,13 +562,36 @@ async def main():
     road_health_items = box_client.list_items_in_folder(box_client.box_road_health_folder_id)
     print(f'{len(road_health_items) = }')
 
-    test_files = os.listdir('test_frames_folder')
-    print(f'{test_files = }')
+    '''
+    client.metadata_templates.get_metadata_template(
+    GetMetadataTemplateScope.ENTERPRISE, template.template_key
+    )
+    '''
+    '''all_templates = box_client.client.metadata_templates.get_enterprise_metadata_templates()
+    print(all_templates)'''
 
-    # Run the async function properly
-    uploaded_files = await box_client.save_frames_to_long_term_storage(source_wos_folder='test_frames_folder')
+    test_metadata_key = 'folderWatcherMetadata'
+    test_metadata = {
+        "filename": "TestFile.mp4", 
+        "timestamp": "2025/01/01T4:21:09",
+        "lat1": "4", 
+        "lon1": "10",
+        "pothole": ["Yes"], 
+        "potholeConfidence": "1",
+        "alligatorCracking": ["No"], 
+        "alligatorCrackingConfidence": "0.75",
+        "lineCracking": ["Yes"], 
+        "lineCrackingConfidence": "0.9",
+        "debris": ["Yes"], 
+        "summary": "This is a summary of a pothole, found on the top-right portion of the frame in question. Yada yada yada.",
+        "roadHealthIndex": "52"
+    }
 
-    print(f"Uploaded files: {uploaded_files}")
+    test_file_id = '1797090814848'
+    #box_client.client.file_metadata.delete_file_metadata_by_id(test_file_id, CreateFileMetadataByIdScope.ENTERPRISE, test_metadata_key)
+    metadataFull = box_client.client.file_metadata.create_file_metadata_by_id(test_file_id, CreateFileMetadataByIdScope.ENTERPRISE, test_metadata_key, test_metadata)
+    #metadataFull = box_client.client.metadata_templates.get_metadata_template(GetMetadataTemplateScope.ENTERPRISE, test_metadata_key)
+    print(f'{metadataFull = }')
 
 # Run the async main function
 if __name__ == '__main__':
