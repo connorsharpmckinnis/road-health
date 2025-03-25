@@ -833,6 +833,23 @@ class TelemetryObject:
                 'box_file_url': self.box_file_url,
                 'analysis_results': self.analysis_results
                 }
+    
+    def to_metadata_dict(self):
+        return {
+            "filename": self.filename,
+            "timestamp": f'{self.timestamp}',
+            "lat1": f'{self.lat}',
+            "lon1": f'{self.lon}',
+            "pothole": [self.analysis_results['pothole'].capitalize()],  # must be a list
+            "potholeConfidence": str(self.analysis_results['pothole_confidence']),
+            "alligatorCracking": [self.analysis_results['alligator_cracking'].capitalize()],
+            "alligatorCrackingConfidence": str(self.analysis_results['alligator_cracking_confidence']),
+            "lineCracking": [self.analysis_results['line_cracking'].capitalize()],
+            "lineCrackingConfidence": str(self.analysis_results['line_cracking_confidence']),
+            "debris": [self.analysis_results['debris'].capitalize()],
+            "summary": self.analysis_results['summary'],
+            "roadHealthIndex": str(self.analysis_results['road_health_index'])
+        }
 
     def add_openai_file_id(self, file_id):
         self.openai_file_id = file_id
