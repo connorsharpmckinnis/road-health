@@ -317,7 +317,7 @@ class Box():
         
         # Define the GeoJSON file path (local save location)
         geojson_filename = f"telemetry_{timestamp}.geojson"
-        geojson_filepath = os.path.join(self.unprocessed_videos_folder, geojson_filename)
+        geojson_filepath = os.path.join('frames', geojson_filename)
 
         # Debug: Check if filepath is valid
         print(f"Saving GeoJSON file to: {geojson_filepath}")

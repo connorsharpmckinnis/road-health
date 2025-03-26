@@ -172,8 +172,7 @@ class App():
             self.processing_status['file'] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
             logger.info(self.processing_status['file']["status"])
 
-            #ASYNCIFY VIDEO PROCESSING IN PROCESSING.PY
-            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode="timelapse")
+            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode="video")
             self.processed_videos.add(file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
