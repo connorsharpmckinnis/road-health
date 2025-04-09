@@ -1,0 +1,1090 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786128,
+          35.822472
+        ]
+      },
+      "properties": {
+        "filename": "frame_0001.jpg",
+        "filepath": "frames/frame_0001.jpg",
+        "timestamp": "2024-05-20T20:18:00Z",
+        "openai_file_id": "file-WbfWstGfFqMkrjas9aTxgF",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0001.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.1,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.1,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.1,
+          "debris": "no",
+          "debris_confidence": 0.1,
+          "summary": "The road is mostly obscured by shadows with no visible distress. Overall condition appears acceptable.",
+          "road_health_index": 90
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786133,
+          35.822471
+        ]
+      },
+      "properties": {
+        "filename": "frame_0002.jpg",
+        "filepath": "frames/frame_0002.jpg",
+        "timestamp": "2024-05-20T20:18:02Z",
+        "openai_file_id": "file-W8RfoiUwnrpSi2wzPt7CeA",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0002.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.1,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.1,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.1,
+          "debris": "no",
+          "debris_confidence": 0.1,
+          "summary": "The road is mostly obscured by shadows with no visible distress. Overall condition appears acceptable.",
+          "road_health_index": 90
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786134,
+          35.82247
+        ]
+      },
+      "properties": {
+        "filename": "frame_0003.jpg",
+        "filepath": "frames/frame_0003.jpg",
+        "timestamp": "2024-05-20T20:18:04Z",
+        "openai_file_id": "file-766bay3yG1R4etcVhPPinm",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0003.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.1,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.1,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.1,
+          "debris": "no",
+          "debris_confidence": 0.1,
+          "summary": "The road is mostly obscured by shadows with no visible distress. Overall condition appears acceptable.",
+          "road_health_index": 90
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786129,
+          35.822463
+        ]
+      },
+      "properties": {
+        "filename": "frame_0004.jpg",
+        "filepath": "frames/frame_0004.jpg",
+        "timestamp": "2024-05-20T20:18:06Z",
+        "openai_file_id": "file-CraXimxK6wEZPWdk8RaMQ4",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0004.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.1,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.1,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.1,
+          "debris": "no",
+          "debris_confidence": 0.1,
+          "summary": "The road is mostly obscured by shadows with no visible distress. Overall condition appears acceptable.",
+          "road_health_index": 90
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786129,
+          35.822468
+        ]
+      },
+      "properties": {
+        "filename": "frame_0005.jpg",
+        "filepath": "frames/frame_0005.jpg",
+        "timestamp": "2024-05-20T20:18:08Z",
+        "openai_file_id": "file-PtMw1hFAMaibKMmUa1NTFq",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0005.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.1,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.1,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.1,
+          "debris": "no",
+          "debris_confidence": 0.1,
+          "summary": "The road is mostly obscured by shadows with no visible distress. Overall condition appears acceptable.",
+          "road_health_index": 90
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786148,
+          35.822476
+        ]
+      },
+      "properties": {
+        "filename": "frame_0006.jpg",
+        "filepath": "frames/frame_0006.jpg",
+        "timestamp": "2024-05-20T20:18:10Z",
+        "openai_file_id": "file-QnFgG8NyYBAd8HkR6RBYqf",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0006.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.1,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.1,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.1,
+          "debris": "no",
+          "debris_confidence": 0.1,
+          "summary": "The road is mostly obscured by shadows with no visible distress. Overall condition appears acceptable.",
+          "road_health_index": 90
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786137,
+          35.822469
+        ]
+      },
+      "properties": {
+        "filename": "frame_0007.jpg",
+        "filepath": "frames/frame_0007.jpg",
+        "timestamp": "2024-05-20T20:18:12Z",
+        "openai_file_id": "file-D8WnQtaiZuaSWd1fwssPEf",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0007.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.95,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.91,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The path shows some minor cracks but no significant distress issues. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786179,
+          35.822462
+        ]
+      },
+      "properties": {
+        "filename": "frame_0008.jpg",
+        "filepath": "frames/frame_0008.jpg",
+        "timestamp": "2024-05-20T20:18:14Z",
+        "openai_file_id": "file-X86RSVZphfwQPfZuekds8X",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0008.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.93,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.89,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.8,
+          "debris": "no",
+          "debris_confidence": 0.91,
+          "summary": "The surface remains in fair condition without any major distress noted. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786245,
+          35.822475
+        ]
+      },
+      "properties": {
+        "filename": "frame_0009.jpg",
+        "filepath": "frames/frame_0009.jpg",
+        "timestamp": "2024-05-20T20:18:16Z",
+        "openai_file_id": "file-UcozztNioeaFVao1qtaQXZ",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0009.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.95,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.82,
+          "debris": "no",
+          "debris_confidence": 0.92,
+          "summary": "No significant issues are visible; the path is in a stable state. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786269,
+          35.822471
+        ]
+      },
+      "properties": {
+        "filename": "frame_0010.jpg",
+        "filepath": "frames/frame_0010.jpg",
+        "timestamp": "2024-05-20T20:18:18Z",
+        "openai_file_id": "file-9gTcDDZyE4hbvMjiZGWTRJ",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0010.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.94,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.88,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.81,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The path continues to show no severe distress, maintaining a fair state. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786288,
+          35.822472
+        ]
+      },
+      "properties": {
+        "filename": "frame_0011.jpg",
+        "filepath": "frames/frame_0011.jpg",
+        "timestamp": "2024-05-20T20:18:20Z",
+        "openai_file_id": "file-4i3HVNLogfRPd9rUBtrBha",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0011.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.92,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.87,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.83,
+          "debris": "no",
+          "debris_confidence": 0.89,
+          "summary": "The surface appears consistent with earlier frames, lacking significant damage. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786316,
+          35.822488
+        ]
+      },
+      "properties": {
+        "filename": "frame_0012.jpg",
+        "filepath": "frames/frame_0012.jpg",
+        "timestamp": "2024-05-20T20:18:22Z",
+        "openai_file_id": "file-AB7YSjRof9DWiDpzX2TwJN",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0012.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.91,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.86,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.8,
+          "debris": "no",
+          "debris_confidence": 0.88,
+          "summary": "The path shows the same fair condition with no notable distress. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786348,
+          35.822494
+        ]
+      },
+      "properties": {
+        "filename": "frame_0013.jpg",
+        "filepath": "frames/frame_0013.jpg",
+        "timestamp": "2024-05-20T20:18:24Z",
+        "openai_file_id": "file-1aknHCHhxvtbJ57fC5yu4S",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0013.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The road surface is in good condition with no visible structural issues or debris. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786429,
+          35.822523
+        ]
+      },
+      "properties": {
+        "filename": "frame_0014.jpg",
+        "filepath": "frames/frame_0014.jpg",
+        "timestamp": "2024-05-20T20:18:26Z",
+        "openai_file_id": "file-F5EH9G4JaXsgmwYt3k55SX",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0014.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The road surface remains in good condition with no significant defects observed. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786496,
+          35.822555
+        ]
+      },
+      "properties": {
+        "filename": "frame_0015.jpg",
+        "filepath": "frames/frame_0015.jpg",
+        "timestamp": "2024-05-20T20:18:28Z",
+        "openai_file_id": "file-8h7yiCwmBWQMr12rQ1oDoA",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0015.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The pavement shows no significant distresses or debris, indicating a stable condition. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786521,
+          35.822581
+        ]
+      },
+      "properties": {
+        "filename": "frame_0016.jpg",
+        "filepath": "frames/frame_0016.jpg",
+        "timestamp": "2024-05-20T20:18:30Z",
+        "openai_file_id": "file-LYCEzkBjGLQRjtXKU7odUq",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0016.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The road continues to be in good condition with no visible issues affecting safety or usability. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786548,
+          35.82259
+        ]
+      },
+      "properties": {
+        "filename": "frame_0017.jpg",
+        "filepath": "frames/frame_0017.jpg",
+        "timestamp": "2024-05-20T20:18:32Z",
+        "openai_file_id": "file-GfgyPvXyFGKU7wo2QUrn5W",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0017.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "No significant distresses have been observed on the roadway, maintaining a good quality surface. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786626,
+          35.82257
+        ]
+      },
+      "properties": {
+        "filename": "frame_0018.jpg",
+        "filepath": "frames/frame_0018.jpg",
+        "timestamp": "2024-05-20T20:18:34Z",
+        "openai_file_id": "file-HdGhH97ZkLis6sGAxjPckW",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0018.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The surface appears to be well-maintained with no observable defects or debris. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786681,
+          35.822551
+        ]
+      },
+      "properties": {
+        "filename": "frame_0019.jpg",
+        "filepath": "frames/frame_0019.jpg",
+        "timestamp": "2024-05-20T20:18:36Z",
+        "openai_file_id": "file-BrdixU3jrHGu2bSzgPp8qS",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0019.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The road surface appears clear of significant defects, with no visible potholes or cracking. Overall condition is acceptable.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786721,
+          35.822542
+        ]
+      },
+      "properties": {
+        "filename": "frame_0020.jpg",
+        "filepath": "frames/frame_0020.jpg",
+        "timestamp": "2024-05-20T20:18:38Z",
+        "openai_file_id": "file-4aGzrWt3DidDEb1yc9ySRL",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0020.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The road surface is in good condition, showing no signs of potholes or extensive cracking. Overall condition is acceptable.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786765,
+          35.822519
+        ]
+      },
+      "properties": {
+        "filename": "frame_0021.jpg",
+        "filepath": "frames/frame_0021.jpg",
+        "timestamp": "2024-05-20T20:18:40Z",
+        "openai_file_id": "file-FjsU7Mpnr5wozom648eBtW",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0021.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "Road surface inspection shows no significant distresses. The overall condition remains good, without any observable defects.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786796,
+          35.822513
+        ]
+      },
+      "properties": {
+        "filename": "frame_0022.jpg",
+        "filepath": "frames/frame_0022.jpg",
+        "timestamp": "2024-05-20T20:18:42Z",
+        "openai_file_id": "file-TxsjwqZaoQLhYCc5jitXsk",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0022.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The image shows a well-maintained road surface, with no detectable potholes, cracking, or debris. Overall condition is good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786812,
+          35.822478
+        ]
+      },
+      "properties": {
+        "filename": "frame_0023.jpg",
+        "filepath": "frames/frame_0023.jpg",
+        "timestamp": "2024-05-20T20:18:44Z",
+        "openai_file_id": "file-HEfXpnZYZ7fGpRd5bq5qfA",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0023.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "Inspection reveals no major defects in the road surface; it appears intact and in great shape. Overall condition is good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.78684,
+          35.822444
+        ]
+      },
+      "properties": {
+        "filename": "frame_0024.jpg",
+        "filepath": "frames/frame_0024.jpg",
+        "timestamp": "2024-05-20T20:18:46Z",
+        "openai_file_id": "file-FvzExwrHBEyAMVDCStaYXh",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0024.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.9,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.9,
+          "debris": "no",
+          "debris_confidence": 0.9,
+          "summary": "The road appears to be in excellent condition, free from potholes or significant surface deterioration. Overall condition is good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.78685,
+          35.822427
+        ]
+      },
+      "properties": {
+        "filename": "frame_0025.jpg",
+        "filepath": "frames/frame_0025.jpg",
+        "timestamp": "2024-05-20T20:18:48Z",
+        "openai_file_id": "file-J2sdo6pC9rEW83EH3Wn5Nf",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0025.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.95,
+          "summary": "The road surface appears to be generally intact with no significant distresses present. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786852,
+          35.82241
+        ]
+      },
+      "properties": {
+        "filename": "frame_0026.jpg",
+        "filepath": "frames/frame_0026.jpg",
+        "timestamp": "2024-05-20T20:18:50Z",
+        "openai_file_id": "file-8rWpKZWqYHrdRoXEf47yhW",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0026.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.95,
+          "summary": "The road surface shows some minor texture, but no significant distresses or hazards are noted. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786837,
+          35.822377
+        ]
+      },
+      "properties": {
+        "filename": "frame_0027.jpg",
+        "filepath": "frames/frame_0027.jpg",
+        "timestamp": "2024-05-20T20:18:52Z",
+        "openai_file_id": "file-XxjEW1ezv9yFzoLoQQT9TY",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0027.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.95,
+          "summary": "The road surface remains intact with no significant issues evident. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786851,
+          35.822343
+        ]
+      },
+      "properties": {
+        "filename": "frame_0028.jpg",
+        "filepath": "frames/frame_0028.jpg",
+        "timestamp": "2024-05-20T20:18:54Z",
+        "openai_file_id": "file-SgNWVkZiuwjaZogRDNd9Ys",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0028.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.95,
+          "summary": "The pavement shows no visible severe distress, maintaining a stable condition. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786868,
+          35.822305
+        ]
+      },
+      "properties": {
+        "filename": "frame_0029.jpg",
+        "filepath": "frames/frame_0029.jpg",
+        "timestamp": "2024-05-20T20:18:56Z",
+        "openai_file_id": "file-ChiFStsgxRHvcxe8ZUwN54",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0029.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.95,
+          "summary": "Surface condition remains acceptable with no notable defects or hazards. Overall condition is Good.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786887,
+          35.822266
+        ]
+      },
+      "properties": {
+        "filename": "frame_0030.jpg",
+        "filepath": "frames/frame_0030.jpg",
+        "timestamp": "2024-05-20T20:18:58Z",
+        "openai_file_id": "file-HPdufhqiiZVf63SPo94FUa",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0030.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.85,
+          "debris": "no",
+          "debris_confidence": 0.95,
+          "summary": "The pavement appears consistent and free of significant distress, resulting in a Good condition status.",
+          "road_health_index": 85
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.786927,
+          35.822222
+        ]
+      },
+      "properties": {
+        "filename": "frame_0031.jpg",
+        "filepath": "frames/frame_0031.jpg",
+        "timestamp": "2024-05-20T20:19:00Z",
+        "openai_file_id": "file-Hccm3ByvyF1ntLV8NEq5G4",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0031.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.75,
+          "debris": "no",
+          "debris_confidence": 0.85,
+          "summary": "The road surface appears mostly intact with superficial visual irregularities. Some light texture changes are present, but these do not indicate significant distress. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.78697,
+          35.822198
+        ]
+      },
+      "properties": {
+        "filename": "frame_0032.jpg",
+        "filepath": "frames/frame_0032.jpg",
+        "timestamp": "2024-05-20T20:19:02Z",
+        "openai_file_id": "file-6jDu3mWbnTDG5GQGtETqCb",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0032.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.75,
+          "debris": "no",
+          "debris_confidence": 0.85,
+          "summary": "The road maintains a similar appearance to the previous image with no significant distresses detected. The visibility of cracks does not indicate severe damage. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.78702,
+          35.822161
+        ]
+      },
+      "properties": {
+        "filename": "frame_0033.jpg",
+        "filepath": "frames/frame_0033.jpg",
+        "timestamp": "2024-05-20T20:19:04Z",
+        "openai_file_id": "file-LCZ6pHKrpojB5yMFws5LkP",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0033.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.75,
+          "debris": "no",
+          "debris_confidence": 0.85,
+          "summary": "The road surface shows light cracks and signs of slight wear without significant distress. The surface condition remains stable with no features indicating severe issues. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.787065,
+          35.822131
+        ]
+      },
+      "properties": {
+        "filename": "frame_0034.jpg",
+        "filepath": "frames/frame_0034.jpg",
+        "timestamp": "2024-05-20T20:19:06Z",
+        "openai_file_id": "file-WrfibAfinvxKYxaADMwsuk",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0034.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.75,
+          "debris": "no",
+          "debris_confidence": 0.85,
+          "summary": "While there are light cracks visible, they do not present significant issues. Surfaces look consistent with previous images without larger-scale distress. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -78.787097,
+          35.82211
+        ]
+      },
+      "properties": {
+        "filename": "frame_0035.jpg",
+        "filepath": "frames/frame_0035.jpg",
+        "timestamp": "2024-05-20T20:19:08Z",
+        "openai_file_id": "file-QbmLCtVmDRJftwT5mjdmxp",
+        "box_file_id": null,
+        "box_file_url": null,
+        "ai_analysis": {
+          "file_id": "frame_0035.jpg",
+          "pothole": "no",
+          "pothole_confidence": 0.9,
+          "alligator_cracking": "no",
+          "alligator_cracking_confidence": 0.8,
+          "line_cracking": "no",
+          "line_cracking_confidence": 0.75,
+          "debris": "no",
+          "debris_confidence": 0.85,
+          "summary": "The road continues to show light surface wear with unremarkable conditions. No severe cracks, potholes, or debris are present, maintaining a steady appearance. Overall condition is Fair.",
+          "road_health_index": 70
+        }
+      }
+    }
+  ]
+}

@@ -348,7 +348,7 @@ class Box():
                 logger.error(f"Error uploading GeoJSON to Box: {e}")
 
             logger.info("Long-term storage process completed.")
-
+            updated_telemetry_objects = telemetry_objects
             return updated_telemetry_objects
 
         # Use the new multithreaded upload function

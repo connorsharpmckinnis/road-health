@@ -363,21 +363,21 @@ class Processor():
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
         return extracted_frames
         
-    def create_telemetry_objects(self, extracted_frame_tuples: list): #Runs once, using all extracted_frame_tuples collected in extract_frames
+    def create_telemetry_objects(self, extracted_frame_tuples: list, video_path: str='Default'): #Runs once, using all extracted_frame_tuples collected in extract_frames
         telemetry_objects = []
 
         for frame in extracted_frame_tuples:
-            telemetry_object = self._create_telemetry_object(frame)
+            telemetry_object = self._create_telemetry_object(frame, video_path=video_path)
             telemetry_objects.append(telemetry_object)
 
         logger.info(f"Created {len(telemetry_objects)} telemetry objects with frame image filename and timestamp data. ")
         return telemetry_objects
     
-    def _create_telemetry_object(self, extracted_frame_tuple: tuple): #Runs for each extracted_frame_tuple in create_telemetry_objects
+    def _create_telemetry_object(self, extracted_frame_tuple: tuple, video_path: str=None): #Runs for each extracted_frame_tuple in create_telemetry_objects
         name = os.path.basename(extracted_frame_tuple[0])
         timestamp = extracted_frame_tuple[1]
         filepath = extracted_frame_tuple[0]
-        telemetry_object = TelemetryObject(filename=name, filepath=filepath, timestamp=timestamp)
+        telemetry_object = TelemetryObject(filename=name, filepath=filepath, timestamp=timestamp, source_video=video_path)
         print(f"{telemetry_object = }")
         return telemetry_object
 
@@ -758,7 +758,7 @@ class Processor():
             # Step 4: Create telemetry objects for extracted frames
             stage_start = time.time()
             logger.info("Step 4: Create telemetry objects for extracted frames")
-            telemetry_objects = self.create_telemetry_objects(extracted_frames)
+            telemetry_objects = self.create_telemetry_objects(extracted_frames, video_path)
             log_timing("Step 4: Create telemetry objects", stage_start)
 
             # Step 5: Add GPS coordinates to telemetry objects
@@ -811,7 +811,7 @@ class Processor():
             raise
 
 class TelemetryObject:
-    def __init__(self, filename: str=None, filepath: str=None, timestamp: str=None, lat: float=None, lon: float=None):
+    def __init__(self, filename: str=None, filepath: str=None, timestamp: str=None, lat: float=None, lon: float=None, source_video: str=None):
         self.filename = filename
         self.filepath = filepath
         self.timestamp = timestamp
@@ -821,10 +821,12 @@ class TelemetryObject:
         self.box_file_id: str = None
         self.box_file_url: str = None
         self.analysis_results: dict = {}
+        self.source_video: str = None
 
     def to_dict(self):
         return {'filename': self.filename,
                 'filepath': self.filepath,
+                'source_video': self.source_video,
                 'timestamp': self.timestamp,
                 'lat': self.lat,
                 'lon': self.lon,
@@ -837,6 +839,8 @@ class TelemetryObject:
     def to_metadata_dict(self):
         return {
             "filename": self.filename,
+            "filepath": self.filepath,
+            "source_vide0": self.source_video,
             "timestamp": f'{self.timestamp}',
             "lat1": f'{self.lat}',
             "lon1": f'{self.lon}',
@@ -873,6 +877,7 @@ class TelemetryObject:
         props = {
             "filename": self.filename,
             "filepath": self.filepath,
+            "source_video": self.source_video,
             "timestamp": self.timestamp,
             "openai_file_id": self.openai_file_id,
             "box_file_id": self.box_file_id,

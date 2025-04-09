@@ -86,6 +86,7 @@ class App():
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
     async def pipeline(self, new_files_to_download: list=None, greenway_mode=True):
+        self.greenway_mode = greenway_mode
         #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
@@ -256,7 +257,10 @@ class App():
         new_files_to_download = []
         self.load_processed_videos()
 
-        box_folder_id = self.box.videos_folder_box_id
+        if self.greenway_mode:
+            box_folder_id = '313579631401'
+        else:
+            box_folder_id = self.box.videos_folder_box_id
         files_in_box = self.box.list_items_in_folder(box_folder_id)  # List files in Box
         
         # Get filenames of downloaded but unprocessed files
@@ -305,7 +309,7 @@ class App():
         os.remove(f"temp_metadata.gpx")
         os.remove(f"temp_metadata.kml")
 
-    async def start_monitoring(self, interval=10):
+    async def start_monitoring(self, interval=10, greenway_mode=False):
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
@@ -314,6 +318,8 @@ class App():
         if self.monitoring_active:
             logger.info("Monitoring is already running.")
             return
+        
+        self.greenway_mode=greenway_mode
         
         self.monitoring_active = True
         self.status = "Active"  # ✅ Set status to Active
@@ -376,7 +382,7 @@ class App():
                         status="Processing",
                         message=f"Processing {len(new_files_to_download)} files."
                     )
-                    await self.pipeline(new_files_to_download)
+                    await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode)
                 else:
                     self.status = "Monitoring"
                     logger.info(self.status)
@@ -388,4 +394,4 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=5)
+    app.start_monitoring(interval=5, greenway_mode=True)
