@@ -6,7 +6,7 @@ from openai import OpenAI
 import openai
 from rich.console import Console
 from rich.table import Table
-from utils import assistant, batch_assistant, get_assistant, get_batch_assistant, set_batch_assistant, model, instructions, batch_response_format, response_format
+from utils import assistant, batch_assistant, get_assistant, get_batch_assistant, set_batch_assistant, get_greenway_assistant, set_greenway_assistant, model, instructions, batch_response_format, response_format, greenway_instructions, greenway_response_format, greenway_user_message
 from logging_config import logger
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -49,13 +49,20 @@ class AI():
         self.model = model
         self.instructions = instructions
         self.batch_instructions = instructions
+        
         self.response_format = response_format
         self.batch_response_format = batch_response_format
 
-        if self.batch_assistant_id is None:
-            batch_assistant, batch_assistant_id = self.create_assistant('batch')
-            self.batch_assistant = batch_assistant
-            set_batch_assistant(batch_assistant_id)
+        self.greenway_assistant = None
+        self.greenway_assistant_id = get_greenway_assistant()
+        self.greenway_instructions = greenway_instructions
+        self.greenway_response_format = greenway_response_format
+        self.greenway_user_message = greenway_user_message
+
+        if self.greenway_assistant_id is None:
+            greenway_assistant, greenway_assistant_id = self.create_assistant('greenway')
+            self.greenway_assistant = greenway_assistant
+            set_greenway_assistant(greenway_assistant_id)
 
 
     async def send_status_update_to_ui(self, type, level, status, message, details={}):
@@ -89,21 +96,22 @@ class AI():
             print(f"Assistant created with ID: {self.batch_assistant_id}")
 
             return self.batch_assistant, self.batch_assistant_id
-
         
-        self.assistant = self.client.beta.assistants.create(
-            name="Road Health Evaluator",
-            description=("You evaluate road conditions based on image inputs. Your task is to analyze images of roads, "
-                "identify issues like potholes or alligator cracking, and provide actionable recommendations."
-            ),
-            model=self.model,
-            instructions=self.instructions,
-            response_format=self.response_format
-        )
-        self.assistant_id = self.assistant.id
-        logger.ai(f"Assistant created with ID: {self.assistant_id}")
+        if type == 'greenway':
+            print("Creating greenway-based assistant for road health evaluation...")
+            self.greenway_assistant = self.client.beta.assistants.create(
+                name="Greenway Health Evaluator",
+                description=("You evaluate pavement conditions based on image inputs. Your task is to analyze images of greenways, "
+                    "identify issues like cracking or debris, and provide professional and consistent condition ratings."
+                ),
+                model=self.model,
+                instructions=self.greenway_instructions,
+                response_format=self.greenway_response_format
+            )
+            self.batch_assistant_id = self.greenway_assistant.id
+            print(f"Greenway-specific Assistant created with ID: {self.greenway_assistant_id}")
 
-        return self.assistant, self.assistant_id
+            return self.greenway_assistant, self.greenway_assistant_id
 
     def upload_image(self, filepath: str):
         """
@@ -288,7 +296,7 @@ class AI():
             for telemetry_object in telemetry_objects:
                 _upload_file_to_openai(telemetry_object)
     
-    def run_all_analyses(self, telemetry_objects: list, batch_size: int, multithreaded: bool):
+    def run_all_analyses(self, telemetry_objects: list, batch_size: int, multithreaded: bool, assistant: str='batch'):
         """
         Run analyses on telemetry objects in batches.
 
@@ -306,8 +314,13 @@ class AI():
 
         # Create batches
         batches = [telemetry_objects[i:i + batch_size] for i in range(0, len(telemetry_objects), batch_size)]
-        if not self.batch_assistant_id:
-            self.create_assistant('batch')
+        
+        if assistant == 'batch':
+            if not self.batch_assistant_id:
+                self.create_assistant(type='batch')
+        elif assistant == 'greenway': 
+            if not self.greenway_assistant_id:
+                self.create_assistant(type='greenway')
         
         if multithreaded:
             from concurrent.futures import ThreadPoolExecutor
@@ -337,7 +350,8 @@ class AI():
 
         # Stage 2: Run all analyses
         start_time_6b = time.time()
-        analyzed_telemetry_objects = self.run_all_analyses(telemetry_objects, batch_size, multithreaded)
+        analyzed_telemetry_objects = self.run_all_analyses(telemetry_objects, batch_size, multithreaded, assistant='greenway')
+        #ASSISTANT TYPE IS SELECTED HERE. CURRENTLY SET TO GREENWAY FOR GREENWAY DATA VALIDATION. CHANGE TO 'batch' FOR RETURN TO ROAD HEALTH EVALUATOR
 
         return analyzed_telemetry_objects, start_time_6a, start_time_6b
     

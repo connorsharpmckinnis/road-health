@@ -85,7 +85,8 @@ class App():
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    async def pipeline(self, new_files_to_download: list=None):
+    async def pipeline(self, new_files_to_download: list=None, greenway_mode=True):
+        #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
         
@@ -173,6 +174,7 @@ class App():
             logger.info(self.processing_status['file']["status"])
 
             telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode="video")
+            #'video' VS 'timelapse' MODE SET HERE. TIMELAPSE MODE IGNORES FRAMERATE I THINK
             self.processed_videos.add(file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
@@ -186,10 +188,11 @@ class App():
         logger.info(self.status)
 
         #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects)
+        telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects, greenway_mode=greenway_mode)
 
-        work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
-        logger.info(f"Work Orders created: {work_orders_created}")
+        if not greenway_mode:
+            work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
+            logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()        
 
