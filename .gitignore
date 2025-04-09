@@ -185,3 +185,7 @@ pipeline_timing_log.txt
 /unprocessed_photos
 .gpx
 .kml
+*.geojson
+*.kml
+*.gpx
+*.bin

@@ -1,25 +1,28 @@
 
 # Road Health Analyzer
 
-The Road Health Analyzer is an automated system designed to collect, process, and archive road condition data using GoPro cameras mounted on solid waste collection vehicles. It is the first pilot implementation of a broader 'Generalist AI Framework' for automating public sector tasks using AI, sensor data, and lightweight, reusable analysis pipelines.
+>The Road Health Analyzer is an automated system designed to collect, process, and archive road condition data using GoPro cameras mounted on solid waste collection vehicles. It is the first pilot implementation of a broader 'Generalist AI Framework' for automating public sector tasks using AI, sensor data, and lightweight, reusable analysis pipelines.
 
 ### ✨ The Vision: Generalist AI Framework
 
-This pilot lays the groundwork for future municipal automation tools by enabling reuse of common data processing, organizing, and analysis tasks to engage multimodal LLMs like chatGPT 4-o and Claude Sonnet. By varying the data inputs and rewriting natural languade instructions, the same framework will enable much quicker deployment of many Town service automations or improvements:
+Specialist AI models are **excellent** at feature detection, pattern recognition, and task automation. However, they require massive and highly curated datasets. A 'generalist' system uses modern multimodal LLMs like GPT 4o to enable acceptably good results without any additional training datasets; requiring only text instructions. Lower-stakes tasks (pothole detection, not cancer diagnostics) can absorb the reduced precision from a generalist model (still in the 90-95% range) without undermining core requirements at a fraction of the startup cost and lead time. 
+
+This pilot lays the groundwork for future municipal automation tools by enabling reuse of common data processing, organizing, and analysis tasks to engage multimodal LLMs like chatGPT 4o and Claude Sonnet. By varying the data inputs and rewriting natural language instructions, the same framework will enable much quicker deployment of new service automations or improvements:
 
 - Pavement condition scoring
-- Sign inventory validation
+- Street sign inventory
 - Parking utilization analysis
 - Tree canopy estimation
 - Deployed asset cataloging
 - Sightline visibility review
-- And more as we explore
+
+And more as we explore
 
 ### 🌐 System Overview
 
-[Daily GoPro Recordings] → [Nightly Box Uploads] → [Automated Python Scripts] → [Frame Extraction + Analysis] → [Salesforce Work Orders + Box Archive] → [GeoJSON Output for GIS Integration]
+>[Daily GoPro Recordings] → [Nightly Box Uploads] → [Automated Python Scripts] → [Frame Extraction + Analysis] → [Salesforce Work Orders + Box Archive] → [GeoJSON Output for GIS Integration]
 
-### 🚀 Features
+### 🚀 Key Features
 
 Fully automated from truck start-up to work order dispatch.
 
@@ -51,20 +54,22 @@ Supported GoPros
 - HERO5 - HERO11 (not tested)
 - HERO13 (tested)
 
+Hero 12 did not include GPS capability for cost and thermal management reasons, so it cannot be used for this system. Other camera brands and models (DJI, Meta, etc) can be used with adjustment to metadata extraction processes.
+
 ### 🔧 Setup
 
 1. Install dependencies
 
-I didn't make a requirements.txt (yet?) so good luck
+- I didn't make a requirements.txt (yet?) so good luck
 
 2. Configure environment variables
 
-Create a .env file with Box, Salesforce, and OpenAI tokens. 
+- Create a .env file with Box, Salesforce, and OpenAI tokens. 
 Check out utils.py for details on the assistant management variables, including system prompts and current instructions. 
 
 3. Run the system (headless mode)
 
-python run_headless.py
+- python run_headless.py
 
 ### 🔹 Salesforce Integration
 Automatically creates Work Orders for potential road issues based on extracted frame analysis. Each Work Order is linked to Box-stored image assets.
