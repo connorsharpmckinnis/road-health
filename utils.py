@@ -352,7 +352,7 @@ box_road_health_folder_id = '309237796489'
 box_videos_folder_id = '303832684570'
 box_archived_videos_folder_id = '308058834229'
 box_images_folder_id = '308059149587'
-box_archived_images_folder_id = '308059844499'
+box_archived_images_folder_id = '316117482557'
 box_work_order_images_folder_id = '308058285408'
 
 def log_event(message):

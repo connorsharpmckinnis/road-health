@@ -178,6 +178,8 @@ class App():
             #'video' VS 'timelapse' MODE SET HERE. TIMELAPSE MODE IGNORES FRAMERATE I THINK
             self.processed_videos.add(file)
 
+            await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=greenway_mode, video_path=file)
+
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
 
@@ -188,8 +190,8 @@ class App():
         self.status = "Saving images to Box..."
         logger.info(self.status)
 
-        #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects, greenway_mode=greenway_mode)
+        # MOVED SAVING TO A PER-FILE OPERATION TO HOPEFULLY MAKE GEOJSON FOR EACH VIDEO PROCESSED
+        #telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects, greenway_mode=greenway_mode)
 
         if not greenway_mode:
             work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)

@@ -336,7 +336,8 @@ class Processor():
 
         # Build FFmpeg command to extract specific frames using the 'select' filter
         select_filter = "+".join([f"eq(n\\,{index})" for index in target_indices])
-        
+        video_basename = os.path.splitext(os.path.basename(video_path))[0]
+
         ffmpeg_command = [
             self.FFMPEG_PATH,
             "-i", video_path,
@@ -345,7 +346,7 @@ class Processor():
             "-vf", f"select='{select_filter}',setpts=N/FRAME_RATE/TB,crop={video_width}:{crop_height}:0:{crop_top}",  # Select specific frames
             "-vsync", "vfr",  # Variable frame rate
             "-frames:v", str(len(target_indices)),  # Stop after extracting the desired frames
-            os.path.join(output_folder, "frame_%04d.jpg")  # Save frames sequentially
+            os.path.join(output_folder, f"{video_basename}_%04d.jpg")  # Save frames sequentially
         ]
 
         # Run the FFmpeg command and handle errors
@@ -357,7 +358,7 @@ class Processor():
 
         # Generate frame file paths and return them with timestamps
         extracted_frames = [
-            (os.path.join(output_folder, f"frame_{i+1:04d}.jpg"), timestamps[i])
+            (os.path.join(output_folder, f"{video_basename}_{i+1:04d}.jpg"), timestamps[i])
             for i in range(len(timestamps))
         ]
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
@@ -510,7 +511,7 @@ class Processor():
     """
         
     def get_ai_analyses(self, telemetry_objects: list, batch_size: int=3) -> list:
-        analyzed_telem_objects = self.ai.analyze_images_with_ai(telemetry_objects=telemetry_objects, batch_size=batch_size, multithreaded=True)
+        analyzed_telem_objects, file_upload_start, image_analysis_start = self.ai.analyze_images_with_ai(telemetry_objects=telemetry_objects, batch_size=batch_size, multithreaded=True)
         logger.info(f"Successfully analyzed {len(analyzed_telem_objects)} frames with AI.")
         return analyzed_telem_objects
 
@@ -522,21 +523,37 @@ class Processor():
             telemetry_objects (list): List of telemetry objects.
         """
 
+        print(f'{telemetry_objects = }')
+
+        flat_telemetry_objects = []
+        for item in telemetry_objects:
+            if isinstance(item, list):
+                flat_telemetry_objects.extend(item)
+            else:
+                flat_telemetry_objects.append(item)
+
         work_order_folder = "work_order_frames"
         os.makedirs(work_order_folder, exist_ok=True)
 
-        for obj in telemetry_objects:
-            json_path = os.path.splitext(obj.filepath)[0] + ".json"  # Replace .jpg with .json
+        
+
+        for obj in flat_telemetry_objects:
+            video_base = os.path.splitext(os.path.basename(obj.source_video))[0]
+            frame_base = os.path.splitext(os.path.basename(obj.filepath))[0]
+            json_filename = f"{video_base}_{frame_base}.json"
+            json_path = os.path.join(os.path.dirname(obj.filepath), json_filename)
+
             telemetry_data = {
                 "filename": obj.filename,
                 "filepath": obj.filepath,
+                "source_video": obj.source_video,
                 "timestamp": obj.timestamp,
                 "lat": obj.lat,
                 "lon": obj.lon,
                 "openai_file_id": obj.openai_file_id,
                 "box_file_id": obj.box_file_id,
                 "box_file_url": obj.box_file_url,
-                "analysis_results": obj.analysis_results,
+                "analysis_results": obj.analysis_results
             }
             with open(json_path, "w") as json_file:
                 json.dump(telemetry_data, json_file, indent=4)
@@ -773,10 +790,10 @@ class Processor():
 
             # Step 6: Perform AI analysis on telemetry objects
 
+            stage_start = time.time()
             logger.info("Step 6: Perform AI analysis on telemetry objects")
-            telemetry_objects, file_upload_start, ai_analysis_start = self.get_ai_analyses(telemetry_objects, batch_size=batch_size)
-            log_timing("Step 6a: Upload Files to openAI", file_upload_start)
-            log_timing("Step 6b: Analyze Files with openAI", ai_analysis_start)
+            telemetry_objects = self.get_ai_analyses(telemetry_objects, batch_size=batch_size)
+            log_timing("Step 6: Analyze files with AI", stage_start)
 
             # Step 7: Save telemetry objects as individual JSON files
             stage_start = time.time()
@@ -821,7 +838,7 @@ class TelemetryObject:
         self.box_file_id: str = None
         self.box_file_url: str = None
         self.analysis_results: dict = {}
-        self.source_video: str = None
+        self.source_video: str = source_video
 
     def to_dict(self):
         return {'filename': self.filename,

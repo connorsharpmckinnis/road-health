@@ -287,8 +287,10 @@ class Box():
                     
         return downloaded_files
     
-    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False):
+    async def save_frames_to_long_term_storage(self, destination_folder_id='316117482557', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False, video_path: str=None):
         telemetry_objects = telemetry_objects or []
+        source_video_base = os.path.splitext(os.path.basename(video_path))[0]
+
 
         #FALSIFY GREENWAY_MODE TO RETURN TO STANDARD CONFIGURATION
 
@@ -311,7 +313,7 @@ class Box():
             feature_collection = geojson.FeatureCollection(geojson_features)
             
             # Define the GeoJSON file path (local save location)
-            geojson_filename = f"telemetry_{timestamp}.geojson"
+            geojson_filename = f"{source_video_base}_{timestamp}.geojson"
             geojson_filepath = os.path.join('greenway_geojsons', geojson_filename)
 
             # Debug: Check if filepath is valid
