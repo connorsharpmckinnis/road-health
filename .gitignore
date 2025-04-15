@@ -192,3 +192,5 @@ temp_metadata.gpx
 temp_metadata.csv
 temp_metadata.kml
 temp_metadata.csv
+*.geojson
+*.bin

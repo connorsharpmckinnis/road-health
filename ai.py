@@ -49,6 +49,7 @@ class AI():
         self.model = model
         self.instructions = instructions
         self.batch_instructions = instructions
+        self.current_assistant_id = None
         
         self.response_format = response_format
         self.batch_response_format = batch_response_format
@@ -198,7 +199,7 @@ class AI():
             try:
                 run = self.client.beta.threads.runs.create_and_poll(
                     thread_id=thread_id,
-                    assistant_id=self.batch_assistant_id
+                    assistant_id=self.current_assistant_id
                 )
                 # Extract token usage if available
                 total_tokens = run.usage.total_tokens if run.usage else 0
@@ -318,9 +319,11 @@ class AI():
         if assistant == 'batch':
             if not self.batch_assistant_id:
                 self.create_assistant(type='batch')
+            self.current_assistant_id = self.batch_assistant_id
         elif assistant == 'greenway': 
             if not self.greenway_assistant_id:
                 self.create_assistant(type='greenway')
+            self.current_assistant_id = self.greenway_assistant_id
         
         if multithreaded:
             from concurrent.futures import ThreadPoolExecutor
