@@ -41,6 +41,52 @@ instructions = """
         •	Ensure results are consistent with the Pavement Condition Index (PCI) system, emphasizing real-world road safety and functionality over purely cosmetic or minor issues.
     """
 
+greenway_instructions = """
+    You are an expert greenway surface inspection analyst. Your mission is to evaluate visual data (e.g., GoPro footage or images) of greenway surfaces and report on key distress features with a focus on public safety, performance, and long‐term maintenance needs. Your assessments must adhere to the following guidelines and criteria:
+1.	Evaluation Focus
+    • Identify only significant, structurally impactful defects. Do not over-classify minor surface irregularities.
+    • Emphasize issues that compromise user safety or lead to accelerated deterioration.
+2.	Defect Categories and Definitions
+    a. Potholes
+     Depressions in the pavement that exhibit significant depth and irregular shape, not to be confused with manhole covers or routine patches.
+     Only flag as a pothole if the defect appears to affect safety or function. Include a brief note on its general location within the image (e.g., “pothole in lower left”).
+    b. Alligator Cracking
+     Interconnected, fatigue-induced cracks that form irregular “alligator” patterns.
+     Only mark if the cracking is extensive and clearly indicative of structural failure.
+    c. Line Cracking
+     Longitudinal or transverse cracks that are wide, deep, or continuous. Ignore isolated or hairline cracks that do not impact overall integrity.
+    d. Debris and Other Obstructions
+     Identify any foreign materials (e.g., leaves, stones, trash) that present a clear hazard on the greenway.
+    e. Additional Factors
+     Note signs of surface raveling, root intrusion, water ponding, or drainage issues as these contribute to the overall deterioration of the pavement.
+     When applicable, document any evidence of vegetation or root damage, particularly in areas adjacent to trees.
+3.	PASER Rating Integration
+    • Adopt the PASER (Pavement Surface Evaluation and Rating) system as the primary method of rating surface condition, but note that it will be recorded as a 'Road Health Index'.
+    • PASER ratings normally range from 1 (failed, requiring complete reconstruction) to 10 (like-new).
+    • Recognize that:
+     Ratings 10-9 indicate excellent condition with no visible distress.
+     Ratings 8-7 denote minor wear or cosmetic issues.
+     Ratings 6-5 reflect moderate deterioration with some patching or maintenance needs.
+     Ratings 4-3 identify significant defects (e.g., severe cracking, potholes) and indicate urgent repair.
+     Ratings 2-1 signal major structural failure, where immediate resurfacing or reconstruction is needed.
+    • In your final report, include the PASER rating for each inspected segment, highlighting segments rated 3 or below as critical.
+4.	Detection Guidelines
+    • For each defect, indicate whether it is present (Yes/No) and assign a confidence score between 0 and 1.
+     Confidence scores above 0.7 are reserved for visually clear and unambiguous cases.
+     Borderline cases (scores below 0.3) should prompt a recommendation for further review or additional data collection.
+    • Always err on the side of caution. If a defect's nature is ambiguous, do not overstate its severity.
+5.	Reporting and Output
+    • Provide a summary that concisely describes the key findings. For example:
+    “Significant alligator cracking was observed across a large portion of the segment, with a pronounced pothole in the upper right corner. Overall condition is rated as Poor (PASER 3), requiring immediate maintenance.”
+    • List each category (Pothole, Alligator Cracking, Line Cracking, Debris/Obstructions) with its binary presence (Yes/No) and corresponding confidence score.
+    • Calculate and report an overall Road Health Index derived from the PASER rating and qualitative observations.
+        6.	Additional Considerations
+    • Maintain consistency with the contractor's methodology by integrating both quantitative PASER ratings and qualitative field observations (e.g., evidence of drainage issues or root intrusion).
+    • Ensure that your evaluation prioritizes safety and long-term usability of the greenway network, reflecting the goals of resource allocation and timely maintenance.
+    • When in doubt, recommend follow-up inspection or additional data collection to confirm borderline observations.
+
+"""
+
 model = 'gpt-4o-mini'
 
 response_format = {
@@ -199,8 +245,95 @@ batch_response_format = {
     }
 }
 
+greenway_user_message = "Please analyze these images and share your expert greenway condition analyses, adhering to the JSON schema provided."
+greenway_response_format = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "road_condition_batch",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "analyses": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "file_id": {
+                                "type": "string",
+                                "description": "The openai file id or unique identifier of the analyzed image"
+                            },
+                            "pothole": {
+                                "type": "string",
+                                "enum": ["yes", "no"],
+                                "description": "Indicates the presence of potholes on the greenway"
+                            },
+                            "pothole_confidence": {
+                                "type": "number",
+                                "description": "Indicates the confidence in the pothole detection, ranging from 0 to 1"
+                            },
+                            "alligator_cracking": {
+                                "type": "string",
+                                "enum": ["yes", "no"],
+                                "description": "Indicates the presence of alligator cracking on the greenway"
+                            },
+                            "alligator_cracking_confidence": {
+                                "type": "number",
+                                "description": "Indicates the confidence in the alligator cracking detection, ranging from 0 to 1"
+                            },
+                            "line_cracking": {
+                                "type": "string",
+                                "enum": ["yes", "no"],
+                                "description": "Indicates the presence of line cracking on the greenway"
+                            },
+                            "line_cracking_confidence": {
+                                "type": "number",
+                                "description": "Indicates the confidence in the line cracking detection, ranging from 0 to 1"
+                            },
+                            "debris": {
+                                "type": "string",
+                                "enum": ["yes", "no"],
+                                "description": "Indicates the presence of debris on the greenway"
+                            },
+                            "debris_confidence": {
+                                "type": "number",
+                                "description": "Indicates the confidence in the debris detection, ranging from 0 to 1"
+                            },
+                            "summary": {
+                                "type": "string",
+                                "description": "A brief summary of the greenway condition, a few sentences tops"
+                            },
+                            "road_health_index": {
+                                "type": "integer",
+                                "description": "The overall health of the greenway represented as a PASER-system value from 1 to 10"
+                            }
+                        },
+                        "required": [
+                            "file_id",
+                            "pothole",
+                            "pothole_confidence",
+                            "alligator_cracking",
+                            "alligator_cracking_confidence",
+                            "line_cracking",
+                            "line_cracking_confidence",
+                            "debris",
+                            "debris_confidence",
+                            "summary",
+                            "road_health_index"
+                        ],
+                        "additionalProperties": False
+                    }
+                }
+            },
+            "required": ["analyses"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+}
+
 assistant = 'asst_eU5BTCInSqddd4fsRiXwE8Dm'
 batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
+greenway_assistant = 'asst_s7hNGDp4PRo8HIPgjunX7FCj'
 
 unprocessed_videos_path = 'unprocessed_videos'
 
@@ -219,7 +352,7 @@ box_road_health_folder_id = '309237796489'
 box_videos_folder_id = '303832684570'
 box_archived_videos_folder_id = '308058834229'
 box_images_folder_id = '308059149587'
-box_archived_images_folder_id = '308059844499'
+box_archived_images_folder_id = '316117482557'
 box_work_order_images_folder_id = '308058285408'
 
 def log_event(message):
@@ -230,6 +363,13 @@ def get_assistant():
 
 def get_batch_assistant():
     return batch_assistant
+
+def get_greenway_assistant():
+    return greenway_assistant
+
+def set_greenway_assistant(greenway_assistant_id):
+    global greenway_assistant
+    greenway_assistant = greenway_assistant_id
 
 def set_batch_assistant(batch_assistant_id):
     global batch_assistant

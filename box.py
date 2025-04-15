@@ -287,14 +287,13 @@ class Box():
                     
         return downloaded_files
     
-    async def save_frames_to_long_term_storage(self, destination_folder_id='308059844499', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None):
+    async def save_frames_to_long_term_storage(self, destination_folder_id='316117482557', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False, video_path: str=None):
         telemetry_objects = telemetry_objects or []
+        source_video_base = os.path.splitext(os.path.basename(video_path))[0]
 
-        #upload images referenced by the telem objects to Box
-        #update the telem objects with their respective Box file ids
-        #Return list of newly box-id-added telem objects
-        #Maybe also update it with the reference url at the same time, since the telem object has a box_file_url attribute now
-        #Later we'll go through the telem objects and update the work order objects with the box file ids
+
+        #FALSIFY GREENWAY_MODE TO RETURN TO STANDARD CONFIGURATION
+
         logger.info(f"Moving videos from the active folder to the archive...")
         # Get the videos from Box's Videos folder
         box_videos_folder_contents = self.list_items_in_folder(self.videos_folder_box_id)
@@ -302,11 +301,57 @@ class Box():
         # Move the videos to the 'Archived Videos' folder
         self.move_files(box_video_ids, self.box_archived_videos_folder_id)
 
-
         logger.info(f"Saving frames to long-term storage...")
 
         # Generate a timestamp for unique filenames
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H_%M")
+
+        if greenway_mode:
+
+            # Convert telemetry objects to GeoJSON Features
+            geojson_features = [telem_obj.to_geojson() for telem_obj in telemetry_objects]
+            feature_collection = geojson.FeatureCollection(geojson_features)
+            
+            # Define the GeoJSON file path (local save location)
+            geojson_filename = f"{source_video_base}_{timestamp}.geojson"
+            geojson_filepath = os.path.join('greenway_geojsons', geojson_filename)
+
+            # Debug: Check if filepath is valid
+            print(f"Saving GeoJSON file to: {geojson_filepath}")
+
+            # Save FeatureCollection as a GeoJSON file
+            try:
+                with open(geojson_filepath, "w") as geojson_file:
+                    geojson.dump(feature_collection, geojson_file, indent=2)
+                logger.info(f"GeoJSON file successfully saved locally: {geojson_filepath}")
+            except Exception as e:
+                logger.error(f"Failed to save GeoJSON file locally: {e}")
+                return None
+
+            # Debug: Check if file exists after writing
+            if not os.path.exists(geojson_filepath):
+                logger.error(f"GeoJSON file does not exist at expected path: {geojson_filepath}")
+                return None
+
+            # Upload the GeoJSON file to Box
+            try:
+                uploaded_geojson = await asyncio.to_thread(
+                    self.upload_small_file_to_folder, geojson_filepath, destination_folder_id, geojson_filename
+                )
+
+                # Debug: Check if upload worked
+                if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
+                    geojson_box_file_id = uploaded_geojson.entries[0].id
+                    geojson_box_file_url = self.get_direct_shared_link(geojson_box_file_id)
+                    logger.info(f"GeoJSON file uploaded to Box: {geojson_box_file_url}")
+                else:
+                    logger.error("GeoJSON upload failed. `uploaded_geojson` did not return expected structure.")
+            except Exception as e:
+                logger.error(f"Error uploading GeoJSON to Box: {e}")
+
+            logger.info("Long-term storage process completed.")
+            updated_telemetry_objects = telemetry_objects
+            return updated_telemetry_objects
 
         # Use the new multithreaded upload function
         updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)

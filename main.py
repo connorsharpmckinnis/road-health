@@ -85,7 +85,9 @@ class App():
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    async def pipeline(self, new_files_to_download: list=None):
+    async def pipeline(self, new_files_to_download: list=None, greenway_mode=True):
+        self.greenway_mode = greenway_mode
+        #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
         
@@ -173,7 +175,10 @@ class App():
             logger.info(self.processing_status['file']["status"])
 
             telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode="video")
+            #'video' VS 'timelapse' MODE SET HERE. TIMELAPSE MODE IGNORES FRAMERATE I THINK
             self.processed_videos.add(file)
+
+            await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=greenway_mode, video_path=file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
@@ -185,11 +190,12 @@ class App():
         self.status = "Saving images to Box..."
         logger.info(self.status)
 
-        #ASYNCIFY BOX ARCHIVE IN BOX.PY
-        telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects)
+        # MOVED SAVING TO A PER-FILE OPERATION TO HOPEFULLY MAKE GEOJSON FOR EACH VIDEO PROCESSED
+        #telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects, greenway_mode=greenway_mode)
 
-        work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
-        logger.info(f"Work Orders created: {work_orders_created}")
+        if not greenway_mode:
+            work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
+            logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()        
 
@@ -253,7 +259,10 @@ class App():
         new_files_to_download = []
         self.load_processed_videos()
 
-        box_folder_id = self.box.videos_folder_box_id
+        if self.greenway_mode:
+            box_folder_id = '313579631401'
+        else:
+            box_folder_id = self.box.videos_folder_box_id
         files_in_box = self.box.list_items_in_folder(box_folder_id)  # List files in Box
         
         # Get filenames of downloaded but unprocessed files
@@ -302,7 +311,7 @@ class App():
         os.remove(f"temp_metadata.gpx")
         os.remove(f"temp_metadata.kml")
 
-    async def start_monitoring(self, interval=10):
+    async def start_monitoring(self, interval=10, greenway_mode=False):
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
@@ -311,6 +320,8 @@ class App():
         if self.monitoring_active:
             logger.info("Monitoring is already running.")
             return
+        
+        self.greenway_mode=greenway_mode
         
         self.monitoring_active = True
         self.status = "Active"  # ✅ Set status to Active
@@ -373,7 +384,7 @@ class App():
                         status="Processing",
                         message=f"Processing {len(new_files_to_download)} files."
                     )
-                    await self.pipeline(new_files_to_download)
+                    await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode)
                 else:
                     self.status = "Monitoring"
                     logger.info(self.status)
@@ -385,4 +396,4 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=5)
+    app.start_monitoring(interval=5, greenway_mode=True)
