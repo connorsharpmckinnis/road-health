@@ -857,7 +857,7 @@ class TelemetryObject:
         return {
             "filename": self.filename,
             "filepath": self.filepath,
-            "source_vide0": self.source_video,
+            "source_video": self.source_video,
             "timestamp": f'{self.timestamp}',
             "lat1": f'{self.lat}',
             "lon1": f'{self.lon}',
