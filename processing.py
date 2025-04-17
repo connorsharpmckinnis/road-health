@@ -117,7 +117,9 @@ class Processor():
 
             # Check GPX file size and number of trackpoints
             if not os.path.exists(Processor.TEMP_GPX_FILE):
-                raise FileNotFoundError(f"GPX file {Processor.TEMP_GPX_FILE} not created.")
+                raise FileNotFoundError(f"GPX file {Processor.TEMP_GPX_FILE} not created.")\
+                
+            self._save_gpx_to_folder(mp4_file_path)
             
             tree = ET.parse(Processor.TEMP_GPX_FILE)
             root = tree.getroot()
@@ -143,6 +145,17 @@ class Processor():
             logger.exception(f"Failed to extract metadata: {e}")
             raise
     
+    def _save_gpx_to_folder(self, video_filename):
+        """Save the GPX file into a GPX_files/ folder with a video-based name."""
+        gpx_folder = "GPX_files"
+        os.makedirs(gpx_folder, exist_ok=True)
+
+        base_name = os.path.splitext(os.path.basename(video_filename))[0]
+        dest_path = os.path.join(gpx_folder, f"{base_name}.gpx")
+
+        shutil.copy2(Processor.TEMP_GPX_FILE, dest_path)
+        logger.info(f"Copied GPX file to {dest_path}")
+
     @staticmethod
     def cleanup_temp_files(*files):
         """Remove temporary files."""

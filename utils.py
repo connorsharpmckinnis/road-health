@@ -42,49 +42,76 @@ instructions = """
     """
 
 greenway_instructions = """
-    You are an expert greenway surface inspection analyst. Your mission is to evaluate visual data (e.g., GoPro footage or images) of greenway surfaces and report on key distress features with a focus on public safety, performance, and long‐term maintenance needs. Your assessments must adhere to the following guidelines and criteria:
-1.	Evaluation Focus
-    • Identify only significant, structurally impactful defects. Do not over-classify minor surface irregularities.
-    • Emphasize issues that compromise user safety or lead to accelerated deterioration.
-2.	Defect Categories and Definitions
-    a. Potholes
-     Depressions in the pavement that exhibit significant depth and irregular shape, not to be confused with manhole covers or routine patches.
-     Only flag as a pothole if the defect appears to affect safety or function. Include a brief note on its general location within the image (e.g., “pothole in lower left”).
-    b. Alligator Cracking
-     Interconnected, fatigue-induced cracks that form irregular “alligator” patterns.
-     Only mark if the cracking is extensive and clearly indicative of structural failure.
-    c. Line Cracking
-     Longitudinal or transverse cracks that are wide, deep, or continuous. Ignore isolated or hairline cracks that do not impact overall integrity.
-    d. Debris and Other Obstructions
-     Identify any foreign materials (e.g., leaves, stones, trash) that present a clear hazard on the greenway.
-    e. Additional Factors
-     Note signs of surface raveling, root intrusion, water ponding, or drainage issues as these contribute to the overall deterioration of the pavement.
-     When applicable, document any evidence of vegetation or root damage, particularly in areas adjacent to trees.
-3.	PASER Rating Integration
-    • Adopt the PASER (Pavement Surface Evaluation and Rating) system as the primary method of rating surface condition, but note that it will be recorded as a 'Road Health Index'.
-    • PASER ratings normally range from 1 (failed, requiring complete reconstruction) to 10 (like-new).
-    • Recognize that:
-     Ratings 10-9 indicate excellent condition with no visible distress.
-     Ratings 8-7 denote minor wear or cosmetic issues.
-     Ratings 6-5 reflect moderate deterioration with some patching or maintenance needs.
-     Ratings 4-3 identify significant defects (e.g., severe cracking, potholes) and indicate urgent repair.
-     Ratings 2-1 signal major structural failure, where immediate resurfacing or reconstruction is needed.
-    • In your final report, include the PASER rating for each inspected segment, highlighting segments rated 3 or below as critical.
-4.	Detection Guidelines
-    • For each defect, indicate whether it is present (Yes/No) and assign a confidence score between 0 and 1.
-     Confidence scores above 0.7 are reserved for visually clear and unambiguous cases.
-     Borderline cases (scores below 0.3) should prompt a recommendation for further review or additional data collection.
-    • Always err on the side of caution. If a defect's nature is ambiguous, do not overstate its severity.
-5.	Reporting and Output
-    • Provide a summary that concisely describes the key findings. For example:
-    “Significant alligator cracking was observed across a large portion of the segment, with a pronounced pothole in the upper right corner. Overall condition is rated as Poor (PASER 3), requiring immediate maintenance.”
-    • List each category (Pothole, Alligator Cracking, Line Cracking, Debris/Obstructions) with its binary presence (Yes/No) and corresponding confidence score.
-    • Calculate and report an overall Road Health Index derived from the PASER rating and qualitative observations.
-        6.	Additional Considerations
-    • Maintain consistency with the contractor's methodology by integrating both quantitative PASER ratings and qualitative field observations (e.g., evidence of drainage issues or root intrusion).
-    • Ensure that your evaluation prioritizes safety and long-term usability of the greenway network, reflecting the goals of resource allocation and timely maintenance.
-    • When in doubt, recommend follow-up inspection or additional data collection to confirm borderline observations.
+    You are a dedicated greenway pavement analyst. Your task is to review GoPro images or video frames of paved greenways and assess surface condition by detecting and quantifying key defects. Your primary goal is to emulate expert-level evaluations with high consistency and clarity.
+ 
+1. Primary Objectives
 
+For each image or frame:
+•	Estimate a PASER rating (1–10) based on the entire visible segment. Think: “If this condition continued for the whole greenway, what would its PASER score be?”
+•	Assign severity scores (0–10) for the following:
+o	Line Cracking
+o	Longitudinal Cracking
+o	Raveling
+o	Upheaval
+ 
+2. PASER Rating Guidelines
+
+Use these surface-level indicators when assigning PASER scores:
+Score	Meaning	Notes
+10–9	Excellent	No visible defects
+8–7	Very Good–Good	Slight surface wear, light cracking
+6–5	Good–Fair	Moderate cracking, minor raveling or patching
+4–3	Fair–Poor	Severe cracking, potholes, upheaval, tripping hazards
+2–1	Very Poor–Failed	Major damage, unusable, full reconstruction needed
+Always highlight images rated 3 or below as critical.
+3. Defect Detection and Severity Scoring (0–10)
+
+Assign scores using the following rubrics:
+
+A. Line Cracking (0–10)
+•	Focus on visible straight cracks, either transverse or diagonal.
+•	Ignore faint hairline marks; score only meaningful cracks.
+•	0 = none; 5 = some moderate cracking; 10 = extensive, deep cracks.
+
+B. Longitudinal Cracking (0–10)
+•	Cracks running parallel to the direction of travel.
+•	Prioritize ones that appear continuous, deep, or cause uneven surfaces.
+•	0 = none; 10 = multiple deep or wide cracks with continuity.
+
+C. Raveling (0–10)
+•	Areas where the asphalt has degraded into loose gravel or has visibly rough surface texture.
+•	Score based on spread and visual severity.
+•	0 = smooth surface; 10 = widespread loose material and disintegration.
+
+D. Upheaval (0–10)
+•	Caused by root damage or other vertical displacement.
+•	Prioritize changes that create trip hazards or uneven transitions.
+•	0 = flat surface; 10 = clear raised sections that affect safety.
+ 
+4. Detection Confidence
+
+For each defect (if detected), provide:
+•	Presence: Yes/No
+•	Confidence Score: 0.0–1.0
+
+Use >0.7 for obvious cases. Below 0.3 = ambiguous → recommend follow-up.
+ 
+5. Reporting Template (per frame)
+
+Example output:
+{
+  "PASER_rating": 3,
+  "line_cracking": 6,
+  "longitudinal_cracking": 8,
+  "raveling": 5,
+  "upheaval": 7,
+  "summary": "Significant longitudinal cracking and root-related upheaval. This frame likely reflects poor condition overall. Recommend further review."
+}
+6. Final Notes
+•	Always consider safety and long-term performance in your ratings.
+•	Be conservative with PASER 8–10. Most images should fall in 4–7 unless pristine or severely damaged.
+•	Match expert methodology: combine visual assessment, safety awareness, and material understanding.
+•	When unsure, recommend flagging the frame for human review.
 """
 
 model = 'gpt-4o-mini'
@@ -247,93 +274,69 @@ batch_response_format = {
 
 greenway_user_message = "Please analyze these images and share your expert greenway condition analyses, adhering to the JSON schema provided."
 greenway_response_format = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "road_condition_batch",
-        "schema": {
+  "type": "json_schema",
+  "json_schema": {
+    "name": "road_condition_batch",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "analyses": {
+          "type": "array",
+          "items": {
             "type": "object",
             "properties": {
-                "analyses": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "file_id": {
-                                "type": "string",
-                                "description": "The openai file id or unique identifier of the analyzed image"
-                            },
-                            "pothole": {
-                                "type": "string",
-                                "enum": ["yes", "no"],
-                                "description": "Indicates the presence of potholes on the greenway"
-                            },
-                            "pothole_confidence": {
-                                "type": "number",
-                                "description": "Indicates the confidence in the pothole detection, ranging from 0 to 1"
-                            },
-                            "alligator_cracking": {
-                                "type": "string",
-                                "enum": ["yes", "no"],
-                                "description": "Indicates the presence of alligator cracking on the greenway"
-                            },
-                            "alligator_cracking_confidence": {
-                                "type": "number",
-                                "description": "Indicates the confidence in the alligator cracking detection, ranging from 0 to 1"
-                            },
-                            "line_cracking": {
-                                "type": "string",
-                                "enum": ["yes", "no"],
-                                "description": "Indicates the presence of line cracking on the greenway"
-                            },
-                            "line_cracking_confidence": {
-                                "type": "number",
-                                "description": "Indicates the confidence in the line cracking detection, ranging from 0 to 1"
-                            },
-                            "debris": {
-                                "type": "string",
-                                "enum": ["yes", "no"],
-                                "description": "Indicates the presence of debris on the greenway"
-                            },
-                            "debris_confidence": {
-                                "type": "number",
-                                "description": "Indicates the confidence in the debris detection, ranging from 0 to 1"
-                            },
-                            "summary": {
-                                "type": "string",
-                                "description": "A brief summary of the greenway condition, a few sentences tops"
-                            },
-                            "road_health_index": {
-                                "type": "integer",
-                                "description": "The overall health of the greenway represented as a PASER-system value from 1 to 10"
-                            }
-                        },
-                        "required": [
-                            "file_id",
-                            "pothole",
-                            "pothole_confidence",
-                            "alligator_cracking",
-                            "alligator_cracking_confidence",
-                            "line_cracking",
-                            "line_cracking_confidence",
-                            "debris",
-                            "debris_confidence",
-                            "summary",
-                            "road_health_index"
-                        ],
-                        "additionalProperties": False
-                    }
-                }
+              "file_id": {
+                "type": "string",
+                "description": "The OpenAI file ID or unique identifier of the analyzed image frame"
+              },
+              "PASER_rating": {
+                "type": "integer",
+                "description": "Estimated PASER rating between 1 and 10 (1 = failed, 10 = excellent)"
+              },
+              "line_cracking": {
+                "type": "integer",
+                "description": "Severity score for general line cracking ranging from 0 to 10 (0 = none, 10 = severe)"
+              },
+              "longitudinal_cracking": {
+                "type": "integer",
+                "description": "Severity score for longitudinal cracks  ranging from 0 to 10 (0 = none, 10 = severe)"
+              },
+              "raveling": {
+                "type": "integer",
+                "description": "Severity score for raveling  ranging from 0 to 10 (0 = none, 10 = severe)"
+              },
+              "upheaval": {
+                "type": "integer",
+                "description": "Severity score for pavement upheaval  ranging from 0 to 10 (0 = none, 10 = severe)"
+              },
+              "summary": {
+                "type": "string",
+                "description": "Brief natural language summary of observed conditions and key issues"
+              }
             },
-            "required": ["analyses"],
+            "required": [
+              "file_id",
+              "PASER_rating",
+              "line_cracking",
+              "longitudinal_cracking",
+              "raveling",
+              "upheaval",
+              "summary"
+            ],
             "additionalProperties": False
-        },
-        "strict": True
-    }
+          }
+        }
+      },
+      "required": ["analyses"],
+      "additionalProperties": False
+    },
+    "strict": True
+  }
 }
 
 assistant = 'asst_eU5BTCInSqddd4fsRiXwE8Dm'
 batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
-greenway_assistant = 'asst_s7hNGDp4PRo8HIPgjunX7FCj'
+greenway_assistant = 'asst_1lJD0RtJ2eMEaZxiyoZ9Mzcn'
 
 unprocessed_videos_path = 'unprocessed_videos'
 
