@@ -14,6 +14,15 @@ async def main() -> None:
         print('Closing...')
         await gopro.close()
         print('Closed!')
+
+
+
+    if gopro.is_ready:
+        # Get list of media and created date
+        # Download today's media then upload to Box OR upload directly to Box
+        # Delete media from camera
+        
+
         return
 
 if __name__ == "__main__":
