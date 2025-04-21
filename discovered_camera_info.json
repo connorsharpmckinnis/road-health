@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Unnamed",
+    "identifier": "0587D22F-0D56-0B6B-22CE-185899556174: GoPro 3721",
+    "ssid": "cary3 gopro",
+    "password": "q=4-tdY-hR4",
+    "ap_entries": {
+      "result": 1,
+      "scanning_state": 2
+    }
+  },
+  {
+    "name": "Unnamed",
+    "identifier": "F2EE8E53-BDF5-E7BB-5834-6422287690F0: GoPro 9799",
+    "ssid": "GP50339799",
+    "password": "VRh-N4P-YjT",
+    "ap_entries": {
+      "result": 1,
+      "scanning_state": 2
+    }
+  }
+]

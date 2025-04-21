@@ -1,44 +1,95 @@
-import asyncio
-from camera_controller.discovery import connect_and_prepare, save_discovered_gopros
-from camera_controller.media_handler import list_media, download_media, delete_media
-from camera_controller.box_uploader import upload_videos_to_box
+# __main__.py
 
+import sys
+import os
+import asyncio
+import json
+from open_gopro import WirelessGoPro
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Optional: Predefined names if you want to target specific cameras
 CAMERA_NAMES = [
-    "GoPro 01", 
-    "GoPro 02",
-    "GoPro 03",
-    "GoPro 04",
-    "GoPro 05",
+    "cary3 gopro",
+    "GP50339799"
 ]
 
-async def process_camera(camera_name):
-    print(f"\n=== Processing {camera_name} ===")
-    gopro = await connect_and_prepare(target_pattern=camera_name)
-    if not gopro:
-        print(f"[!] Failed to connect to {camera_name}")
-        return
+OUTPUT_FILE = "discovered_camera_info.json"
+
+
+async def scrape_camera_info(name=None):
+    info = {}
 
     try:
-        media_entries = await list_media(gopro)
-        if not media_entries:
-            print(f"[~] No media found on {camera_name}")
+        if name:
+            async with WirelessGoPro(target=name, wifi_interface=False, enable_wifi=False) as gopro:
+                print(f'Connected to {gopro.identifier}')
+                statuses = await gopro.ble_command.get_camera_statuses()
+                settings = await gopro.ble_command.get_camera_settings()
+                print(f"Statuses: {statuses}")
+                print(f"Settings: {settings}")
         else:
-            await download_media(gopro, media_entries)
-            await delete_media(gopro, media_entries)
+            async with WirelessGoPro(wifi_interface=False, enable_wifi=False) as gopro:
+                print(f'Connected to {gopro.identifier}')
+                statuses = await gopro.ble_command.get_camera_statuses()
+                settings = await gopro.ble_command.get_camera_settings()
+                print(f"Statuses: {statuses}")
+                print(f"Settings: {settings}")
+                ssid = await gopro.ble_command.get_wifi_ssid()
+                ssid = ssid.data
+                wifi_password = await gopro.ble_command.get_wifi_password()
+                wifi_password = wifi_password.data
+                ap_entries = await gopro.ble_command.scan_wifi_networks()
+                ap_entries = ap_entries.data
+                id = gopro.identifier
+
+
+        info = {
+            "name": name if name else "Unnamed",
+            "identifier": id,
+            "ssid": ssid,
+            "password": wifi_password,
+            "ap_entries": ap_entries
+        }
+
+        print(f"[+] Scraped info from {info['name']} ({info['identifier']})")
 
     except Exception as e:
-        print(f"[!] Error processing {camera_name}: {e}")
+        print(f"[!] Error scraping {name or 'Unnamed'}: {e}")
+        return None
 
     finally:
         await gopro.close()
 
-    # Switch to ethernet manually or assume you're already on it here
-    upload_videos_to_box()
+    return info
 
-async def main():
-    # await save_discovered_gopros()
-    for name in CAMERA_NAMES:
-        await process_camera(name)
+
+async def main(named_mode=True):
+    all_infos = []
+
+    if named_mode:
+        for name in CAMERA_NAMES:
+            camera_info = await scrape_camera_info(name)
+            if camera_info:
+                all_infos.append(camera_info)
+    else:
+        # Attempt to discover cameras nearby without specifying names
+        print("[~] Scanning for nearby cameras...")
+        camera_info = await scrape_camera_info(name=None)
+        if camera_info:
+            all_infos.append(camera_info)
+        await asyncio.sleep(2)
+
+    if all_infos:
+        print(f'{all_infos = }')
+        with open(OUTPUT_FILE, "w") as f:
+            json.dump(all_infos, f, indent=2)
+
+        print(f"[✓] Saved {len(all_infos)} camera(s) info to {OUTPUT_FILE}")
+    else:
+        print("[!] No cameras discovered.")
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Set named_mode to True if you want to target specific cameras
+    asyncio.run(main(named_mode=False))

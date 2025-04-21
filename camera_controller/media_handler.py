@@ -4,13 +4,13 @@ import os
 from pathlib import Path
 import aiofiles
 import aiohttp
-from open_gopro import GoPro
+from open_gopro import WirelessGoPro
 import requests
 
-async def list_media(gopro: GoPro):
+async def list_media(gopro: WirelessGoPro):
     try:
         
-        response = await gopro.wifi_command.get_media_list()
+        response = await gopro.http_command.get_media_list()
         if not response.success or not response.result:
             print("[!] No media found.")
             return []
@@ -19,15 +19,15 @@ async def list_media(gopro: GoPro):
         print(f"[ERROR] Failed to list media: {e}")
         return []
 
-async def download_media(gopro: GoPro, media_entries, download_dir="downloads"):
+async def download_media(gopro: WirelessGoPro, media_entries, download_dir="downloads"):
     os.makedirs(download_dir, exist_ok=True)
-    base_url = "http://10.5.5.9:8080/videos/DCIM"
+    base_url = gopro.http_command.get_base_url()
 
     async with aiohttp.ClientSession() as session:
         for entry in media_entries:
             filename = entry.filename
             folder = entry.directory
-            url = f"{base_url}/{folder}/{filename}"
+            url = f"{base_url}/videos/DCIM/{folder}/{filename}"
             local_path = Path(download_dir) / filename
 
             if local_path.exists():
@@ -45,8 +45,8 @@ async def download_media(gopro: GoPro, media_entries, download_dir="downloads"):
             except Exception as e:
                 print(f"[ERROR] Exception downloading {filename}: {e}")
 
-async def delete_media(gopro: GoPro, media_entries):
-    url = "http://10.5.5.9:8080/gopro/media/delete/file"
+async def delete_media(gopro: WirelessGoPro, media_entries):
+    url = f"{gopro.http_command.get_base_url()}/gopro/media/delete/file"
 
     for entry in media_entries:
         path = f"{entry.directory}/{entry.filename}"

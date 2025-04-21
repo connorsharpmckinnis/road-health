@@ -20,8 +20,7 @@ def authenticate_box_client():
     auth = BoxCCGAuth(config=ccg_config)
     return BoxClient(auth)
 
-def upload_videos_to_box(download_dir="downloads"):
-    client = authenticate_box_client()
+def upload_videos_to_box(client, download_dir="downloads"):
     folder = client.folders.get_folder_by_id(BOX_VIDEOS_FOLDER_ID)
     for filename in os.listdir(download_dir):
         if filename.lower().endswith(".mp4"):
