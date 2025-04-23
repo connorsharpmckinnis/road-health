@@ -16,7 +16,6 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import geojson
 
-
 # Load environment variables from .env file
 load_dotenv()
 

@@ -725,8 +725,10 @@ class Processor():
         self.mode = mode
         log_file = "pipeline_timing_log.txt"
         file_name = video_path
-        # update the video path to pull from unprocessed_videos/
-        video_path = f"unprocessed_videos/{video_path}"
+        
+        # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
+        #video_path = f"unprocessed_videos/{video_path}"
+        video_path = f"unprocessed_greenway_videos/{video_path}"
 
         with open(log_file, "w") as log:
             log.write("Stage Timing Log:\n")

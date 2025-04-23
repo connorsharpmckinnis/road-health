@@ -194,3 +194,4 @@ temp_metadata.kml
 temp_metadata.csv
 *.geojson
 *.bin
+/unprocessed_greenway_videos
