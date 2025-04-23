@@ -191,3 +191,4 @@ temp_metadata.csv
 *.kml
 *.gpx
 *.bin
+/unprocessed_greenway_videos

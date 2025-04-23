@@ -1,28 +1,48 @@
 from arcgis.gis import GIS
-from arcgis.geometry import Point
-from arcgis.features import FeatureLayer
+from arcgis.geometry import Geometry
+from arcgis.geometry.functions import project
+from arcgis.geometry import distance as arcgis_distance
+from arcgis.features import use_proximity
+from arcgis.features import Feature, FeatureLayer, FeatureLayerCollection, FeatureSet
+from arcgis.geometry import *
+from arcgis import *
+import os
+from shapely.geometry import Point as ShapelyPoint
+from shapely.ops import transform
+import pyproj
 
-# Connect to GIS
-gis = GIS("https://your-org.maps.arcgis.com", api_key="YOUR_API_KEY")
+api_key = os.getenv("ARCGIS_API_KEY")
+gis = GIS("https://carync.maps.arcgis.com", api_key=api_key)
+print("Connected to ArcGIS Online")
 
-# Define your point (latitude, longitude)
-lat = 35.7915
-lon = -78.7811
-point = {"x": lon, "y": lat, "spatialReference": {"wkid": 4326}}
+# Load just the road ownership layer
+road_ownership_item: FeatureLayerCollection = gis.content.get("e79290fb33664e6d94cb650ea29a6bfa")
+roads_layer: FeatureLayer = road_ownership_item.layers[0]
 
-# Load your roads layer
-roads_layer = FeatureLayer("https://services.arcgis.com/<your-org-id>/arcgis/rest/services/Roads/FeatureServer/0")
 
-# Find nearest road
-result = roads_layer.query_nearest(geometries=[point], search_distance=100, return_attributes=True)
+# Pothole location
+lat, lon = 35.791836, -78.784555  # Example spot on a state road
+pothole = Point({"x" : lon, "y" : lat, 
+            "spatialReference" : {"wkid" : 3857}}) 
 
-# Get the closest feature and its attributes
-nearest_road = result['features'][0]['attributes']
+pothole_set = Feature(geometry=pothole, attributes={})
+pothole_featureset = FeatureSet([pothole_set])
 
-# Extract relevant info
-road_name = nearest_road.get("ROAD_NAME")
-owner = nearest_road.get("OWNER")  # Field names depend on your layer!
-maintainer = nearest_road.get("MAINT_RESPONSIBILITY")
+# Create a 50-meter buffer around the projected pothole point
+# Convert ArcGIS point to shapely
+shapely_point = ShapelyPoint(pothole["x"], pothole["y"])
+buffered = shapely_point.buffer(50)  # 50m buffer (in meters)
 
-print(f"Closest road: {road_name}")
-print(f"Maintained by: {maintainer or owner}")
+circle = Geometry(buffered.__geo_interface__)
+circle["spatialReference"] = {"wkid": 3857}
+print(f'{circle._type = }')
+
+results = roads_layer.query(
+    geometry=circle,
+    geometry_type="esriGeometryPolygon",
+    spatial_rel="esriSpatialRelIntersects",
+    out_fields="*",
+    return_geometry=True
+)
+
+print(f'{results = }')
