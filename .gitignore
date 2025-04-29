@@ -178,11 +178,9 @@ pipeline_timing_log.txt
 /extracted_frames
 /work_order_frames
 /unprocessed_videos
-/test_frames_folder/frame_0002.jpg
-/test_frames_folder
 .bin
 .log
-/unprocessed_photos
+unprocessed_photos
 .gpx
 .kml
 greenway_geojsons/telemetry_20250327_11_46.geojson
@@ -193,6 +191,8 @@ temp_metadata.kml
 temp_metadata.csv
 *.geojson
 *.bin
-/unprocessed_greenway_videos
-/GPX_files
+*.jpg
+*.mp4
+unprocessed_greenway_videos
+GPX_files
 aggregated_geojsons.json
