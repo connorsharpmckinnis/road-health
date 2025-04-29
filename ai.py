@@ -109,7 +109,7 @@ class AI():
                 instructions=self.greenway_instructions,
                 response_format=self.greenway_response_format
             )
-            self.batch_assistant_id = self.greenway_assistant.id
+            self.greenway_assistant_id = self.greenway_assistant.id
             print(f"Greenway-specific Assistant created with ID: {self.greenway_assistant_id}")
 
             return self.greenway_assistant, self.greenway_assistant_id

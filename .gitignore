@@ -184,6 +184,8 @@ unprocessed_photos
 .gpx
 .kml
 *.geojson
+*.kml
+*.gpx
 *.bin
 *.csv
 *.jpg
