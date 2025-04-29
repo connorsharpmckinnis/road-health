@@ -85,7 +85,7 @@ class App():
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    async def pipeline(self, new_files_to_download: list=None, greenway_mode=True):
+    async def pipeline(self, new_files_to_download: list=None, greenway_mode=False):
         self.greenway_mode = greenway_mode
         #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
@@ -406,4 +406,4 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=5, greenway_mode=True)
+    app.start_monitoring(interval=5, greenway_mode=False)

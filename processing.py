@@ -298,7 +298,7 @@ class Processor():
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
         return extracted_frames
     
-    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=713):
+    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=360):
         """
         Extract frames at specific intervals from a video using FFmpeg, respecting max_frames.
         Args:
@@ -707,7 +707,7 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="video"):
+    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -727,8 +727,8 @@ class Processor():
         file_name = video_path
         
         # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
-        #video_path = f"unprocessed_videos/{video_path}"
-        video_path = f"unprocessed_greenway_videos/{video_path}"
+        video_path = f"unprocessed_videos/{video_path}"
+        #video_path = f"unprocessed_greenway_videos/{video_path}"
 
         with open(log_file, "w") as log:
             log.write("Stage Timing Log:\n")
@@ -774,7 +774,7 @@ class Processor():
                 extracted_frames = self.extract_all_frames_ffmpeg(
                     video_path=video_path,
                     output_folder="frames",
-                    crop_top=713  # Crop top for GoPro videos
+                    crop_top=360  # Crop top for GoPro videos
                 )
             elif self.mode == "video":
                 extracted_frames = self.extract_frames_ffmpeg(
