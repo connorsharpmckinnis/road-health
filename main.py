@@ -85,7 +85,7 @@ class App():
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    async def pipeline(self, new_files_to_download: list=None, greenway_mode=True):
+    async def pipeline(self, new_files_to_download: list=None, greenway_mode=False):
         self.greenway_mode = greenway_mode
         #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
@@ -145,28 +145,8 @@ class App():
             logger.info("No files to process. Exiting pipeline.")
             return
 
-        # 📣 Send program status update with countdown
-        await self.send_status_update_to_ui(
-            source='App.pipeline()',
-            level='Section',
-            type='Video',
-            status="In Progress",
-            message=f"Processing {len(new_files_to_download)} files."
-        )
+        
         for file in files_to_process:
-            # 📣 Send video card status update with initial processing
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="In Progress",
-                message=f"Processing {file}.",
-                details={
-                    "video_file": file,
-                    "progress": "20%",
-                    "stage": "Downloading"
-                }
-            )
 
             self.processing_status['file'] = {"stage": "Downloading", "status": f"Downloading {file}..."}
             logger.info(self.processing_status['file']["status"])
@@ -213,38 +193,12 @@ class App():
             if os.path.exists(file_path):
                 logger.info(f"File already exists: {file['name']}. Skipping download.")
                 
-                # Simulate download status for the UI
-                await self.send_status_update_to_ui(
-                    source='App.download_files()',
-                    level='Card',
-                    type='Video',
-                    status="Already Downloaded",
-                    message=f"File {file['name']} already exists. Skipping download.",
-                    details={
-                        "video_file": file['name'],
-                        "progress": "30%",
-                        "stage": "Downloading"
-                    }
-                )
                 continue
 
             logger.info(f"Downloading file: {file['name']}. Please wait...")
             self.box.download_file(file_id=file['id'], file_name=file['name'], folder_path=self.box.unprocessed_videos_folder)
             logger.info(f"Downloaded file: {file['name']}")
 
-            # Send status update to UI after successful download
-            await self.send_status_update_to_ui(
-                source='App.download_files()',
-                level='Card',
-                type='Video',
-                status="Download Complete",
-                message=f"File {file['name']} downloaded successfully.",
-                details={
-                    "video_file": file['name'],
-                    "progress": "30%",
-                    "stage": "Downloading"
-                }
-            )
         return True
 
     def get_all_files(self):
@@ -337,13 +291,6 @@ class App():
                         logger.info("Monitoring loop interrupted.")
                         self.status = "Idle"
                         self.monitoring_status = "Idle"
-                        await self.send_status_update_to_ui(
-                            source='App.start_monitoring()',
-                            level='Info',
-                            type='Program',
-                            status="Stopped",
-                            message="Monitoring has been stopped by the user.",
-                        )
                         return
                     
                     
@@ -352,25 +299,6 @@ class App():
                     self.monitoring_status = "Active"
                     await asyncio.sleep(1)
                     
-                    # 📣 Send program status update with countdown
-                    await self.send_status_update_to_ui(
-                        source='App.start_monitoring()',
-                        level='Info',
-                        type='Program',
-                        status="Active",
-                        message=f"Next check in {i} seconds",
-                        details={
-                            "countdown": i
-                        }
-                    )
-                # 📣 Send temp box check
-                await self.send_status_update_to_ui(
-                    source='App.start_monitoring()',
-                    level='Info',
-                    type='Temp',
-                    status="Checking Box for new files...",
-                    message=f"Checking Box for new files...",
-                )
 
                 new_files_to_download = self.check_for_new_files()
                 if len(new_files_to_download) > 0:
@@ -396,4 +324,4 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=5, greenway_mode=True)
+    app.start_monitoring(interval=5, greenway_mode=False)
