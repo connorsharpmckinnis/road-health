@@ -16,7 +16,6 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import geojson
 
-
 # Load environment variables from .env file
 load_dotenv()
 
@@ -352,55 +351,41 @@ class Box():
             logger.info("Long-term storage process completed.")
             updated_telemetry_objects = telemetry_objects
             return updated_telemetry_objects
-
         # Use the new multithreaded upload function
-        updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
+        # DEACTIVATED ARCHIVING OF ALL FRAMES SEPARATELY. NO NEED IF ARCHIVING VIDEOS AND SAVING WORK ORDER FRAMES SPECIFICALLY
+        # updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
 
-        # Convert telemetry objects to GeoJSON Features
-        geojson_features = [telem_obj.to_geojson() for telem_obj in telemetry_objects]
+        logger.info("Saving all telemetry into a single GeoJSON (timelapse mode)...")
+
+        # Combine all telemetry objects into one FeatureCollection
+        geojson_features = [telem_obj.to_geojson() for telem_obj in updated_telemetry_objects]
         feature_collection = geojson.FeatureCollection(geojson_features)
-        
-        # Define the GeoJSON file path (local save location)
-        geojson_filename = f"telemetry_{timestamp}.geojson"
+
+        # Build filename based on source video
+        geojson_filename = f"{source_video_base}_{timestamp}_telemetry.geojson"
         geojson_filepath = os.path.join('frames', geojson_filename)
 
-        # Debug: Check if filepath is valid
-        print(f"Saving GeoJSON file to: {geojson_filepath}")
-
-        # Save FeatureCollection as a GeoJSON file
+        # Save the FeatureCollection locally
         try:
             with open(geojson_filepath, "w") as geojson_file:
                 geojson.dump(feature_collection, geojson_file, indent=2)
-            logger.info(f"GeoJSON file successfully saved locally: {geojson_filepath}")
+            logger.info(f"Saved combined GeoJSON: {geojson_filepath}")
         except Exception as e:
-            logger.error(f"Failed to save GeoJSON file locally: {e}")
-            return None
+            logger.error(f"Error saving combined GeoJSON: {e}")
 
-        # Debug: Check if file exists after writing
-        if not os.path.exists(geojson_filepath):
-            logger.error(f"GeoJSON file does not exist at expected path: {geojson_filepath}")
-            return None
-
-        # Upload the GeoJSON file to Box
+        # Upload the combined GeoJSON to Box
         try:
             uploaded_geojson = await asyncio.to_thread(
                 self.upload_small_file_to_folder, geojson_filepath, destination_folder_id, geojson_filename
             )
-
-            # Debug: Check if upload worked
             if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
                 geojson_box_file_id = uploaded_geojson.entries[0].id
                 geojson_box_file_url = self.get_direct_shared_link(geojson_box_file_id)
-                logger.info(f"GeoJSON file uploaded to Box: {geojson_box_file_url}")
+                logger.info(f"GeoJSON uploaded: {geojson_box_file_url}")
             else:
-                logger.error("GeoJSON upload failed. `uploaded_geojson` did not return expected structure.")
+                logger.error(f"GeoJSON upload failed for {geojson_filename}")
         except Exception as e:
-            logger.error(f"Error uploading GeoJSON to Box: {e}")
-
-        logger.info("Long-term storage process completed.")
-
-        return updated_telemetry_objects
-    
+            logger.error(f"Error uploading GeoJSON {geojson_filename}: {e}")
 
         
 

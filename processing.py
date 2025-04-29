@@ -117,7 +117,9 @@ class Processor():
 
             # Check GPX file size and number of trackpoints
             if not os.path.exists(Processor.TEMP_GPX_FILE):
-                raise FileNotFoundError(f"GPX file {Processor.TEMP_GPX_FILE} not created.")
+                raise FileNotFoundError(f"GPX file {Processor.TEMP_GPX_FILE} not created.")\
+                
+            self._save_gpx_to_folder(mp4_file_path)
             
             tree = ET.parse(Processor.TEMP_GPX_FILE)
             root = tree.getroot()
@@ -143,6 +145,17 @@ class Processor():
             logger.exception(f"Failed to extract metadata: {e}")
             raise
     
+    def _save_gpx_to_folder(self, video_filename):
+        """Save the GPX file into a GPX_files/ folder with a video-based name."""
+        gpx_folder = "GPX_files"
+        os.makedirs(gpx_folder, exist_ok=True)
+
+        base_name = os.path.splitext(os.path.basename(video_filename))[0]
+        dest_path = os.path.join(gpx_folder, f"{base_name}.gpx")
+
+        shutil.copy2(Processor.TEMP_GPX_FILE, dest_path)
+        logger.info(f"Copied GPX file to {dest_path}")
+
     @staticmethod
     def cleanup_temp_files(*files):
         """Remove temporary files."""
@@ -285,7 +298,7 @@ class Processor():
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
         return extracted_frames
     
-    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=713):
+    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=360):
         """
         Extract frames at specific intervals from a video using FFmpeg, respecting max_frames.
         Args:
@@ -694,7 +707,7 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="video"):
+    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -712,8 +725,10 @@ class Processor():
         self.mode = mode
         log_file = "pipeline_timing_log.txt"
         file_name = video_path
-        # update the video path to pull from unprocessed_videos/
+        
+        # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
         video_path = f"unprocessed_videos/{video_path}"
+        #video_path = f"unprocessed_greenway_videos/{video_path}"
 
         with open(log_file, "w") as log:
             log.write("Stage Timing Log:\n")
@@ -759,7 +774,7 @@ class Processor():
                 extracted_frames = self.extract_all_frames_ffmpeg(
                     video_path=video_path,
                     output_folder="frames",
-                    crop_top=713  # Crop top for GoPro videos
+                    crop_top=360  # Crop top for GoPro videos
                 )
             elif self.mode == "video":
                 extracted_frames = self.extract_frames_ffmpeg(

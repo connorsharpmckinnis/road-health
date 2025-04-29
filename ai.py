@@ -353,7 +353,7 @@ class AI():
 
         # Stage 2: Run all analyses
         start_time_6b = time.time()
-        analyzed_telemetry_objects = self.run_all_analyses(telemetry_objects, batch_size, multithreaded, assistant='greenway')
+        analyzed_telemetry_objects = self.run_all_analyses(telemetry_objects, batch_size, multithreaded, assistant='batch')
         #ASSISTANT TYPE IS SELECTED HERE. CURRENTLY SET TO GREENWAY FOR GREENWAY DATA VALIDATION. CHANGE TO 'batch' FOR RETURN TO ROAD HEALTH EVALUATOR
 
         return analyzed_telemetry_objects, start_time_6a, start_time_6b

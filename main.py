@@ -114,10 +114,13 @@ class App():
                     "stage": "Downloading"
                 }
             )
-        
-        download_files_result = await self.download_files(new_files_to_download)
-        if download_files_result:
-            logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
+
+        if not self.greenway_mode:
+            download_files_result = await self.download_files(new_files_to_download)
+            if download_files_result:
+                logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
+        else:
+            logger.info(f"Greenway Mode: Using local files without downloading.")
 
         for file in new_files_to_download:
             # 📣 Send video card status update with waiting
@@ -133,9 +136,11 @@ class App():
                 }
             )
         
-        #check if there are files to process in the unprocessed_videos folder
-        files_to_process = os.listdir("unprocessed_videos")
-        self.processed_videos = set()
+                #check if there are files to process in the appropriate unprocessed folder
+        if self.greenway_mode:
+            files_to_process = os.listdir("unprocessed_greenway_videos")
+        else:
+            files_to_process = os.listdir("unprocessed_videos")
 
         #establish processing status for each file
         self.processing_status = {file: {"stage": "Queued", "status": "Waiting to Start"} for file in files_to_process}
@@ -208,30 +213,35 @@ class App():
         return files
         
     def check_for_new_files(self) -> list:
-        """Poll Box for new files and return the names of any that aren't already handled."""
+        """Poll Box or Local Folder for new files and return ones not already handled."""
         logger.info("Checking for new files...")
         new_files_to_download = []
         self.load_processed_videos()
 
         if self.greenway_mode:
-            box_folder_id = '313579631401'
+            # Greenway mode: check local folder
+            local_folder = 'unprocessed_greenway_videos'
+            files_in_local = os.listdir(local_folder)
+            files_in_processed = set(os.listdir("processed_videos"))
+
+            new_files = [
+                {'name': file, 'id': None} for file in files_in_local
+                if file not in self.processed_videos
+                and file not in files_in_processed
+            ]
+
         else:
+            # Normal Box mode
             box_folder_id = self.box.videos_folder_box_id
-        files_in_box = self.box.list_items_in_folder(box_folder_id)  # List files in Box
-        
-        # Get filenames of downloaded but unprocessed files
-        files_in_unprocessed_folder = set(os.listdir("unprocessed_videos"))
+            files_in_box = self.box.list_items_in_folder(box_folder_id)
 
-        #get filenames of downloaded and processed files
-        files_in_processed_videos_folder = set(os.listdir("processed_videos"))
+            files_in_processed = set(os.listdir("processed_videos"))
 
-        # Exclude files already processed OR already downloaded
-        new_files = [
-            file for file in files_in_box 
-            if file['name'] not in self.processed_videos  # Not processed
-            #and file['name'] not in files_in_unprocessed_folder  # Not already downloaded # De-comment when pre-downloaded files are removed
-            and file['name'] not in files_in_processed_videos_folder # Not already dwnldld and processed
-        ]
+            new_files = [
+                file for file in files_in_box
+                if file['name'] not in self.processed_videos
+                and file['name'] not in files_in_processed
+            ]
 
         if not new_files:
             logger.info("No new files to process.")
@@ -241,7 +251,7 @@ class App():
 
         for file in new_files:
             new_files_to_download.append(file)
-            logger.info(f"Adding {file['name']} to to-download: (Id {file['id']})")
+            logger.info(f"Adding {file['name']} to to-download list")
 
         return new_files_to_download
 
