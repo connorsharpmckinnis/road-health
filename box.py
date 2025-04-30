@@ -337,9 +337,9 @@ class Box():
             logger.info("Long-term storage process completed.")
             updated_telemetry_objects = telemetry_objects
             return updated_telemetry_objects
-        # Use the new multithreaded upload function
-        # DEACTIVATED ARCHIVING OF ALL FRAMES SEPARATELY. NO NEED IF ARCHIVING VIDEOS AND SAVING WORK ORDER FRAMES SPECIFICALLY
-        # updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
+        
+        # Use the new multithreaded upload function to save all frames to Box
+        updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
 
         logger.info("Saving all telemetry into a single GeoJSON (timelapse mode)...")
 
