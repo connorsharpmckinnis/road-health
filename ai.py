@@ -66,18 +66,6 @@ class AI():
             set_greenway_assistant(greenway_assistant_id)
 
 
-    async def send_status_update_to_ui(self, type, level, status, message, details={}):
-        """Send a status update to the UI using WebSockets."""
-        if self.web_app:
-            await self.web_app.send_status_update(
-                source="AI",
-                type=type,
-                level=level,
-                status=status,
-                message=message,
-                details=details
-            )
-
     def create_assistant(self, type=None) -> tuple: #Tuple (self.assistant, self.assistant_id)
         """
         Create an Assistant dedicated to road health evaluations.
@@ -351,10 +339,16 @@ class AI():
         start_time_6a = time.time()
         self.upload_files_to_openai(telemetry_objects, multithreaded)
 
+        self.file_ids = [obj.openai_file_id for obj in telemetry_objects]
+
         # Stage 2: Run all analyses
         start_time_6b = time.time()
         analyzed_telemetry_objects = self.run_all_analyses(telemetry_objects, batch_size, multithreaded, assistant='batch')
         #ASSISTANT TYPE IS SELECTED HERE. CURRENTLY SET TO GREENWAY FOR GREENWAY DATA VALIDATION. CHANGE TO 'batch' FOR RETURN TO ROAD HEALTH EVALUATOR
+
+        if self.file_ids:
+            print('Deleting finished OpenAI Files...')
+            self.delete_files(self.file_ids)
 
         return analyzed_telemetry_objects, start_time_6a, start_time_6b
     
@@ -434,6 +428,7 @@ class AI():
             logger.ai(f"Deleted files: {len(delete_results.items())}")
         else:
             logger.ai("No old files to delete.")
+
     
 
 if __name__ == '__main__':

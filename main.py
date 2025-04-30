@@ -90,30 +90,7 @@ class App():
         #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
         logger.info(f"Starting pipeline. Downloading files...")
-        
-        # 📣 Send program status update with countdown
-        await self.send_status_update_to_ui(
-            source='App.pipeline()',
-            level='Section',
-            type='Video',
-            status="Downloading Files",
-            message=f"Downloading {len(new_files_to_download)} files."
-        )
 
-        for file in new_files_to_download:
-            # 📣 Send video card status update with downloading
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="In Progress",
-                message=f"Downloading file",
-                details={
-                    "video_file": file['name'],
-                    "progress": "20%",
-                    "stage": "Downloading"
-                }
-            )
 
         if not self.greenway_mode:
             download_files_result = await self.download_files(new_files_to_download)
@@ -122,19 +99,6 @@ class App():
         else:
             logger.info(f"Greenway Mode: Using local files without downloading.")
 
-        for file in new_files_to_download:
-            # 📣 Send video card status update with waiting
-            await self.send_status_update_to_ui(
-                source='App.pipeline()',
-                level='Card',
-                type='Video',
-                status="Inactive",
-                message=f"Waiting patiently for its turn",
-                details={
-                    "video_file": file['name'],
-                    "progress": "0%"
-                }
-            )
         
                 #check if there are files to process in the appropriate unprocessed folder
         if self.greenway_mode:
@@ -314,14 +278,6 @@ class App():
                 if len(new_files_to_download) > 0:
                     self.status = "Downloading"
                     
-                    # 📣 Send video status alert for new processing of videos
-                    await self.send_status_update_to_ui(
-                        source='App.start_monitoring()',
-                        level='Info',
-                        type='Program',
-                        status="Processing",
-                        message=f"Processing {len(new_files_to_download)} files."
-                    )
                     await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode)
                 else:
                     self.status = "Monitoring"

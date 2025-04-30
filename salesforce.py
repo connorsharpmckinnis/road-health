@@ -58,18 +58,6 @@ class WorkOrderCreator:
         self.coordinate_variance_growth_factor = 0.001
         self.base_query = "SELECT Id, Name, Geolocation__latitude__s, Geolocation__longitude__s FROM Location__c"
 
-    async def send_status_update_to_ui(self, type, level, status, message, details={}):
-        """Send a status update to the UI using WebSockets."""
-        if self.web_app:
-            await self.web_app.send_status_update(
-                source="Salesforce",
-                type=type,
-                level=level,
-                status=status,
-                message=message,
-                details=details
-            )
-
     def process_metadata_files(self):
         """
         Process metadata files and create Work Orders for high-confidence potholes.
@@ -133,19 +121,6 @@ class WorkOrderCreator:
                             for key, value in analysis_results.items():
                                 ai_analysis_str += f"{key}: {value}\n"
 
-                            await self.send_status_update_to_ui(
-                                type="WorkOrder",
-                                level="Info",
-                                status = "Created",
-                                message=f"Work Order {work_order_id} created.",
-                                details = {
-                                    "video_file": object.filename,
-                                    "work_order_id": work_order_id,
-                                    "image_base64": encoded_string,
-                                    "ai_analysis_str": ai_analysis_str,
-                                    "url": f"https://carync{self.sf_domain}.lightning.force.com/lightning/r/sm1a__WorkOrder__c/{work_order_id}/view"
-                                }
-                            )
                         except Exception as e:
                             logging.error(f"Error sending status update to UI: {e}")
 

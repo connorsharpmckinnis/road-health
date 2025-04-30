@@ -56,19 +56,6 @@ class Processor():
         }
         self.mode = mode
 
-
-    async def send_status_update_to_ui(self, source, type, level, status, message, details={}):
-        """Send a status update to the UI properly using WebSockets."""
-        if self.web_app:
-            await self.web_app.send_status_update(
-                source=source,
-                type=type,
-                level=level,
-                status=status,
-                message=message,
-                details=details
-            )
-
     @staticmethod
     def ensure_ffmpeg_installed():
         """Ensure ffmpeg and ffprobe are installed and accessible."""

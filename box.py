@@ -46,20 +46,6 @@ class Box():
         self.authenticate()
         print(f"{self.client = }")     
         
-
-
-    async def send_status_update_to_ui(self, type, level, status, message, details={}):
-        """Send a status update to the UI using WebSockets."""
-        if self.web_app:
-            await self.web_app.send_status_update(
-                source="Box",
-                type=type,
-                level=level,
-                status=status,
-                message=message,
-                details=details
-            )
-
     ## SECURITY AND AUTHENTICATION
 
     def authenticate(self):
