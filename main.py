@@ -85,7 +85,7 @@ class App():
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    async def pipeline(self, new_files_to_download: list=None, greenway_mode=False):
+    async def pipeline(self, new_files_to_download: list=None, greenway_mode=False, mode="timelapse"):
         self.greenway_mode = greenway_mode
         #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
@@ -123,7 +123,7 @@ class App():
             self.processing_status['file'] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
             logger.info(self.processing_status['file']["status"])
 
-            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode="video")
+            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode=mode)
             #'video' VS 'timelapse' MODE SET HERE. TIMELAPSE MODE IGNORES FRAMERATE I THINK
             self.processed_videos.add(file)
 
@@ -239,7 +239,7 @@ class App():
         os.remove(f"temp_metadata.gpx")
         os.remove(f"temp_metadata.kml")
 
-    async def start_monitoring(self, interval=10, greenway_mode=False):
+    async def start_monitoring(self, interval=10, greenway_mode=False, mode="timelapse"):
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
@@ -278,7 +278,7 @@ class App():
                 if len(new_files_to_download) > 0:
                     self.status = "Downloading"
                     
-                    await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode)
+                    await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode, mode=mode)
                 else:
                     self.status = "Monitoring"
                     logger.info(self.status)
@@ -290,4 +290,4 @@ class App():
 
 if __name__ == "__main__":
     app = App()
-    app.start_monitoring(interval=5, greenway_mode=False)
+    app.start_monitoring(interval=5, greenway_mode=False, mode="timelapse")
