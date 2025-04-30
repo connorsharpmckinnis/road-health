@@ -893,6 +893,8 @@ class TelemetryObject:
 
         geojson_object = None
         geom = geojson.Point((self.lon, self.lat))
+        
+        # Flatten analysis_results into the properties
         props = {
             "filename": self.filename,
             "filepath": self.filepath,
@@ -901,8 +903,9 @@ class TelemetryObject:
             "openai_file_id": self.openai_file_id,
             "box_file_id": self.box_file_id,
             "box_file_url": self.box_file_url,
-            "ai_analysis": self.analysis_results,
         }
+        if self.analysis_results:
+            props.update(self.analysis_results)  # Merge analysis_results into props
 
         geojson_object = geojson.Feature(
             geometry=geom,
