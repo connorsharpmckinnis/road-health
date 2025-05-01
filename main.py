@@ -21,9 +21,8 @@ dotenv.load_dotenv()
 flask_app = Flask(__name__)
 
 class App():
-    def __init__(self, web_app: WebApp=None):
+    def __init__(self):
         """Initialize App with reference to WebApp."""
-        self.web_app = web_app  # ✅ Store WebApp instance
         self.status = "Monitoring Inactive"
         self.monitoring_active = False
         self.monitoring_status = "Idle"
@@ -50,13 +49,13 @@ class App():
 
 
     def startup_box_client(self):
-        self.box = Box(web_app=self.web_app)
+        self.box = Box()
 
     def startup_processor(self):
-        self.frame_processor = Processor(web_app=self.web_app)
+        self.frame_processor = Processor()
 
     def startup_work_order_creator(self):
-        self.work_order_creator = WorkOrderCreator(web_app=self.web_app)
+        self.work_order_creator = WorkOrderCreator()
 
     def load_processed_videos(self):
         try:
@@ -68,17 +67,6 @@ class App():
     def load_downloaded_but_unprocessed_videos(self):
         self.downloaded_but_unprocessed = os.listdir("unprocessed_videos")
 
-    async def send_status_update_to_ui(self, source, type, level, status, message, details={}):
-        """Send a status update to the UI properly using WebSockets."""
-        if self.web_app:
-            await self.web_app.send_status_update(
-                source=source,
-                type=type,
-                level=level,
-                status=status,
-                message=message,
-                details=details
-            )
     
     def save_processed_videos(self):
         """Save processed files to a log to prevent reprocessing."""

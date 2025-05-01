@@ -9,7 +9,6 @@ from analysis import *
 import dotenv
 import logging
 import io
-from web_ui import WebApp, StatusUpdate
 import shutil
 import re
 
@@ -17,7 +16,7 @@ import re
 dotenv.load_dotenv()
 
 class WorkOrderCreator:
-    def __init__(self, username: str=None, password: str=None, security_token: str=None, client_id: str=None, metadata_folder: str=None, telemetry_items: list=None, sandbox: bool=True, web_app: WebApp=None):
+    def __init__(self, username: str=None, password: str=None, security_token: str=None, client_id: str=None, metadata_folder: str=None, telemetry_items: list=None, sandbox: bool=True):
         """
         Initialize the WorkOrderCreator class with Salesforce authentication.
 
@@ -29,7 +28,6 @@ class WorkOrderCreator:
         :param sandbox: Boolean indicating whether to use a Salesforce sandbox.
         """
 
-        self.web_app = web_app
         self.all_metadata = telemetry_items if telemetry_items else []
 
         

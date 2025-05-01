@@ -14,7 +14,6 @@ dotenv.load_dotenv()
 import time
 from datetime import datetime, timedelta, timezone
 from openai.types import FileObject, FileDeleted
-from web_ui import WebApp, StatusUpdate
 import asyncio
 
 AI_LOG_FILE = "logs/ai.log"
@@ -37,8 +36,7 @@ logger.addHandler(ai_file_handler)
 
 
 class AI():
-    def __init__(self, api_key, web_app: WebApp=None):
-        self.web_app = web_app
+    def __init__(self, api_key):
         self.api_key = api_key
         openai.api_key = self.api_key
         self.client = OpenAI()
@@ -118,7 +116,6 @@ class AI():
             purpose="vision"
             )
         
-        logger.ai(f"Uploaded file with OpenAI File Id {file.id}\nobject: {file.object}\nbytes: {file.bytes}\ncreated_at: {file.created_at}\nfilename: {file.filename}\npurpose: {file.purpose}")
         return file
 
     def get_n_analyses_from_openai(self, telemetry_objects: list):
@@ -196,7 +193,6 @@ class AI():
                 with open(TOKEN_USAGE_LOG_FILE, "a") as f:
                     f.write(f"{datetime.now(timezone.utc)} - Thread ID: {thread_id}, Tokens Used: {total_tokens}\n")
 
-                logger.ai(f"Run completed for thread {thread_id} with {total_tokens} tokens used.")
                 
                 return run
             except Exception as e:
@@ -234,7 +230,6 @@ class AI():
                                         if obj.filepath == file_id or obj.filename == file_id:
                                             obj.analysis_results = analysis
 
-                logger.ai(f"Successfully processed analysis results for thread {thread_id}.")
                 return telemetry_objects
             except Exception as e:
                 logger.ai(f"Failed to retrieve or process messages: {e}")
@@ -400,7 +395,6 @@ class AI():
             try:
                 result = self.client.files.delete(file_id)
                 if isinstance(result, FileDeleted):
-                    logger.ai(f"Deleted file {file_id}")
                     return file_id, True
                 else:
                     logger.ai(f"Failed to delete file {file_id}")
@@ -433,4 +427,4 @@ class AI():
 
 if __name__ == '__main__':
     ai = AI(os.getenv("OPENAI_API_KEY"))
-    ai.clear_old_files(0)
+    ai.create_assistant(type='batch')

@@ -11,7 +11,6 @@ import hashlib
 import io
 import datetime
 from utils import unprocessed_videos_path, box_archived_images_folder_id, box_archived_videos_folder_id, box_images_folder_id, box_videos_folder_id, box_work_order_images_folder_id, box_road_health_folder_id
-from web_ui import WebApp, StatusUpdate
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import geojson
@@ -26,8 +25,7 @@ BOX_CLIENT_SECRET = os.getenv("BOX_CLIENT_SECRET")
 BOX_ENTERPRISE_ID = os.getenv("BOX_ENTERPRISE_ID")
 
 class Box():
-    def __init__(self, client_id=None, client_secret=None, enterprise_id=None, web_app: WebApp=None):
-        self.web_app = web_app
+    def __init__(self, client_id=None, client_secret=None, enterprise_id=None):
         self.client_id = client_id or BOX_CLIENT_ID
         self.client_secret = client_secret or BOX_CLIENT_SECRET
         self.enterprise_id = enterprise_id or BOX_ENTERPRISE_ID
@@ -73,8 +71,6 @@ class Box():
         try:
             root_folder = self.client.folders.get_folder_by_id('0')
             logger.info(f"Connected to Box as: {self.client}")
-            logger.info(f"Root folder name: {root_folder.name}")
-            logger.info("Listing items in the root folder:")
 
             # Retrieve and log items in the root folder
             for item in root_folder.item_collection.entries:
@@ -134,7 +130,6 @@ class Box():
             items = parent_folder.item_collection.entries
             for item in items:
                 if item.name == folder_name and item.type == 'FolderBaseTypeField':
-                    logger.info(f"Folder '{folder_name}' found with ID: {item.id}")
                     return item.id
             logger.warning(f"Folder '{folder_name}' not found under parent folder '{parent_folder_id}'.")
             return None
@@ -187,8 +182,6 @@ class Box():
                     file,
                 )
         
-                logger.info(f"File '{new_file_name}' uploaded successfully.")
-                print(f'from upload_small_file_to_folder: {uploaded_file = }')
                 return uploaded_file
         except Exception as e:
             logger.error(f"Failed to upload file '{file_path}': {e}")
@@ -208,7 +201,6 @@ class Box():
                     parent_folder_id=parent_folder_id
                 )
 
-            logger.info(f'File "{uploaded_file.name}" uploaded successfully with file ID {uploaded_file.id}')
             return uploaded_file
 
         except Exception as e:
@@ -253,7 +245,6 @@ class Box():
             # Download the file content
             with open(path, 'wb') as file:
                 self.client.downloads.download_file_to_output_stream(file_id, file)
-                logger.info(f"File '{file_name}' downloaded successfully with ID: {file_id}")
 
             return file_name
         except Exception as e:
@@ -308,7 +299,6 @@ class Box():
             try:
                 with open(geojson_filepath, "w") as geojson_file:
                     geojson.dump(feature_collection, geojson_file, indent=2)
-                logger.info(f"GeoJSON file successfully saved locally: {geojson_filepath}")
             except Exception as e:
                 logger.error(f"Failed to save GeoJSON file locally: {e}")
                 return None
@@ -328,7 +318,6 @@ class Box():
                 if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
                     geojson_box_file_id = uploaded_geojson.entries[0].id
                     geojson_box_file_url = self.get_direct_shared_link(geojson_box_file_id)
-                    logger.info(f"GeoJSON file uploaded to Box: {geojson_box_file_url}")
                 else:
                     logger.error("GeoJSON upload failed. `uploaded_geojson` did not return expected structure.")
             except Exception as e:
@@ -366,8 +355,6 @@ class Box():
             )
             if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
                 geojson_box_file_id = uploaded_geojson.entries[0].id
-                geojson_box_file_url = self.get_direct_shared_link(geojson_box_file_id)
-                logger.info(f"GeoJSON uploaded: {geojson_box_file_url}")
             else:
                 logger.error(f"GeoJSON upload failed for {geojson_filename}")
         except Exception as e:
@@ -459,11 +446,6 @@ class Box():
             new_description = new_description or current_file.description
             new_parent_folder_id = new_parent_folder_id or current_file.parent.id
 
-            logger.info(f"Updating file '{file_id}' - "
-                        f"Name: '{current_file.name}' -> '{new_name}', "
-                        f"Description: '{current_file.description}' -> '{new_description}', "
-                        f"Parent ID: '{current_file.parent.id}' -> '{new_parent_folder_id}'")
-
             # Prepare parameters for the update
             update_params = {}
 
@@ -552,7 +534,6 @@ class Box():
                     telem_obj.add_box_file_id(box_file_id)
                     telem_obj.add_box_file_url(box_file_url)
                     
-                    logger.info(f"Updated TelemetryObject: {telem_obj} -> \n{telem_obj.to_dict()}")
 
                     updated_telemetry_objects.append(telem_obj)
             except Exception as e:

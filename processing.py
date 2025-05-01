@@ -17,7 +17,6 @@ from utils import *
 from logging_config import logger
 from analysis import *
 from bisect import bisect_left
-from web_ui import WebApp, StatusUpdate
 import asyncio
 import shutil
 import geojson
@@ -35,10 +34,9 @@ class Processor():
     TEMP_BIN_FILE = "temp_metadata.bin"
     TEMP_GPX_FILE = "temp_metadata.gpx"
 
-    def __init__(self, web_app: WebApp=None, mode="video"):
+    def __init__(self, mode="video"):
         self.ensure_ffmpeg_installed()
-        self.web_app=web_app
-        self.ai = AI(os.getenv("OPENAI_API_KEY"), web_app=self.web_app)
+        self.ai = AI(os.getenv("OPENAI_API_KEY"))
         self.video_fps = None
         self.analysis_frames_per_second = None
         self.analysis_max_frames = None
@@ -438,7 +436,6 @@ class Processor():
                 else:
                     closest_entry = after
 
-            logger.info(f"Closest telemetry found for {target_time}: {closest_entry}")
             return closest_entry
 
         except Exception as e:
@@ -472,7 +469,6 @@ class Processor():
                         'heart_rate': trkpt.findtext('.//gpxtpx:hr', "N/A", namespaces),
                         'speed': trkpt.findtext('.//gpxtpx:speed', "N/A", namespaces)
                     }
-                    logger.info(f"Retrieved telemetry for {target_time}: {telemetry = }")
                     return telemetry
 
             logger.error("No matching telemetry data found.")
