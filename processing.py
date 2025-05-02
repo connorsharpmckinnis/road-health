@@ -20,6 +20,7 @@ from bisect import bisect_left
 import asyncio
 import shutil
 import geojson
+from box import Box
 
 
 
@@ -34,9 +35,10 @@ class Processor():
     TEMP_BIN_FILE = "temp_metadata.bin"
     TEMP_GPX_FILE = "temp_metadata.gpx"
 
-    def __init__(self, mode="video"):
+    def __init__(self, mode="video", box: Box=None):
         self.ensure_ffmpeg_installed()
         self.ai = AI(os.getenv("OPENAI_API_KEY"))
+        self.box: Box = box
         self.video_fps = None
         self.analysis_frames_per_second = None
         self.analysis_max_frames = None
@@ -147,6 +149,15 @@ class Processor():
         for file in files:
             if os.path.exists(file):
                 os.remove(file)
+
+        #clear out the frames folder
+        frames = os.listdir("frames")
+        for frame in frames:
+            os.remove(f"frames/{frame}")
+
+        os.remove(f"temp_metadata.bin")
+        os.remove(f"temp_metadata.gpx")
+        os.remove(f"temp_metadata.kml")
 
     def preprocess_gpx_file(self):
         """Preprocess the GPX file to extract and sort all timestamps with telemetry data."""
@@ -690,7 +701,7 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
+    async def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -808,6 +819,12 @@ class Processor():
             self.save_overview_json(telemetry_objects)
             self.save_full_list(telemetry_objects=telemetry_objects)
             log_timing("Step 8: Create and save overview.json and all_frame_analyses.json", stage_start)
+
+            # Step 9: Cleanup files and archive data in Box
+            logger.info("Step 9: Cleanup files and archive data in Box")
+            self.cleanup_temp_files(Processor.TEMP_GPX_FILE)
+            await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=False, video_path=video_path)
+
 
             # Finalize
             total_duration = time.time() - total_start_time

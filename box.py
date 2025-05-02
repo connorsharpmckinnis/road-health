@@ -14,6 +14,7 @@ from utils import unprocessed_videos_path, box_archived_images_folder_id, box_ar
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import geojson
+import zipfile
 
 # Load environment variables from .env file
 load_dotenv()
@@ -264,6 +265,8 @@ class Box():
         return downloaded_files
     
     async def save_frames_to_long_term_storage(self, destination_folder_id='316117482557', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False, video_path: str=None):
+        from processing import TelemetryObject
+
         telemetry_objects = telemetry_objects or []
         source_video_base = os.path.splitext(os.path.basename(video_path))[0]
 
@@ -328,7 +331,23 @@ class Box():
             return updated_telemetry_objects
         
         # Use the new multithreaded upload function to save all frames to Box
-        updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
+        # REPLACED WITH THE GROUPED/ZIPPED PROCESS BELOW
+        #updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
+
+        # Bundle frames into per-video ZIPs and upload
+        grouped = self.group_telem_objects_by_video(telemetry_objects)
+        zip_paths = []
+        for base, items in grouped.items():
+            # extract file paths
+            fps = [item['filepath'] for item in items]
+            zip_name = f"{base}_{timestamp}"
+            zip_path = self.create_zip_from_group(zip_name, fps)
+            zip_paths.append(zip_path)
+        # Upload all ZIP archives
+        await self.upload_zip_to_box(zip_paths, destination_folder_id)
+        updated_telemetry_objects = telemetry_objects
+
+
 
         logger.info("Saving all telemetry into a single GeoJSON (timelapse mode)...")
 
@@ -340,7 +359,7 @@ class Box():
         geojson_filename = f"{source_video_base}_{timestamp}_telemetry.geojson"
         geojson_filepath = os.path.join('frames', geojson_filename)
 
-        # Save the FeatureCollection locally
+        # Save the FeatureCollection GeoJSON locally
         try:
             with open(geojson_filepath, "w") as geojson_file:
                 geojson.dump(feature_collection, geojson_file, indent=2)
@@ -546,6 +565,116 @@ class Box():
 
         logger.info("All files uploaded successfully.")
         return updated_telemetry_objects
+    
+    def group_telem_objects_by_video(self, telemetry_objects: list):
+        from collections import defaultdict
+        """
+        Groups telemetry objects by their video file name.
+
+        Args:
+            telemetry_objects (list): A list of telemetry objects to group.
+
+        Returns:
+            dict: A dictionary where keys are video file names and values are lists of telemetry objects.
+        """
+        grouped_objects = defaultdict(list)
+
+        for telem_obj in telemetry_objects:
+            source_video = telem_obj.to_dict().get('source_video')
+            if source_video:
+                grouped_objects[source_video].append(telem_obj.to_dict())
+        return dict(grouped_objects)
+    
+    def create_zip_from_group(self, group_name: str, file_list: list, output_dir: str = 'zipped_files') -> str:
+        """
+        Creates a zip file from a list of file paths for a specific group.
+
+        Args:
+            group_name (str): The name of the group to create a zip file for.
+            file_list (list): A list of file paths to include in the zip file.
+            output_dir (str): The directory to save the zip file in. Defaults to 'zipped_files'.
+
+        Returns:
+            str: The path to the created zip file.
+        """
+        import os
+        import zipfile
+
+        # Normalize file_list if user accidentally passed a dict
+        if isinstance(file_list, dict):
+            file_list = file_list.get(group_name, [])
+
+        # If list elements are dicts with 'filepath', extract paths
+        if file_list and isinstance(file_list[0], dict) and 'filepath' in file_list[0]:
+            file_list = [item['filepath'] for item in file_list]
+
+
+        os.makedirs(output_dir, exist_ok=True)
+        zip_file_path = os.path.join(output_dir, f"{group_name}.zip")
+
+        with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in file_list:
+                if os.path.exists(file_path):
+                    zipf.write(file_path, arcname=os.path.basename(file_path))
+                else:
+                    print(f"File {file_path} does not exist. Skipping.")
+        
+        return zip_file_path
+    
+    async def upload_zip_to_box(self, zip_file_paths, destination_folder_id):
+        """
+        Uploads a zip file to a specified Box folder.
+
+        Args:
+            zip_file_path (str): The path to the zip file to upload.
+            destination_folder_id (str): The ID of the Box folder to upload the zip file to.
+
+        Returns:
+            str: The ID of the uploaded zip file in Box.
+        """
+
+        # Ensure we have a list of paths
+        if isinstance(zip_file_paths, str):
+            zip_file_paths = [zip_file_paths]
+        elif zip_file_paths is None:
+            zip_file_paths = []
+
+        uploaded_files = []
+
+        async def upload_file(zip_file_path):
+            file_size = os.path.getsize(zip_file_path)
+            file_name = os.path.basename(zip_file_path)
+
+            try:
+                if file_size > 50 * 1024 * 1024:
+                    print('Uploading large file...')
+                    file_metadata = await asyncio.to_thread(
+                        self.upload_large_file_to_box, 
+                        zip_file_path, 
+                        file_name, 
+                        destination_folder_id
+                    )
+
+                else:
+                    print('Uploading regular file...')
+                    file_metadata = await asyncio.to_thread(
+                        self.upload_small_file_to_folder, 
+                        zip_file_path,
+                        destination_folder_id,
+                        file_name
+                    )
+
+                uploaded_files.append(file_metadata)
+            except Exception as e:
+                logger.error(f"Failed to upload zip file '{zip_file_path}': {e}")
+
+        tasks = [upload_file(zip_file_path) for zip_file_path in zip_file_paths]
+        await asyncio.gather(*tasks)
+
+        return uploaded_files
+            
+
+
 
 async def main():
     # Initialize the Box client
@@ -559,13 +688,29 @@ async def main():
     road_health_items = box_client.list_items_in_folder(box_client.box_road_health_folder_id)
     print(f'{len(road_health_items) = }')
 
+    from processing import TelemetryObject
+
+    object1 = TelemetryObject('1.jpg', 'frames/1.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
+    object2 = TelemetryObject('2.jpg', 'frames/2.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
+    object3 = TelemetryObject('3.jpg', 'frames/3.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
+    object4 = TelemetryObject('4.jpg', 'frames/4.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
+    object5 = TelemetryObject('5.jpg', 'frames/5.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
+    object6 = TelemetryObject('6.jpg', 'frames/6.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010102')
+    telem_objects = [object1, object2, object3, object4, object5, object6]
+    grouped_objs = box_client.group_telem_objects_by_video(telem_objects)
+    print(f'{grouped_objs = }')
+    zip_file_paths = box_client.create_zip_from_group('GX010101', grouped_objs)
+    print(f'{zip_file_paths = }')
+    results = await box_client.upload_zip_to_box(zip_file_paths, box_client.box_images_folder_id)
+    print(f'{results = }')
+
     '''
     client.metadata_templates.get_metadata_template(
     GetMetadataTemplateScope.ENTERPRISE, template.template_key
     )
     '''
     '''all_templates = box_client.client.metadata_templates.get_enterprise_metadata_templates()
-    print(all_templates)'''
+    print(all_templates)
 
     test_metadata_key = 'folderWatcherMetadata'
     test_metadata = {
@@ -583,24 +728,21 @@ async def main():
         "summary": "This is a summary of a pothole, found on the top-right portion of the frame in question. Yada yada yada.",
         "roadHealthIndex": "52"
     }
+    '''
 
+    
+    '''
     test_file_id = '1797090814848'
     #box_client.client.file_metadata.delete_file_metadata_by_id(test_file_id, CreateFileMetadataByIdScope.ENTERPRISE, test_metadata_key)
     metadataFull = box_client.client.file_metadata.create_file_metadata_by_id(test_file_id, CreateFileMetadataByIdScope.ENTERPRISE, test_metadata_key, test_metadata)
     #metadataFull = box_client.client.metadata_templates.get_metadata_template(GetMetadataTemplateScope.ENTERPRISE, test_metadata_key)
     print(f'{metadataFull = }')
+    '''
 
 # Run the async main function
 if __name__ == '__main__':
     asyncio.run(main())
-   
-
-    
-
-
 
     #box_client.share_folder_with_user_by_email(videos_folder_id, 'connor.mckinnis@carync.gov', role='editor')
 
     #box_client.upload_large_file_to_box(file_name='GX010014.mp4', file_path='unprocessed_videos/GX010014.MP4', parent_folder_id=box_client.videos_folder_box_id)
-
-    

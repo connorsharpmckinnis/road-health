@@ -111,11 +111,12 @@ class App():
             self.processing_status['file'] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
             logger.info(self.processing_status['file']["status"])
 
-            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode=mode)
+            telemetry_objects = await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode=mode)
             #'video' VS 'timelapse' MODE SET HERE. TIMELAPSE MODE IGNORES FRAMERATE I THINK
             self.processed_videos.add(file)
 
-            await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=greenway_mode, video_path=file)
+            # MOVED THIS OVER TO PROCESSING.PY FOR PER-FILE UPLOAD AND CLEANUP. MIGHT WORK?
+            #await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=greenway_mode, video_path=file)
 
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
@@ -217,15 +218,8 @@ class App():
             if file in self.processed_videos:
                 shutil.move(f"unprocessed_videos/{file}", f"{processed_videos_folder}/{file}")
                 logger.info(f"Moved {file} to {processed_videos_folder}")
+                
 
-        #clear out the frames folder
-        frames = os.listdir("frames")
-        for frame in frames:
-            os.remove(f"frames/{frame}")
-
-        os.remove(f"temp_metadata.bin")
-        os.remove(f"temp_metadata.gpx")
-        os.remove(f"temp_metadata.kml")
 
     async def start_monitoring(self, interval=10, greenway_mode=False, mode="timelapse"):
         """Starts the monitoring loop without using threading.
