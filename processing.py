@@ -150,14 +150,15 @@ class Processor():
             if os.path.exists(file):
                 os.remove(file)
 
-        #clear out the frames folder
-        frames = os.listdir("frames")
-        for frame in frames:
-            os.remove(f"frames/{frame}")
+        # Clear out the frames folder
+        if os.path.exists("frames"):
+            for frame in frames:
+                os.remove(f"frames/{frame}")
 
-        os.remove(f"temp_metadata.bin")
-        os.remove(f"temp_metadata.gpx")
-        os.remove(f"temp_metadata.kml")
+        # Remove specific temporary files if they exist
+        for temp_file in ["temp_metadata.bin", "temp_metadata.gpx", "temp_metadata.kml"]:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
     def preprocess_gpx_file(self):
         """Preprocess the GPX file to extract and sort all timestamps with telemetry data."""
