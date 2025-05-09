@@ -152,6 +152,7 @@ class Processor():
 
         # Clear out the frames folder
         if os.path.exists("frames"):
+            frames = os.listdir("frames")
             for frame in frames:
                 os.remove(f"frames/{frame}")
 
