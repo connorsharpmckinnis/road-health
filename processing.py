@@ -17,7 +17,6 @@ from utils import *
 from logging_config import logger
 from analysis import *
 from bisect import bisect_left
-import asyncio
 import shutil
 import geojson
 from box import Box
@@ -76,6 +75,10 @@ class Processor():
     def extract_all_metadata(self, mp4_file_path):  # Runs at the start of the program
         """Extracts binary metadata and converts it to GPX format."""
         logger.info(f"Extracting metadata from {mp4_file_path}...")
+        # skip hidden or non‐MP4 files (e.g. .DS_Store)
+        if not mp4_file_path.lower().endswith('.mp4') or os.path.basename(mp4_file_path).startswith('.'):
+            logger.info(f"Skipping non‐MP4 or hidden file: {mp4_file_path}")
+            return
         try:
             # Extract binary metadata
             subprocess.run(
@@ -152,6 +155,7 @@ class Processor():
 
         # Clear out the frames folder
         if os.path.exists("frames"):
+            frames = os.listdir("frames")
             for frame in frames:
                 os.remove(f"frames/{frame}")
 
@@ -389,7 +393,6 @@ class Processor():
         timestamp = extracted_frame_tuple[1]
         filepath = extracted_frame_tuple[0]
         telemetry_object = TelemetryObject(filename=name, filepath=filepath, timestamp=timestamp, source_video=video_path)
-        print(f"{telemetry_object = }")
         return telemetry_object
 
     def add_coords_to_telemetry_objects(self, telemetry_objects: list): #Runs once, using all telemetry_objects created in create_telemetry_objects
@@ -531,7 +534,6 @@ class Processor():
             telemetry_objects (list): List of telemetry objects.
         """
 
-        print(f'{telemetry_objects = }')
 
         flat_telemetry_objects = []
         for item in telemetry_objects:
@@ -702,7 +704,7 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    async def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
+    def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -720,6 +722,7 @@ class Processor():
         self.mode = mode
         log_file = "pipeline_timing_log.txt"
         file_name = video_path
+        print(f'{self.box = }')
         
         # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
         video_path = f"unprocessed_videos/{video_path}"
@@ -805,6 +808,10 @@ class Processor():
             telemetry_objects = self.get_ai_analyses(telemetry_objects, batch_size=batch_size)
             log_timing("Step 6: Analyze files with AI", stage_start)
 
+            # Step 6b: Optional: Check AI analyses with another 'checker' AI to validate results and filter poor and unconfident detections. 
+            # if self.check_detections:
+            #   self.check_detections(telemetry_objects=telemetry_objects, attribute_to_check='pothole', input_confidence_threshold=0.7, output_confidence_threshold=0.8), 
+
             # Step 7: Save telemetry objects as individual JSON files
             stage_start = time.time()
             logger.info("Step 7: Save telemetry objects as individual JSON files")
@@ -824,7 +831,8 @@ class Processor():
             # Step 9: Cleanup files and archive data in Box
             logger.info("Step 9: Cleanup files and archive data in Box")
             self.cleanup_temp_files(Processor.TEMP_GPX_FILE)
-            await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=False, video_path=video_path)
+            print(f'{self.box = }')
+            self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=False, video_path=video_path)
 
 
             # Finalize
@@ -939,7 +947,6 @@ if __name__ == "__main__":
     start_time = time.time()
     
     telem_objs = processor.process_video_pipeline(video_path=video_file, frame_rate=1, max_frames=10, batch_size=3)
-    print(f'Telemetry objects: {telem_objs}')
  
     
     end_time = time.time()

@@ -27,7 +27,7 @@ class App():
         self.monitoring_active = False
         self.monitoring_status = "Idle"
         self.box = None
-        self.processor = None
+        self.frame_processor = None
         self.work_order_creator = None
         self.processed_videos = set()
         self.all_files = []
@@ -36,23 +36,24 @@ class App():
         self.time_to_check = None
         self.processing_status = {}
 
-    async def initialize(self):
+    def initialize(self):
         """Run initialization logic and send status updates."""
         
         print("Initalizing")
 
         # ✅ Start up core services (ensure async methods are awaited)
         self.startup_box_client()
-        self.startup_processor()
+        self.startup_processor(self.box)
         self.startup_work_order_creator()
         self.load_processed_videos()
 
 
     def startup_box_client(self):
         self.box = Box()
+        print(f'{self.box = }')
 
-    def startup_processor(self):
-        self.frame_processor = Processor()
+    def startup_processor(self, box):
+        self.frame_processor = Processor(mode="timelapse", box=box)
 
     def startup_work_order_creator(self):
         self.work_order_creator = WorkOrderCreator()
@@ -73,7 +74,7 @@ class App():
         with open("processed_files.log", "w") as f:
             f.write("\n".join(sorted(self.processed_videos)))  # Sort for readability
 
-    async def pipeline(self, new_files_to_download: list=None, greenway_mode=False, mode="timelapse"):
+    def pipeline(self, new_files_to_download: list=None, greenway_mode=False, mode="timelapse"):
         self.greenway_mode = greenway_mode
         #FALSIFY GREENWAY_MODE TO RETURN TO NORMAL FUNCTIONALITY
         self.status = 'Running pipeline...'
@@ -81,7 +82,7 @@ class App():
 
 
         if not self.greenway_mode:
-            download_files_result = await self.download_files(new_files_to_download)
+            download_files_result = self.download_files(new_files_to_download)
             if download_files_result:
                 logger.info(f"Downloaded {len(self.all_files)} files.\n Processing...")
         else:
@@ -93,6 +94,8 @@ class App():
             files_to_process = os.listdir("unprocessed_greenway_videos")
         else:
             files_to_process = os.listdir("unprocessed_videos")
+            # Filter out '.DS_Store' files
+            files_to_process = [file for file in files_to_process if file != ".DS_Store"]
 
         #establish processing status for each file
         self.processing_status = {file: {"stage": "Queued", "status": "Waiting to Start"} for file in files_to_process}
@@ -111,7 +114,7 @@ class App():
             self.processing_status['file'] = {"stage": "Processing", "status": f"Processing footage from {file}..."}
             logger.info(self.processing_status['file']["status"])
 
-            telemetry_objects = await self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode=mode)
+            telemetry_objects = self.frame_processor.process_video_pipeline(video_path=file, frame_rate=0.5, mode=mode)
             #'video' VS 'timelapse' MODE SET HERE. TIMELAPSE MODE IGNORES FRAMERATE I THINK
             self.processed_videos.add(file)
 
@@ -132,7 +135,7 @@ class App():
         #telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects, greenway_mode=greenway_mode)
 
         if not greenway_mode:
-            work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
+            work_orders_created = self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
             logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()        
@@ -145,7 +148,7 @@ class App():
 
         self.status = "Idle - Waiting for next check"
     
-    async def download_files(self, files_to_download: list = None) -> bool:
+    def download_files(self, files_to_download: list = None) -> bool:
         for file in files_to_download:
             file_path = os.path.join(self.box.unprocessed_videos_folder, file['name'])
             if os.path.exists(file_path):
@@ -194,6 +197,7 @@ class App():
                 file for file in files_in_box
                 if file['name'] not in self.processed_videos
                 and file['name'] not in files_in_processed
+                and file['name'] != ".DS_Store"
             ]
 
         if not new_files:
@@ -203,8 +207,9 @@ class App():
         logger.info(f"New files detected: {[file['name'] for file in new_files]}")
 
         for file in new_files:
-            new_files_to_download.append(file)
-            logger.info(f"Adding {file['name']} to to-download list")
+            if file['name'] != ".DS_Store":
+                new_files_to_download.append(file)
+                logger.info(f"Adding {file['name']} to to-download list")
 
         return new_files_to_download
 
@@ -221,7 +226,7 @@ class App():
                 
 
 
-    async def start_monitoring(self, interval=10, greenway_mode=False, mode="timelapse"):
+    def start_monitoring(self, interval=10, greenway_mode=False, mode="timelapse"):
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
@@ -253,14 +258,14 @@ class App():
 
                     self.time_to_check = i
                     self.monitoring_status = "Active"
-                    await asyncio.sleep(1)
+                    time.sleep(1)
                     
 
                 new_files_to_download = self.check_for_new_files()
                 if len(new_files_to_download) > 0:
                     self.status = "Downloading"
                     
-                    await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode, mode=mode)
+                    self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode, mode=mode)
                 else:
                     self.status = "Monitoring"
                     logger.info(self.status)

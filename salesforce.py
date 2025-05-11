@@ -78,7 +78,7 @@ class WorkOrderCreator:
 
         print(f"Processed {len(self.all_metadata)} metadata files. Stored in self.all_metadata.")
     
-    async def work_order_engine(self, box_client, telemetry_objects:list=None):
+    def work_order_engine(self, box_client, telemetry_objects:list=None):
         """
         Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.
         """

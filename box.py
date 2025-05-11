@@ -264,7 +264,7 @@ class Box():
                     
         return downloaded_files
     
-    async def save_frames_to_long_term_storage(self, destination_folder_id='316117482557', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False, video_path: str=None):
+    def save_frames_to_long_term_storage(self, destination_folder_id='316117482557', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False, video_path: str=None):
         from processing import TelemetryObject
 
         telemetry_objects = telemetry_objects or []
@@ -313,9 +313,7 @@ class Box():
 
             # Upload the GeoJSON file to Box
             try:
-                uploaded_geojson = await asyncio.to_thread(
-                    self.upload_small_file_to_folder, geojson_filepath, destination_folder_id, geojson_filename
-                )
+                uploaded_geojson = self.upload_small_file_to_folder(geojson_filepath, destination_folder_id, geojson_filename)
 
                 # Debug: Check if upload worked
                 if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
@@ -340,11 +338,13 @@ class Box():
         for base, items in grouped.items():
             # extract file paths
             fps = [item['filepath'] for item in items]
-            zip_name = f"{base}_{timestamp}"
+            # strip any path components from base before building zip name
+            safe_base = os.path.basename(base)
+            zip_name = f"{safe_base}_{timestamp}"
             zip_path = self.create_zip_from_group(zip_name, fps)
             zip_paths.append(zip_path)
         # Upload all ZIP archives
-        await self.upload_zip_to_box(zip_paths, destination_folder_id)
+        self.upload_zip_to_box(zip_paths, destination_folder_id)
         updated_telemetry_objects = telemetry_objects
 
 
@@ -357,7 +357,7 @@ class Box():
 
         # Build filename based on source video
         geojson_filename = f"{source_video_base}_{timestamp}_telemetry.geojson"
-        geojson_filepath = os.path.join('frames', geojson_filename)
+        geojson_filepath = os.path.join('road_geojsons', geojson_filename)
 
         # Save the FeatureCollection GeoJSON locally
         try:
@@ -369,9 +369,7 @@ class Box():
 
         # Upload the combined GeoJSON to Box
         try:
-            uploaded_geojson = await asyncio.to_thread(
-                self.upload_small_file_to_folder, geojson_filepath, destination_folder_id, geojson_filename
-            )
+            uploaded_geojson = self.upload_small_file_to_folder(geojson_filepath, destination_folder_id, geojson_filename)
             if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
                 geojson_box_file_id = uploaded_geojson.entries[0].id
             else:
@@ -509,7 +507,7 @@ class Box():
         except Exception as e:
             logger.error(f"Failed to move files: {e}")
 
-    async def upload_files_to_box_folder(self, destination_folder_id, prefix_timestamp=None, max_workers=5, file_paths=None, telemetry_objects: list=None):
+    '''def upload_files_to_box_folder(self, destination_folder_id, prefix_timestamp=None, max_workers=5, file_paths=None, telemetry_objects: list=None):
         """
         Uploads multiple small files (<50MB each) to a specified Box folder concurrently.
 
@@ -522,22 +520,21 @@ class Box():
         updated_telemetry_objects = []
         logger.info(f"Uploading {len(telemetry_objects)} files to Box folder ID '{destination_folder_id}' using multithreading...")
         
-        async def upload_file(telem_obj):
+        def upload_file(telem_obj):
             """Uploads a file and updates its Box file ID."""
             try:
                 file_path = telem_obj.filepath
                 new_file_name = f"{prefix_timestamp}_{os.path.basename(file_path)}" if prefix_timestamp else os.path.basename(file_path)
 
                 # Upload the file to Box
-                fake_file_obj = await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
+                fake_file_obj = self.upload_small_file_to_folder(file_path, destination_folder_id, new_file_name)
                 real_file_obj = fake_file_obj.entries[0]
 
                 # Build metadata dict from telem_obj
                 telem_metadata = telem_obj.to_metadata_dict()  # You define this method on your TelemetryObject
 
                 # Attach metadata to file
-                await asyncio.to_thread(
-                    self.client.file_metadata.create_file_metadata_by_id,
+                self.client.file_metadata.create_file_metadata_by_id(
                     real_file_obj.id,
                     CreateFileMetadataByIdScope.ENTERPRISE,
                     self.box_metadata_template_key,
@@ -564,7 +561,7 @@ class Box():
         await asyncio.gather(*tasks)
 
         logger.info("All files uploaded successfully.")
-        return updated_telemetry_objects
+        return updated_telemetry_objects'''
     
     def group_telem_objects_by_video(self, telemetry_objects: list):
         from collections import defaultdict
@@ -611,6 +608,10 @@ class Box():
 
         os.makedirs(output_dir, exist_ok=True)
         zip_file_path = os.path.join(output_dir, f"{group_name}.zip")
+        # ensure any nested directories in the zip path are created
+        zip_dir = os.path.dirname(zip_file_path)
+        if zip_dir:
+            os.makedirs(zip_dir, exist_ok=True)
 
         with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for file_path in file_list:
@@ -621,7 +622,7 @@ class Box():
         
         return zip_file_path
     
-    async def upload_zip_to_box(self, zip_file_paths, destination_folder_id):
+    def upload_zip_to_box(self, zip_file_paths, destination_folder_id):
         """
         Uploads a zip file to a specified Box folder.
 
@@ -641,42 +642,33 @@ class Box():
 
         uploaded_files = []
 
-        async def upload_file(zip_file_path):
+        def upload_file(zip_file_path):
             file_size = os.path.getsize(zip_file_path)
             file_name = os.path.basename(zip_file_path)
 
             try:
+
                 if file_size > 50 * 1024 * 1024:
                     print('Uploading large file...')
-                    file_metadata = await asyncio.to_thread(
-                        self.upload_large_file_to_box, 
-                        zip_file_path, 
-                        file_name, 
-                        destination_folder_id
-                    )
+                    file_metadata = self.upload_large_file_to_box(zip_file_path, file_name, destination_folder_id)
 
                 else:
                     print('Uploading regular file...')
-                    file_metadata = await asyncio.to_thread(
-                        self.upload_small_file_to_folder, 
-                        zip_file_path,
-                        destination_folder_id,
-                        file_name
-                    )
+                    file_metadata = self.upload_small_file_to_folder(zip_file_path, destination_folder_id, file_name)
 
                 uploaded_files.append(file_metadata)
             except Exception as e:
                 logger.error(f"Failed to upload zip file '{zip_file_path}': {e}")
 
-        tasks = [upload_file(zip_file_path) for zip_file_path in zip_file_paths]
-        await asyncio.gather(*tasks)
+        for zip_file_path in zip_file_paths:
+            upload_file(zip_file_path)
 
         return uploaded_files
             
 
 
 
-async def main():
+def main():
     # Initialize the Box client
     box_client = Box(BOX_CLIENT_ID, BOX_CLIENT_SECRET, BOX_ENTERPRISE_ID)
 
@@ -685,24 +677,7 @@ async def main():
     root_items = box_client.list_items_in_folder('0')
     print(f'{len(root_items) = }')
 
-    road_health_items = box_client.list_items_in_folder(box_client.box_road_health_folder_id)
-    print(f'{len(road_health_items) = }')
-
-    from processing import TelemetryObject
-
-    object1 = TelemetryObject('1.jpg', 'frames/1.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object2 = TelemetryObject('2.jpg', 'frames/2.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object3 = TelemetryObject('3.jpg', 'frames/3.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object4 = TelemetryObject('4.jpg', 'frames/4.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object5 = TelemetryObject('5.jpg', 'frames/5.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object6 = TelemetryObject('6.jpg', 'frames/6.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010102')
-    telem_objects = [object1, object2, object3, object4, object5, object6]
-    grouped_objs = box_client.group_telem_objects_by_video(telem_objects)
-    print(f'{grouped_objs = }')
-    zip_file_paths = box_client.create_zip_from_group('GX010101', grouped_objs)
-    print(f'{zip_file_paths = }')
-    results = await box_client.upload_zip_to_box(zip_file_paths, box_client.box_images_folder_id)
-    print(f'{results = }')
+    
 
     '''
     client.metadata_templates.get_metadata_template(

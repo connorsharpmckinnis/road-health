@@ -178,6 +178,7 @@ pipeline_timing_log.txt
 /extracted_frames
 /work_order_frames
 /unprocessed_videos
+/zipped_files
 .bin
 .log
 unprocessed_photos

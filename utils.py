@@ -334,11 +334,41 @@ greenway_response_format = {
   }
 }
 
+checker_user_message = ""
+checker_response_format = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "checker_response",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "file_id": {
+                    "type": "string",
+                    "description": "The OpenAI file ID or unique identifier of the analyzed image frame"
+                },
+                "approval": {
+                    "type": "string",
+                    "description": "A 'yes' or 'no' statement describing whether you agree with the detection reported by the detector AI. Only answer 'yes' or 'no'"
+                },
+                "confidence": {
+                    "type": "number",
+                }
+            },
+            "required": ["file_id", "approval", "confidence"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+}
+
+
 assistant = 'asst_eU5BTCInSqddd4fsRiXwE8Dm'
 gpt_4o_batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 gpt_41_mini_batch_assistant = 'asst_P9RpVzTUOk4zJRodAP2QKw9Y'
 batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 greenway_assistant = 'asst_1lJD0RtJ2eMEaZxiyoZ9Mzcn'
+
+checker_assistant = ''
 
 unprocessed_videos_path = 'unprocessed_videos'
 
@@ -372,6 +402,9 @@ def get_batch_assistant():
 def get_greenway_assistant():
     return greenway_assistant
 
+def get_checker_assistant():
+    return checker_assistant
+
 def set_greenway_assistant(greenway_assistant_id):
     global greenway_assistant
     greenway_assistant = greenway_assistant_id
@@ -379,6 +412,10 @@ def set_greenway_assistant(greenway_assistant_id):
 def set_batch_assistant(batch_assistant_id):
     global batch_assistant
     batch_assistant = batch_assistant_id
+
+def set_checker_assistant(checker_assistant_id):
+    global checker_assistant
+    checker_assistant = checker_assistant_id
 
 def read_config(file_path):
     pass

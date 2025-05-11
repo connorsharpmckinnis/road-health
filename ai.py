@@ -6,7 +6,7 @@ from openai import OpenAI
 import openai
 from rich.console import Console
 from rich.table import Table
-from utils import assistant, batch_assistant, get_assistant, get_batch_assistant, set_batch_assistant, get_greenway_assistant, set_greenway_assistant, model, instructions, batch_response_format, response_format, greenway_instructions, greenway_response_format, greenway_user_message
+from utils import assistant, batch_assistant, get_assistant, get_batch_assistant, set_batch_assistant, get_greenway_assistant, set_greenway_assistant, get_checker_assistant, set_checker_assistant, model, instructions, batch_response_format, response_format, greenway_instructions, greenway_response_format, greenway_user_message, checker_assistant, checker_response_format, checker_user_message
 from logging_config import logger
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
