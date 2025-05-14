@@ -313,6 +313,7 @@ class WorkOrderCreator:
         debris_confidence = ai_analysis.get("debris_confidence", None)
         lat = metadata_item.get("lat", "Unknown")
         lon = metadata_item.get("lon", "Unknown")
+        box_url = metadata_item.get("box_file_url", "https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg")
 
         # Construct assessment details
         assessment_details = []
@@ -342,7 +343,8 @@ class WorkOrderCreator:
             f"Assessment Results:\n"
             + "\n".join(assessment_details) + "\n\n"
             f"To route to the best-estimated location of the pothole, click this link:\n"
-            f"{maps_url}"
+            f"{maps_url}\n"
+            f"{box_url}"
         )
 
 

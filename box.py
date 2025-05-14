@@ -15,6 +15,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import geojson
 import zipfile
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -339,9 +340,11 @@ class Box():
         zip_paths = []
         for base, items in grouped.items():
             # extract file paths
-            fps = [item['filepath'] for item in items]
-            zip_name = f"{base}_{timestamp}"
-            zip_path = self.create_zip_from_group(zip_name, fps)
+            fps = [item['filename'] for item in items]
+            video_id = re.search(f'([^/]+)(?=\.)', base).group(1)
+            zip_name = f"{video_id}_{timestamp}"
+            print(f'{zip_name = }\n{fps = }')
+            zip_path = self.create_zip_from_group(group_name=zip_name, file_list=fps)
             zip_paths.append(zip_path)
         # Upload all ZIP archives
         await self.upload_zip_to_box(zip_paths, destination_folder_id)
@@ -378,6 +381,45 @@ class Box():
                 logger.error(f"GeoJSON upload failed for {geojson_filename}")
         except Exception as e:
             logger.error(f"Error uploading GeoJSON {geojson_filename}: {e}")
+
+        # Delete all the jpg files in the 'frames' folder
+        try:
+            for file in os.listdir(source_normals_folder):
+                os.remove(os.path.join(source_normals_folder, file))
+            logger.info(f"Deleted all files in {source_normals_folder}")
+        except Exception as e:
+            logger.error(f"Error deleting JPG files: {e}")
+
+        # Upload all the work order frames manually to Box in source_wos_folder
+        if source_wos_folder:
+            try:
+                for file in os.listdir(source_wos_folder):
+                    file_path = os.path.join(source_wos_folder, file)
+                    uploaded_file = await asyncio.to_thread(
+                        self.upload_small_file_to_folder, file_path, '308058285408', file
+                    )
+                    if uploaded_file:
+                        logger.info(f"Uploaded work order frame: {uploaded_file}")
+                        # Get shared link from Box and save it to the telemetry object
+                        link = self.get_direct_shared_link(uploaded_file.entries[0].id)
+                        # Find the corresponding telemetry object
+                        for telem_obj in updated_telemetry_objects:
+                            if telem_obj.filepath == file_path:
+                                telem_obj.add_box_file_id(uploaded_file.entries[0].id)
+                                telem_obj.add_box_file_url(link)
+                        
+            except Exception as e:
+                logger.error(f"Error uploading work order frames: {e}")
+
+            # Delete all the jpg files in the 'work_order_frames' folder
+            try:
+                for file in os.listdir(source_wos_folder):
+                    os.remove(os.path.join(source_wos_folder, file))
+                logger.info(f"Deleted all files in {source_wos_folder}")
+            except Exception as e:
+                logger.error(f"Error deleting work order JPG files: {e}")
+
+            return updated_telemetry_objects
 
         
 
@@ -614,10 +656,11 @@ class Box():
 
         with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for file_path in file_list:
-                if os.path.exists(file_path):
-                    zipf.write(file_path, arcname=os.path.basename(file_path))
+                full_path = os.path.join('frames', file_path)
+                if os.path.exists(full_path):
+                    zipf.write(full_path, arcname=os.path.basename(file_path))
                 else:
-                    print(f"File {file_path} does not exist. Skipping.")
+                    print(f"File {full_path} does not exist. Skipping.")
         
         return zip_file_path
     

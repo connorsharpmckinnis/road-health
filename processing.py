@@ -35,10 +35,10 @@ class Processor():
     TEMP_BIN_FILE = "temp_metadata.bin"
     TEMP_GPX_FILE = "temp_metadata.gpx"
 
-    def __init__(self, mode="video", box: Box=None):
+    def __init__(self, mode="video"):
         self.ensure_ffmpeg_installed()
         self.ai = AI(os.getenv("OPENAI_API_KEY"))
-        self.box: Box = box
+        self.box: Box = Box()
         self.video_fps = None
         self.analysis_frames_per_second = None
         self.analysis_max_frames = None
@@ -55,6 +55,8 @@ class Processor():
             "Finalization": "Pending"
         }
         self.mode = mode
+
+        print(f'{self.box = }')
 
     @staticmethod
     def ensure_ffmpeg_installed():
@@ -149,12 +151,6 @@ class Processor():
         for file in files:
             if os.path.exists(file):
                 os.remove(file)
-
-        # Clear out the frames folder
-        if os.path.exists("frames"):
-            frames = os.listdir("frames")
-            for frame in frames:
-                os.remove(f"frames/{frame}")
 
         # Remove specific temporary files if they exist
         for temp_file in ["temp_metadata.bin", "temp_metadata.gpx", "temp_metadata.kml"]:
@@ -825,7 +821,7 @@ class Processor():
             # Step 9: Cleanup files and archive data in Box
             logger.info("Step 9: Cleanup files and archive data in Box")
             self.cleanup_temp_files(Processor.TEMP_GPX_FILE)
-            await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=False, video_path=video_path)
+            telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=False, video_path=video_path)
 
 
             # Finalize

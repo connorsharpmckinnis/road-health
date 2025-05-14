@@ -198,3 +198,7 @@ aggregated_geojsons.json
 *.csv
 *.gpx
 *.kml
+/zipped_files
+unprocessed_on_deck/.DS_Store
+.DS_Store
+.DS_Store

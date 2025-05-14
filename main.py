@@ -93,6 +93,7 @@ class App():
             files_to_process = os.listdir("unprocessed_greenway_videos")
         else:
             files_to_process = os.listdir("unprocessed_videos")
+            files_to_process = [f for f in files_to_process if f != '.DS_Store']
 
         #establish processing status for each file
         self.processing_status = {file: {"stage": "Queued", "status": "Waiting to Start"} for file in files_to_process}
@@ -181,6 +182,7 @@ class App():
                 {'name': file, 'id': None} for file in files_in_local
                 if file not in self.processed_videos
                 and file not in files_in_processed
+                and file != '.DS_Store'
             ]
 
         else:
@@ -194,6 +196,7 @@ class App():
                 file for file in files_in_box
                 if file['name'] not in self.processed_videos
                 and file['name'] not in files_in_processed
+                and file['name'] != '.DS_Store'
             ]
 
         if not new_files:
@@ -259,6 +262,7 @@ class App():
                 new_files_to_download = self.check_for_new_files()
                 if len(new_files_to_download) > 0:
                     self.status = "Downloading"
+                    logger.info(f"New files detected: {new_files_to_download}")
                     
                     await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode, mode=mode)
                 else:
