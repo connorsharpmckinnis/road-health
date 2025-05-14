@@ -386,7 +386,6 @@ class Processor():
         timestamp = extracted_frame_tuple[1]
         filepath = extracted_frame_tuple[0]
         telemetry_object = TelemetryObject(filename=name, filepath=filepath, timestamp=timestamp, source_video=video_path)
-        print(f"{telemetry_object = }")
         return telemetry_object
 
     def add_coords_to_telemetry_objects(self, telemetry_objects: list): #Runs once, using all telemetry_objects created in create_telemetry_objects

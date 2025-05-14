@@ -399,14 +399,16 @@ class Box():
                         self.upload_small_file_to_folder, file_path, '308058285408', file
                     )
                     if uploaded_file:
-                        logger.info(f"Uploaded work order frame: {uploaded_file}")
+                        logger.info(f"Uploaded work order frame: {uploaded_file.entries[0].name} with ID: {uploaded_file.entries[0].id}")
                         # Get shared link from Box and save it to the telemetry object
                         link = self.get_direct_shared_link(uploaded_file.entries[0].id)
                         # Find the corresponding telemetry object
                         for telem_obj in updated_telemetry_objects:
                             if telem_obj.filepath == file_path:
                                 telem_obj.add_box_file_id(uploaded_file.entries[0].id)
-                                telem_obj.add_box_file_url(link)
+                                telem_obj.box_file_url = link
+                                print(f'{telem_obj.box_file_id = }')
+                                print(f'{telem_obj.box_file_url = }')
                         
             except Exception as e:
                 logger.error(f"Error uploading work order frames: {e}")

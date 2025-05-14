@@ -122,19 +122,13 @@ class App():
             self.processing_status[file] = {"stage": "Complete", "status": f"Processing complete for {file}."}
             logger.info(self.processing_status[file]["status"])
 
-        #check if there are processed files in the frames folder. If so, we'll need to send the folder through the Salesforce script/processor to trigger any Work Orders that are needed
-        self.status = "Processing Salesforce actions..."
-        logger.info(self.status)
+            self.status = "Processing Salesforce actions..."
+            logger.info(self.status)
 
-        self.status = "Saving images to Box..."
-        logger.info(self.status)
+            if not greenway_mode:
+                work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
+                logger.info(f"Work Orders created: {work_orders_created}")
 
-        # MOVED SAVING TO A PER-FILE OPERATION TO HOPEFULLY MAKE GEOJSON FOR EACH VIDEO PROCESSED
-        #telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects = telemetry_objects, greenway_mode=greenway_mode)
-
-        if not greenway_mode:
-            work_orders_created = await self.work_order_creator.work_order_engine(box_client=self.box, telemetry_objects=telemetry_objects)
-            logger.info(f"Work Orders created: {work_orders_created}")
 
         self.save_processed_videos()        
 
