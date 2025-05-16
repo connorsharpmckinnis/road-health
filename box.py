@@ -360,7 +360,7 @@ class Box():
 
         # Build filename based on source video
         geojson_filename = f"{source_video_base}_{timestamp}_telemetry.geojson"
-        geojson_filepath = os.path.join('frames', geojson_filename)
+        geojson_filepath = os.path.join('road_geojsons', geojson_filename)
 
         # Save the FeatureCollection GeoJSON locally
         try:
@@ -373,7 +373,7 @@ class Box():
         # Upload the combined GeoJSON to Box
         try:
             uploaded_geojson = await asyncio.to_thread(
-                self.upload_small_file_to_folder, geojson_filepath, destination_folder_id, geojson_filename
+                self.upload_small_file_to_folder, geojson_filepath, '321197026857', geojson_filename
             )
             if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
                 geojson_box_file_id = uploaded_geojson.entries[0].id
