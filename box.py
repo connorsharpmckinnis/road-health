@@ -217,7 +217,6 @@ class Box():
             access=AddShareLinkToFileSharedLinkAccessField.OPEN,),
         )
         fileDirectSharedLink = fileFull.shared_link.download_url
-        print(f'{fileDirectSharedLink = }')
         return fileDirectSharedLink
     
     def download_file(self, file_id, file_name=None, folder_path=None):
@@ -393,6 +392,8 @@ class Box():
         # Upload all the work order frames manually to Box in source_wos_folder
         if source_wos_folder:
             try:
+                # Build a lookup map by filename for telemetry objects
+                filename_to_telem = {os.path.basename(obj.filepath): obj for obj in updated_telemetry_objects}
                 for file in os.listdir(source_wos_folder):
                     file_path = os.path.join(source_wos_folder, file)
                     uploaded_file = await asyncio.to_thread(
@@ -402,13 +403,13 @@ class Box():
                         logger.info(f"Uploaded work order frame: {uploaded_file.entries[0].name} with ID: {uploaded_file.entries[0].id}")
                         # Get shared link from Box and save it to the telemetry object
                         link = self.get_direct_shared_link(uploaded_file.entries[0].id)
-                        # Find the corresponding telemetry object
-                        for telem_obj in updated_telemetry_objects:
-                            if telem_obj.filepath == file_path:
-                                telem_obj.add_box_file_id(uploaded_file.entries[0].id)
-                                telem_obj.box_file_url = link
-                                print(f'{telem_obj.box_file_id = }')
-                                print(f'{telem_obj.box_file_url = }')
+                        # Find the telemetry object by filename
+                        telem_obj = filename_to_telem.get(file)
+                        if telem_obj:
+                            telem_obj.add_box_file_id(uploaded_file.entries[0].id)
+                            telem_obj.box_file_url = link
+                            print(f'{telem_obj.box_file_id = }')
+                            print(f'{telem_obj.box_file_url = }')
                         
             except Exception as e:
                 logger.error(f"Error uploading work order frames: {e}")
