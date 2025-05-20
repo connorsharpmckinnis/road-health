@@ -195,16 +195,25 @@ class Processor():
             logger.error("GPX file not found.")
             return []
         
-    @staticmethod
     def convert_to_gpx_timestamp(self, seconds):
-        """
-        Convert a timestamp in seconds to ISO 8601 format.
-        Example: 15.5 seconds -> '2024-09-26T16:37:34.500000Z'
+        """Convert a timestamp in seconds to ISO 8601 format.
+
+        Example: ``15.5`` -> ``"2024-09-26T16:37:34Z"``.
+
+        Parameters
+        ----------
+        seconds : float
+            Seconds offset from ``self.base_timestamp``.
+
+        Returns
+        -------
+        str
+            ISO 8601 formatted timestamp without microseconds.
         """
         base_time = self.base_timestamp
         delta = datetime.timedelta(seconds=seconds)
         target_time = base_time + delta
-        return target_time.replace(microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ') 
+        return target_time.replace(microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ')
     
     def get_base_timestamp_from_gpx(self):
         """
@@ -398,7 +407,7 @@ class Processor():
         return telemetry_objects
     
     def _add_coords_to_telemetry_object(self, telemetry_object): #Runs for each telemetry_object in add_coords_to_telemetry_objects
-        timestamp = self.convert_to_gpx_timestamp(self, telemetry_object.timestamp)
+        timestamp = self.convert_to_gpx_timestamp(telemetry_object.timestamp)
         telemetry = self.get_telemetry_for_timestamp_binary(timestamp, self.telemetry_data)
         telem_lat = telemetry.get('lat', 0.0)
         telem_lon = telemetry.get('lon', 0.0)
