@@ -2,6 +2,12 @@ import os
 import pandas as pd
 import geopandas as gpd
 
+"""
+Aggregates GeoJSON files containing AI analysis results into a single overview.
+Pulls from 'road_geojsons' folder and writes to 'all_files.geojson'.
+"""
+
+
 # 1) Gather all .geojson file paths
 folder = 'road_geojsons'
 files = [os.path.join(folder, f) 
