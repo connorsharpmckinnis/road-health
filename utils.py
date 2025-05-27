@@ -335,7 +335,7 @@ greenway_response_format = {
 }
 
 assistant = 'asst_eU5BTCInSqddd4fsRiXwE8Dm'
-gpt_4o_batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
+gpt_4o_mini_batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 gpt_41_mini_batch_assistant = 'asst_P9RpVzTUOk4zJRodAP2QKw9Y'
 batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 greenway_assistant = 'asst_1lJD0RtJ2eMEaZxiyoZ9Mzcn'
