@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import geopandas as gpd
+import numpy as np
 
 """
 Aggregates GeoJSON files containing AI analysis results into a single overview.
@@ -20,7 +21,11 @@ gdfs = [gpd.read_file(fp) for fp in files]
 # 3) Concatenate them (ignoring the old index)
 combined = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True))
 
-# 4) (Optional) ensure a consistent CRS
+# 4) Convert road_health_index to int, keep nulls as-is
+if 'road_health_index' in combined.columns:
+    combined['road_health_index'] = combined['road_health_index'].apply(
+        lambda x: int(round(x)) if pd.notnull(x) else 0
+    )
 # combined = combined.to_crs(epsg=4326)
 
 # 5) Write out

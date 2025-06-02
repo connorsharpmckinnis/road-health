@@ -272,6 +272,92 @@ batch_response_format = {
     }
 }
 
+
+resp_api_batch_format = { "format": {
+    "type": "json_schema",
+    "name": "road_condition_batch",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "analyses": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "file_id": {
+                            "type": "string",
+                            "description": "The openai file id or unique identifier of the analyzed image"
+                        },
+                        "pothole": {
+                            "type": "string",
+                            "enum": ["yes", "no"],
+                            "description": "Indicates the presence of potholes on the road"
+                        },
+                        "pothole_confidence": {
+                            "type": "number",
+                            "description": "Indicates the confidence in the pothole detection, ranging from 0 to 1"
+                        },
+                        "alligator_cracking": {
+                            "type": "string",
+                            "enum": ["yes", "no"],
+                            "description": "Indicates the presence of alligator cracking on the road"
+                        },
+                        "alligator_cracking_confidence": {
+                            "type": "number",
+                            "description": "Indicates the confidence in the alligator cracking detection, ranging from 0 to 1"
+                        },
+                        "line_cracking": {
+                            "type": "string",
+                            "enum": ["yes", "no"],
+                            "description": "Indicates the presence of line cracking on the road"
+                        },
+                        "line_cracking_confidence": {
+                            "type": "number",
+                            "description": "Indicates the confidence in the line cracking detection, ranging from 0 to 1"
+                        },
+                        "debris": {
+                            "type": "string",
+                            "enum": ["yes", "no"],
+                            "description": "Indicates the presence of debris on the road"
+                        },
+                        "debris_confidence": {
+                            "type": "number",
+                            "description": "Indicates the confidence in the debris detection, ranging from 0 to 1"
+                        },
+                        "summary": {
+                            "type": "string",
+                            "description": "A brief summary of the road condition, a few sentences tops"
+                        },
+                        "road_health_index": {
+                            "type": "integer",
+                            "description": "The overall health of the road represented as a percentage from 1 to 100"
+                        }
+                    },
+                    "required": [
+                        "file_id",
+                        "pothole",
+                        "pothole_confidence",
+                        "alligator_cracking",
+                        "alligator_cracking_confidence",
+                        "line_cracking",
+                        "line_cracking_confidence",
+                        "debris",
+                        "debris_confidence",
+                        "summary",
+                        "road_health_index"
+                    ],
+                    "additionalProperties": False
+                }
+            }
+        },
+        "required": ["analyses"],
+        "additionalProperties": False
+    },
+        "strict": True
+    }
+}
+
+
 greenway_user_message = "Please analyze these images and share your expert greenway condition analyses, adhering to the JSON schema provided."
 greenway_response_format = {
   "type": "json_schema",
@@ -337,8 +423,9 @@ greenway_response_format = {
 assistant = 'asst_eU5BTCInSqddd4fsRiXwE8Dm'
 gpt_4o_mini_batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 gpt_41_mini_batch_assistant = 'asst_P9RpVzTUOk4zJRodAP2QKw9Y'
-batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
+batch_assistant = 'asst_60EjppJclkHDLKcO3HjU62bw'
 greenway_assistant = 'asst_1lJD0RtJ2eMEaZxiyoZ9Mzcn'
+gpt_4_1_nano_batch_assistant = "asst_60EjppJclkHDLKcO3HjU62bw"
 
 unprocessed_videos_path = 'unprocessed_videos'
 

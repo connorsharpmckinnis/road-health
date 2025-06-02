@@ -1,18 +1,12 @@
 from flask import Flask, request, jsonify
-from ai import AI
 from box import Box
 from salesforce import WorkOrderCreator
 from processing import Processor
-import utils
 import dotenv
 import os
 from logging_config import logger
-import time
 import shutil
-import threading
-from web_ui import StatusUpdate, WebApp
 import asyncio
-import json
 
 
 dotenv.load_dotenv()
