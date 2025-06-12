@@ -92,38 +92,44 @@ class WorkOrderCreator:
                 pothole = analysis_results.get("pothole", "no")
                 pothole_confidence = analysis_results.get("pothole_confidence", 0)
                 if pothole == "yes" and pothole_confidence > 0.9:
-                    logging.info(f"Processing metadata item: {object.filename}")
-                    closest_location, closest_distance = self.get_closest_location(object.to_dict())
+                    
+                    if not self.in_excluded_area(object.to_dict()):
 
-                    description = self.create_description_package(
-                        object.to_dict(), closest_location, closest_distance
-                    )
 
-                    box_url = object.box_file_url
-                    work_order_subject = f"Pothole Detected - Confidence {pothole_confidence*100:.1f}%"
-                    work_order_id = self.create_work_order(object.to_dict(), work_order_subject, description, closest_location, box_file_url=box_url)
+                        logging.info(f"Processing metadata item: {object.filename}")
+                        closest_location, closest_distance = self.get_closest_location(object.to_dict())
 
-                    if work_order_id:
-                        work_orders_created += 1
-                        # Create a related Work Task
-                        self.create_work_task(work_order_id)
+                        description = self.create_description_package(
+                            object.to_dict(), closest_location, closest_distance
+                        )
 
-                        # Send a work order card to the UI with the image
-                        try:
-                            # First convert the image to a base64 string
-                            with open(object.filepath, "rb") as image_file:
-                                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                        box_url = object.box_file_url
+                        work_order_subject = f"Pothole Detected - Confidence {pothole_confidence*100:.1f}%"
+                        work_order_id = self.create_work_order(object.to_dict(), work_order_subject, description, closest_location, box_file_url=box_url)
 
-                            # Break ai_analysis into separate strings for structuring into the card
-                            ai_analysis_str = ""
-                            for key, value in analysis_results.items():
-                                ai_analysis_str += f"{key}: {value}\n"
+                        if work_order_id:
+                            work_orders_created += 1
+                            # Create a related Work Task
+                            self.create_work_task(work_order_id)
 
-                        except Exception as e:
-                            logging.error(f"Error sending status update to UI: {e}")
+                            # Send a work order card to the UI with the image
+                            try:
+                                # First convert the image to a base64 string
+                                with open(object.filepath, "rb") as image_file:
+                                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
+                                # Break ai_analysis into separate strings for structuring into the card
+                                ai_analysis_str = ""
+                                for key, value in analysis_results.items():
+                                    ai_analysis_str += f"{key}: {value}\n"
+
+                            except Exception as e:
+                                logging.error(f"Error sending status update to UI: {e}")
+
+                        else:
+                            logging.error("Failed to create Work Order. Skipping further actions for this metadata item.")
                     else:
-                        logging.error("Failed to create Work Order. Skipping further actions for this metadata item.")
+                        logging.info(f"Skipping metadata item {object.filename} due to exclusion areas.")
 
             logging.info("Work Order Engine completed successfully.")
             return work_orders_created
@@ -131,6 +137,42 @@ class WorkOrderCreator:
         except Exception as e:
             logging.error(f"An error occurred in the Work Order Engine: {e}")
             return work_orders_created
+
+    def in_excluded_area(self, metadata_item):
+        """Checks if the image is of a location in an excluded area.
+
+        Args:
+            metadata_item (_type_): _description_
+        """
+        in_excluded_area = False
+        excluded_areas = [
+            {
+                "name": "James Jackson PW Facility",
+                "lat_min": 35.796492,
+                "lat_max": 35.800932,
+                "lon_min": -78.798565,
+                "lon_max": -78.810302
+            },
+            {
+                "name": "South Wake Landfill",
+                "lat_min": 35.679923,
+                "lat_max": 35.686232,
+                "lon_min": -78.682376,
+                "lon_max": -78.847694
+            }
+        ]
+
+        lat = float(metadata_item.get('lat', 0))
+        lon = float(metadata_item.get('lon', 0))
+
+        for area in excluded_areas:
+            if (area['lat_min'] <= lat <= area['lat_max']) and (area['lon_min'] <= lon <= area['lon_max']):
+                in_excluded_area = True
+                print(f"DEBUG: Image at ({lat}, {lon}) is in excluded area: {area['name']}")
+                return in_excluded_area
+
+        return in_excluded_area
+
 
     def get_nearby_street_segments(self, metadata_item): # Subprocess
         print(f"DEBUG: Running get_nearby_street_segments")
@@ -226,7 +268,8 @@ class WorkOrderCreator:
                 'Location__c': location_id_string,
                 'sm1a__Geolocation__Latitude__s': lat,
                 'sm1a__Geolocation__Longitude__s': lon,
-                'Subject_Image_URL__c': box_file_url
+                'Subject_Image_URL__c': box_file_url,
+                'OwnerId': "3D00GVF000003yaN3"
             }
 
             # Create the Work Order
@@ -250,7 +293,7 @@ class WorkOrderCreator:
             # Define the required fields for the Work Task
             work_task = {
                 'sm1a__Work_Order__c': work_order_id,  # Relates the Work Task to the Work Order
-                'sm1a__Comments__c': 'Pothole Assessment',  # Placeholder subject
+                'sm1a__Comments__c': 'Pothole Repair',  # Placeholder subject
                 'sm1a__Std_Task__c': 'aDI7X000000HKOtWAO'
             }
 

@@ -216,6 +216,8 @@ class App():
         """Starts the monitoring loop without using threading.
         This function will block indefinitely.
         """
+        five_min_timer = 300 / interval
+
         print("Start_monitoring has begun!")
         self.monitoring_status = "Idle"
         if self.monitoring_active:
@@ -232,7 +234,7 @@ class App():
 
         # The monitoring loop runs synchronously now.
         try:
-            while self.monitoring_active:
+            while self.monitoring_active and five_min_timer > 0:
                 for i in range(interval, 0, -1):
                     if not self.monitoring_active:
                         logger.info("Monitoring loop interrupted.")
@@ -251,11 +253,18 @@ class App():
                 if len(new_files_to_download) > 0:
                     self.status = "Downloading"
                     logger.info(f"New files detected: {new_files_to_download}")
-                    
+                    fine_min_timer = 300 / interval
                     await self.pipeline(new_files_to_download, greenway_mode=self.greenway_mode, mode=mode)
                 else:
                     self.status = "Monitoring"
                     logger.info(self.status)
+                    five_min_timer -= 1
+                    if five_min_timer <= 0:
+                        logger.info("Five-minute timeout reached with no new files. Shutting down monitoring.")
+                        self.monitoring_active = False
+                        self.status = "Idle"
+                        self.monitoring_status = "Idle"
+                        return
         except Exception as e:
             self.status = f"Errored"
             self.monitoring_status = "Error"

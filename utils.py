@@ -27,7 +27,7 @@ instructions = """
 
     Updated Evaluation Output:
 
-    For an image showing significant potholes and alligator cracking:
+    For an image showing significant potholes and alligator cracking, this is an example:
         •	Pothole: Yes (confidence: 0.94)
         •	Alligator Cracking: Yes (confidence: 0.91)
         •	Line Cracking: No (confidence: 0.70)
@@ -423,7 +423,7 @@ greenway_response_format = {
 assistant = 'asst_eU5BTCInSqddd4fsRiXwE8Dm'
 gpt_4o_mini_batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 gpt_41_mini_batch_assistant = 'asst_P9RpVzTUOk4zJRodAP2QKw9Y'
-batch_assistant = 'asst_60EjppJclkHDLKcO3HjU62bw'
+batch_assistant = 'asst_os1KrypxpdTlWtqm7eswVUg6'
 greenway_assistant = 'asst_1lJD0RtJ2eMEaZxiyoZ9Mzcn'
 gpt_4_1_nano_batch_assistant = "asst_60EjppJclkHDLKcO3HjU62bw"
 
