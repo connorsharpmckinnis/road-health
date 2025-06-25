@@ -623,6 +623,7 @@ class Processor:
     def get_checker_ai_analyses(
         self, telemetry_objects: list, batch_size: int = 3
     ) -> list:
+        print("Rechecking files!")
         analyzed_telem_objects = self.ai.analyze_images_with_checker_ai(
             telemetry_objects=telemetry_objects,
             batch_size=batch_size,

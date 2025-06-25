@@ -96,6 +96,7 @@ class WorkOrderCreator:
             "Location__Latitude__s": lat,
             "Location__Longitude__s": lon,
             "RecordTypeId": "012VF000001Go9xYAC",
+            "OwnerId": "00GVF000003yaN3",
         }
 
         response = self.sf.AI_Event__c.create(ai_event)
@@ -153,60 +154,6 @@ class WorkOrderCreator:
         except Exception as e:
             logging.error(f"An error occurred in the AI Event Engine: {e}")
             return None
-
-    async def work_order_engine(self, box_client, telemetry_objects: list = None):
-        """
-        Process all metadata items and create Work Orders and related Work Tasks for valid pothole detections.
-        """
-        try:
-            logging.info("Starting Work Order Engine...")
-            work_orders_created = 0
-
-            for object in telemetry_objects:
-                analysis_results = object.analysis_results
-                pothole = analysis_results.get("pothole", "no")
-                pothole_confidence = analysis_results.get("pothole_confidence", 0)
-                if pothole == "yes" and pothole_confidence > 0.9:
-                    if not self.in_excluded_area(object.to_dict()):
-                        logging.info(f"Processing metadata item: {object.filename}")
-                        closest_location, closest_distance = self.get_closest_location(
-                            object.to_dict()
-                        )
-
-                        description = self.create_description_package(
-                            object.to_dict(), closest_location, closest_distance
-                        )
-
-                        box_url = object.box_file_url
-                        work_order_subject = f"Pothole Detected - Confidence {pothole_confidence * 100:.1f}%"
-                        work_order_id = self.create_work_order(
-                            object.to_dict(),
-                            work_order_subject,
-                            description,
-                            closest_location,
-                            box_file_url=box_url,
-                        )
-
-                        if work_order_id:
-                            work_orders_created += 1
-                            # Create a related Work Task
-                            self.create_work_task(work_order_id)
-
-                        else:
-                            logging.error(
-                                "Failed to create Work Order. Skipping further actions for this metadata item."
-                            )
-                    else:
-                        logging.info(
-                            f"Skipping metadata item {object.filename} due to exclusion areas."
-                        )
-
-            logging.info("Work Order Engine completed successfully.")
-            return work_orders_created
-
-        except Exception as e:
-            logging.error(f"An error occurred in the Work Order Engine: {e}")
-            return work_orders_created
 
     def in_excluded_area(self, metadata_item):
         """Checks if the image is of a location in an excluded area.
@@ -317,77 +264,6 @@ class WorkOrderCreator:
 
         return closest_location, min_distance
 
-    def create_work_order(
-        self,
-        metadata_item,
-        subject,
-        description,
-        location_id=None,
-        box_file_url="https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg",
-    ):
-        """
-        Create a Work Order in Salesforce.
-
-        :param subject: The subject of the Work Order.
-        :param description: The description of the Work Order.
-        :return: The Id of the created Work Order.
-        """
-        try:
-            # Define the required fields for the Work Order
-            lat_str = metadata_item.get("lat", 0)
-            lon_str = metadata_item.get("lon", 0)
-
-            lat = float(lat_str)
-            lon = float(lon_str)
-
-            location_id_string = location_id.get("Id")
-
-            work_order = {
-                "sm1a__Description__c": subject,
-                "sm1a__Detailed_Comments__c": description,
-                "Division__c": "Operations",  # Hardcoded division for now
-                "Location__c": location_id_string,
-                "sm1a__Geolocation__Latitude__s": lat,
-                "sm1a__Geolocation__Longitude__s": lon,
-                "Subject_Image_URL__c": box_file_url,
-                "OwnerId": "3D00GVF000003yaN3",
-            }
-
-            # Create the Work Order
-            response = self.sf.sm1a__WorkOrder__c.create(work_order)
-            work_order_id = response["id"]
-            print(f"Work Order created successfully: {work_order_id}")
-            return work_order_id
-
-        except Exception as e:
-            print(f"Failed to create Work Order: {e}")
-            return None
-
-    def create_work_task(self, work_order_id):
-        """
-        Create a Work Task in Salesforce.
-
-        :param work_order_id: The Id of the related Work Order.
-        :return: The Id of the created Work Task.
-        """
-        try:
-            # Define the required fields for the Work Task
-            work_task = {
-                "sm1a__Work_Order__c": work_order_id,  # Relates the Work Task to the Work Order
-                "sm1a__Comments__c": "Pothole Repair",  # Placeholder subject
-                "sm1a__Std_Task__c": "aDI7X000000HKOtWAO",
-            }
-
-            # Create the Work Task
-            response = self.sf.sm1a__WorkTask__c.create(work_task)
-            work_task_id = response["id"]
-            print(f"Work Task created successfully: {work_task_id}")
-            return work_task_id
-
-        except Exception as e:
-            print(f"Failed to create Work Task: {e}")
-            return None
-
     def create_description_package(
         self, metadata_item, closest_sf_location=None, closest_sf_location_distance=None
     ):
@@ -441,10 +317,6 @@ class WorkOrderCreator:
         debris_confidence = ai_analysis.get("debris_confidence", None)
         lat = metadata_item.get("lat", "Unknown")
         lon = metadata_item.get("lon", "Unknown")
-        box_url = metadata_item.get(
-            "box_file_url",
-            "https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg",
-        )
 
         # Construct assessment details
         assessment_details = []
@@ -469,23 +341,15 @@ class WorkOrderCreator:
         maps_url = f"https://www.google.com/maps/place/{lat},{lon}"
 
         # Construct the Static Resource URL
-        # static_resource_url = f"/resource/{static_resource_name}"
-        if closest_sf_location is not None:
-            near_location = f" near {closest_sf_location.get('Name', 'Unknown')}"
-        if closest_sf_location_distance is not None:
-            near_location_distance = (
-                f" ({closest_sf_location_distance:.2f} km away)\n\n"
-            )
         # Format the description package
         description = (
-            f"This Work Order was created by an automatic system due to a detected pothole{near_location}{near_location_distance}."
+            f"This Work Order was created by an automatic system due to a detected pothole."
             f"If this analysis is incorrect, or correction is not needed, please reject this record and do not act on it.\n\n"
             f"Analysis provided by the Road Health Analysis AI:\n"
             f"{analysis_summary}\n\n"
             f"Assessment Results:\n" + "\n".join(assessment_details) + "\n\n"
             f"To route to the best-estimated location of the detection, click this link:\n"
             f"{maps_url}\n"
-            f"{box_url}"
         )
 
         return description
