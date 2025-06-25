@@ -1,33 +1,53 @@
-#ai.py
+# ai.py
 import json
 import dotenv
 import os
 from openai import OpenAI
 import openai
-from rich.console import Console
-from rich.table import Table
-from utils import assistant, batch_assistant, get_assistant, get_batch_assistant, set_batch_assistant, get_greenway_assistant, set_greenway_assistant, model, instructions, batch_response_format, response_format, greenway_instructions, greenway_response_format, greenway_user_message
+from utils import (
+    assistant,
+    batch_assistant,
+    checker_model,
+    get_assistant,
+    get_batch_assistant,
+    set_batch_assistant,
+    get_greenway_assistant,
+    set_greenway_assistant,
+    model,
+    instructions,
+    batch_response_format,
+    response_format,
+    greenway_instructions,
+    greenway_response_format,
+    greenway_user_message,
+)
 from logging_config import logger
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
-dotenv.load_dotenv()
+from concurrent.futures import ThreadPoolExecutor
+
+
 import time
 from datetime import datetime, timedelta, timezone
-from openai.types import FileObject, FileDeleted
-import asyncio
+from openai.types import FileDeleted
+
+dotenv.load_dotenv()
 
 AI_LOG_FILE = "logs/ai.log"
 TOKEN_USAGE_LOG_FILE = "logs/token_usage.log"
 
 # Create a new handler for AI logs
 ai_file_handler = logging.FileHandler(AI_LOG_FILE)
-ai_file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+ai_file_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+)
 ai_file_handler.setLevel(15)  # AI custom level
+
 
 # Create a filter to **only allow AI logs** in this handler
 class AIFilter(logging.Filter):
     def filter(self, record):
         return record.levelno == 15  # Only log AI messages
+
 
 ai_file_handler.addFilter(AIFilter())  # Apply filter
 
@@ -35,7 +55,7 @@ ai_file_handler.addFilter(AIFilter())  # Apply filter
 logger.addHandler(ai_file_handler)
 
 
-class AI():
+class AI:
     def __init__(self, api_key):
         self.api_key = api_key
         openai.api_key = self.api_key
@@ -48,7 +68,7 @@ class AI():
         self.instructions = instructions
         self.batch_instructions = instructions
         self.current_assistant_id = None
-        
+
         self.response_format = response_format
         self.batch_response_format = batch_response_format
 
@@ -59,44 +79,63 @@ class AI():
         self.greenway_user_message = greenway_user_message
 
         if self.greenway_assistant_id is None:
-            greenway_assistant, greenway_assistant_id = self.create_assistant('greenway')
+            greenway_assistant, greenway_assistant_id = self.create_assistant(
+                "greenway"
+            )
             self.greenway_assistant = greenway_assistant
             set_greenway_assistant(greenway_assistant_id)
 
-
-    def create_assistant(self, type=None) -> tuple: #Tuple (self.assistant, self.assistant_id)
+    def create_assistant(
+        self, type=None
+    ) -> tuple:  # Tuple (self.assistant, self.assistant_id)
         """
         Create an Assistant dedicated to road health evaluations.
         """
-        if type == 'batch':
+        if type == "batch":
             print("Creating batch-based assistant for road health evaluation...")
             self.batch_assistant = self.client.beta.assistants.create(
                 name="Road Health Evaluator",
-                description=("You evaluate road conditions based on image inputs. Your task is to analyze images of roads, "
+                description=(
+                    "You evaluate road conditions based on image inputs. Your task is to analyze images of roads, "
                     "identify issues like potholes or alligator cracking, and provide actionable recommendations."
                 ),
                 model=self.model,
                 instructions=self.instructions,
-                response_format=self.batch_response_format
+                response_format=self.batch_response_format,
             )
             self.batch_assistant_id = self.batch_assistant.id
             print(f"Assistant created with ID: {self.batch_assistant_id}")
 
             return self.batch_assistant, self.batch_assistant_id
-        
-        if type == 'greenway':
+
+        if type == "greenway":
             print("Creating greenway-based assistant for road health evaluation...")
             self.greenway_assistant = self.client.beta.assistants.create(
                 name="Greenway Health Evaluator",
-                description=("You evaluate pavement conditions based on image inputs. Your task is to analyze images of greenways, "
+                description=(
+                    "You evaluate pavement conditions based on image inputs. Your task is to analyze images of greenways, "
                     "identify issues like cracking or debris, and provide professional and consistent condition ratings."
                 ),
                 model=self.model,
                 instructions=self.greenway_instructions,
-                response_format=self.greenway_response_format
+                response_format=self.greenway_response_format,
             )
             self.greenway_assistant_id = self.greenway_assistant.id
-            print(f"Greenway-specific Assistant created with ID: {self.greenway_assistant_id}")
+            print(
+                f"Greenway-specific Assistant created with ID: {self.greenway_assistant_id}"
+            )
+
+        if type == "checker":
+            print("Creating checker-based assistant for road health evaluation...")
+            self.checker_assistant = self.client.beta.assistants.create(
+                name="Road Health Checker",
+                description=(
+                    "You review road health evaluations specifically to determine whether a detected anomany is indeed a pothole or just some other pavement attribute"
+                ),
+                model=checker_model,
+                response_format=self.batch_response_format,
+            )
+            self.checker_assistant_id = self.checker_assistant.id
 
             return self.greenway_assistant, self.greenway_assistant_id
 
@@ -111,11 +150,8 @@ class AI():
             str: OpenAI file ID.
         """
         # Upload file to OpenAI
-        file = self.client.files.create(
-            file=open(filepath, "rb"),
-            purpose="vision"
-            )
-        
+        file = self.client.files.create(file=open(filepath, "rb"), purpose="vision")
+
         return file
 
     def get_n_analyses_from_openai(self, telemetry_objects: list):
@@ -128,6 +164,7 @@ class AI():
         Returns:
             list: Telemetry objects with analysis results populated.
         """
+
         def _create_thread(telemetry_objects: list) -> str:
             """
             Create a thread with the prompt message referencing telemetry objects.
@@ -142,27 +179,24 @@ class AI():
             filenames = [obj.filename for obj in telemetry_objects]
 
             # Construct the user message content
-            filenames_message = ', '.join([f'"{filename}"' for filename in filenames])
+            filenames_message = ", ".join([f'"{filename}"' for filename in filenames])
             intro_message = (
                 f"In order of appearance, you will review {filenames_message}. "
                 f"Refer to the files with these file_ids when responding."
             )
 
-            user_message_content = [
-                {"type": "text", "text": intro_message}
-            ]
+            user_message_content = [{"type": "text", "text": intro_message}]
 
             # Add file references to the message
             for obj in telemetry_objects:
-                user_message_content.append({
-                    "type": "image_file",
-                    "image_file": {"file_id": obj.openai_file_id}
-                })
+                user_message_content.append(
+                    {
+                        "type": "image_file",
+                        "image_file": {"file_id": obj.openai_file_id},
+                    }
+                )
 
-            user_message = {
-                "role": "user",
-                "content": user_message_content
-            }
+            user_message = {"role": "user", "content": user_message_content}
 
             try:
                 thread = self.client.beta.threads.create(messages=[user_message])
@@ -183,17 +217,17 @@ class AI():
             """
             try:
                 run = self.client.beta.threads.runs.create_and_poll(
-                    thread_id=thread_id,
-                    assistant_id=self.current_assistant_id
+                    thread_id=thread_id, assistant_id=self.current_assistant_id
                 )
                 # Extract token usage if available
                 total_tokens = run.usage.total_tokens if run.usage else 0
-                
+
                 # Log thread ID and token usage
                 with open(TOKEN_USAGE_LOG_FILE, "a") as f:
-                    f.write(f"{datetime.now(timezone.utc)} - Thread ID: {thread_id}, Tokens Used: {total_tokens}\n")
+                    f.write(
+                        f"{datetime.now(timezone.utc)} - Thread ID: {thread_id}, Tokens Used: {total_tokens}\n"
+                    )
 
-                
                 return run
             except Exception as e:
                 logger.ai(f"Failed to create and poll run: {e}")
@@ -216,18 +250,23 @@ class AI():
 
                 # Find the assistant message containing the analysis results
                 for message in messages.data:
-                    if message.role == 'assistant':
+                    if message.role == "assistant":
                         # Extract JSON string from the content
                         for content_block in message.content:
-                            if content_block.type == 'text':
-                                analysis_data = json.loads(content_block.text.value)  # Parse the JSON
+                            if content_block.type == "text":
+                                analysis_data = json.loads(
+                                    content_block.text.value
+                                )  # Parse the JSON
 
                                 # Iterate over each analysis in the 'analyses' list
                                 for analysis in analysis_data.get("analyses", []):
                                     file_id = analysis.get("file_id")
                                     # Match and populate telemetry objects based on file_id
                                     for obj in telemetry_objects:
-                                        if obj.filepath == file_id or obj.filename == file_id:
+                                        if (
+                                            obj.filepath == file_id
+                                            or obj.filename == file_id
+                                        ):
                                             obj.analysis_results = analysis
 
                 return telemetry_objects
@@ -242,13 +281,14 @@ class AI():
 
         # Step 2: Run the analysis and poll until completion
         run = _create_and_poll_run(thread_id)
-        if not run or run.status != 'completed':
-            logger.ai(f"Run did not complete successfully. Status: {run.status if run else 'unknown'}")
+        if not run or run.status != "completed":
+            logger.ai(
+                f"Run did not complete successfully. Status: {run.status if run else 'unknown'}"
+            )
             return telemetry_objects  # Return as is, without analysis
 
         # Step 3: Retrieve and process the analysis results
         telemetry_objects = _process_analysis_results(thread_id, telemetry_objects)
-
 
         return telemetry_objects
 
@@ -263,6 +303,7 @@ class AI():
         Returns:
             dict: Mapping of filenames to OpenAI file IDs.
         """
+
         def _upload_file_to_openai(telemetry_object):
             try:
                 file = self.upload_image(telemetry_object.filepath)
@@ -274,13 +315,20 @@ class AI():
 
         if multithreaded:
             from concurrent.futures import ThreadPoolExecutor
+
             with ThreadPoolExecutor(max_workers=20) as executor:
                 executor.map(_upload_file_to_openai, telemetry_objects)
         else:
             for telemetry_object in telemetry_objects:
                 _upload_file_to_openai(telemetry_object)
-    
-    def run_all_analyses(self, telemetry_objects: list, batch_size: int, multithreaded: bool, assistant: str='batch'):
+
+    def run_all_analyses(
+        self,
+        telemetry_objects: list,
+        batch_size: int,
+        multithreaded: bool,
+        assistant: str = "batch",
+    ):
         """
         Run analyses on telemetry objects in batches.
 
@@ -292,24 +340,33 @@ class AI():
         Returns:
             list: List of telemetry objects with analysis results.
         """
+
         def _process_batch(batch):
             result = self.get_n_analyses_from_openai(batch)
             return result if result is not None else []
 
         # Create batches
-        batches = [telemetry_objects[i:i + batch_size] for i in range(0, len(telemetry_objects), batch_size)]
-        
-        if assistant == 'batch':
+        batches = [
+            telemetry_objects[i : i + batch_size]
+            for i in range(0, len(telemetry_objects), batch_size)
+        ]
+
+        if assistant == "batch":
             if not self.batch_assistant_id:
-                self.create_assistant(type='batch')
+                self.create_assistant(type="batch")
             self.current_assistant_id = self.batch_assistant_id
-        elif assistant == 'greenway': 
+        elif assistant == "greenway":
             if not self.greenway_assistant_id:
-                self.create_assistant(type='greenway')
+                self.create_assistant(type="greenway")
             self.current_assistant_id = self.greenway_assistant_id
-        
+        elif assistant == "checker":
+            if not self.assistant_id:
+                self.create_assistant(type="checker")
+            self.current_assistant_id = self.assistant_id
+
         if multithreaded:
             from concurrent.futures import ThreadPoolExecutor
+
             with ThreadPoolExecutor(max_workers=20) as executor:
                 results = executor.map(_process_batch, batches)
         else:
@@ -318,7 +375,9 @@ class AI():
         # Flatten results
         return [obj for batch_result in results for obj in batch_result]
 
-    def analyze_images_with_ai(self, telemetry_objects: list, batch_size: int, multithreaded: bool=True):
+    def analyze_images_with_ai(
+        self, telemetry_objects: list, batch_size: int, multithreaded: bool = True
+    ):
         """
         Main function to analyze images using OpenAI.
 
@@ -338,15 +397,21 @@ class AI():
 
         # Stage 2: Run all analyses
         start_time_6b = time.time()
-        analyzed_telemetry_objects = self.run_all_analyses(telemetry_objects, batch_size, multithreaded, assistant='batch')
-        #ASSISTANT TYPE IS SELECTED HERE. CURRENTLY SET TO GREENWAY FOR GREENWAY DATA VALIDATION. CHANGE TO 'batch' FOR RETURN TO ROAD HEALTH EVALUATOR
-
-        if self.file_ids:
-            print('Deleting finished OpenAI Files...')
-            self.delete_files(self.file_ids)
+        analyzed_telemetry_objects = self.run_all_analyses(
+            telemetry_objects, batch_size, multithreaded, assistant="batch"
+        )
+        # ASSISTANT TYPE IS SELECTED HERE. CURRENTLY SET TO GREENWAY FOR GREENWAY DATA VALIDATION. CHANGE TO 'batch' FOR RETURN TO ROAD HEALTH EVALUATOR
 
         return analyzed_telemetry_objects, start_time_6a, start_time_6b
-    
+
+    def analyze_images_with_checker_ai(
+        self, telemetry_objects: list, batch_size: int, multithreaded: bool = True
+    ):
+        analyzed_telemetry_objects = self.run_all_analyses(
+            telemetry_objects, batch_size, multithreaded, assistant="checker"
+        )
+        return analyzed_telemetry_objects
+
     def list_uploaded_files(self) -> list:
         """
         Retrieve a list of uploaded files from OpenAI.
@@ -361,7 +426,9 @@ class AI():
             logger.ai(f"Failed to retrieve files: {e}")
             return []
 
-    def filter_files_by_date(self, files: list, cutoff_date: datetime, older_than=True) -> list:
+    def filter_files_by_date(
+        self, files: list, cutoff_date: datetime, older_than=True
+    ) -> list:
         """
         Filters files based on creation date.
 
@@ -376,9 +443,11 @@ class AI():
         filtered_files = []
         for file in files:
             file_created_at = datetime.fromtimestamp(file.created_at, tz=timezone.utc)
-            if (older_than and file_created_at < cutoff_date) or (not older_than and file_created_at >= cutoff_date):
+            if (older_than and file_created_at < cutoff_date) or (
+                not older_than and file_created_at >= cutoff_date
+            ):
                 filtered_files.append(file)
-        
+
         return filtered_files
 
     def delete_files(self, file_ids: list):
@@ -391,6 +460,7 @@ class AI():
         Returns:
             dict: Dictionary mapping file IDs to deletion success status.
         """
+
         def _delete_file(file_id):
             try:
                 result = self.client.files.delete(file_id)
@@ -410,21 +480,22 @@ class AI():
                 deletion_results[file_id] = success
 
         return deletion_results
-    
-    def clear_old_files(self, days_ago_threshold: int=7):
+
+    def clear_old_files(self, days_ago_threshold: int = 7):
         days_ago = datetime.now(timezone.utc) - timedelta(days=days_ago_threshold)
         uploaded_files = self.list_uploaded_files()
         old_files = self.filter_files_by_date(uploaded_files, days_ago, older_than=True)
         file_ids_to_delete = [file.id for file in old_files]
-        logger.ai(f"Found {len(file_ids_to_delete)} files older than {days_ago_threshold} days.")
+        logger.ai(
+            f"Found {len(file_ids_to_delete)} files older than {days_ago_threshold} days."
+        )
         if file_ids_to_delete:
             delete_results = self.delete_files(file_ids_to_delete)
             logger.ai(f"Deleted files: {len(delete_results.items())}")
         else:
             logger.ai("No old files to delete.")
 
-    
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ai = AI(os.getenv("OPENAI_API_KEY"))
     ai.clear_old_files(days_ago_threshold=0)

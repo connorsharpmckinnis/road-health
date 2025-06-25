@@ -1,4 +1,4 @@
-#processing.py
+# processing.py
 import os
 import subprocess
 import xml.etree.ElementTree as ET
@@ -6,30 +6,20 @@ import datetime
 from ai import AI
 import dotenv
 import json
-from simple_salesforce import Salesforce
-from math import radians, sin, cos, sqrt, atan2
-from PIL import Image
-import exifread
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 from utils import *
 from logging_config import logger
 from analysis import *
 from bisect import bisect_left
-import asyncio
 import shutil
 import geojson
 from box import Box
 
 
-
-
-
-
 dotenv.load_dotenv()
 
-class Processor():
+
+class Processor:
     FFMPEG_PATH = "/opt/homebrew/bin/ffmpeg"
     FFPROBE_PATH = "/opt/homebrew/bin/ffprobe"
     TEMP_BIN_FILE = "temp_metadata.bin"
@@ -52,18 +42,22 @@ class Processor():
             "Frame Extraction": "Pending",
             "Analysis Prep": "Pending",
             "AI Analysis": "Pending",
-            "Finalization": "Pending"
+            "Finalization": "Pending",
         }
         self.mode = mode
 
-        print(f'{self.box = }')
+        print(f"{self.box = }")
 
     @staticmethod
     def ensure_ffmpeg_installed():
         """Ensure ffmpeg and ffprobe are installed and accessible."""
-        if not os.path.exists(Processor.FFMPEG_PATH) or not os.path.exists(Processor.FFPROBE_PATH):
-            raise FileNotFoundError("Ensure ffmpeg and ffprobe are installed and paths are correct.")
-        logger.info(f"ffmpeg and ffprobe are installed and paths are correct.")
+        if not os.path.exists(Processor.FFMPEG_PATH) or not os.path.exists(
+            Processor.FFPROBE_PATH
+        ):
+            raise FileNotFoundError(
+                "Ensure ffmpeg and ffprobe are installed and paths are correct."
+            )
+        logger.info("ffmpeg and ffprobe are installed and paths are correct.")
 
     def save_pipeline_settings(self, frame_rate, max_frames, batch_size):
         self.analysis_frames_per_second = frame_rate
@@ -81,8 +75,20 @@ class Processor():
         try:
             # Extract binary metadata
             subprocess.run(
-                [Processor.FFMPEG_PATH, "-y", "-i", mp4_file_path, "-codec", "copy", "-map", "0:2", "-f", "rawvideo", Processor.TEMP_BIN_FILE],
-                check=True
+                [
+                    Processor.FFMPEG_PATH,
+                    "-y",
+                    "-i",
+                    mp4_file_path,
+                    "-codec",
+                    "copy",
+                    "-map",
+                    "0:2",
+                    "-f",
+                    "rawvideo",
+                    Processor.TEMP_BIN_FILE,
+                ],
+                check=True,
             )
             logger.info(f"Extracted binary metadata to {Processor.TEMP_BIN_FILE}.")
             logger.info(f"TEMP_GPX_FILE: {Processor.TEMP_GPX_FILE}")
@@ -93,7 +99,9 @@ class Processor():
             gopro2gpx_path = shutil.which("gopro2gpx")
 
             if not gopro2gpx_path:
-                raise FileNotFoundError("gopro2gpx not found. Ensure the virtual environment is activated!")
+                raise FileNotFoundError(
+                    "gopro2gpx not found. Ensure the virtual environment is activated!"
+                )
 
             result = subprocess.run(
                 ["gopro2gpx", "-s", "-vv", mp4_file_path, gpx_prefix]
@@ -101,39 +109,47 @@ class Processor():
 
             if result.returncode != 0:
                 logger.error(f"gopro2gpx failed with error:\n{result.stderr}")
-                raise RuntimeError(f"gopro2gpx failed. See logs for details.")
+                raise RuntimeError("gopro2gpx failed. See logs for details.")
             logger.info(f"Generated GPX file {Processor.TEMP_GPX_FILE}.")
 
             # Check GPX file size and number of trackpoints
             if not os.path.exists(Processor.TEMP_GPX_FILE):
-                raise FileNotFoundError(f"GPX file {Processor.TEMP_GPX_FILE} not created.")\
-                
+                raise FileNotFoundError(
+                    f"GPX file {Processor.TEMP_GPX_FILE} not created."
+                )
+
             self._save_gpx_to_folder(mp4_file_path)
-            
+
             tree = ET.parse(Processor.TEMP_GPX_FILE)
             root = tree.getroot()
-            namespaces = {'default': 'http://www.topografix.com/GPX/1/1'}
-            trkpts = root.findall('.//default:trkpt', namespaces)
-            
+            namespaces = {"default": "http://www.topografix.com/GPX/1/1"}
+            trkpts = root.findall(".//default:trkpt", namespaces)
+
             if len(trkpts) == 0:
-                raise ValueError(f"GPX file {Processor.TEMP_GPX_FILE} contains no trackpoints.")
+                raise ValueError(
+                    f"GPX file {Processor.TEMP_GPX_FILE} contains no trackpoints."
+                )
 
-            logger.info(f"Extracted metadata from {mp4_file_path}. GPX contains {len(trkpts)} trackpoints.")
+            logger.info(
+                f"Extracted metadata from {mp4_file_path}. GPX contains {len(trkpts)} trackpoints."
+            )
 
             tree = ET.parse(Processor.TEMP_GPX_FILE)
             root = tree.getroot()
 
-            namespaces = {'default': 'http://www.topografix.com/GPX/1/1'}
-            metadata_time = root.find('./default:metadata/default:time', namespaces)
+            namespaces = {"default": "http://www.topografix.com/GPX/1/1"}
+            metadata_time = root.find("./default:metadata/default:time", namespaces)
 
             if metadata_time is not None:
-                base_time = datetime.datetime.strptime(metadata_time.text.strip(), '%Y-%m-%dT%H:%M:%S.%fZ')
+                base_time = datetime.datetime.strptime(
+                    metadata_time.text.strip(), "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
                 self.base_timestamp = base_time
                 logger.info(f"Base timestamp extracted from GPX: {base_time}")
         except Exception as e:
             logger.exception(f"Failed to extract metadata: {e}")
             raise
-    
+
     def _save_gpx_to_folder(self, video_filename):
         """Save the GPX file into a GPX_files/ folder with a video-based name."""
         gpx_folder = "GPX_files"
@@ -153,7 +169,11 @@ class Processor():
                 os.remove(file)
 
         # Remove specific temporary files if they exist
-        for temp_file in ["temp_metadata.bin", "temp_metadata.gpx", "temp_metadata.kml"]:
+        for temp_file in [
+            "temp_metadata.bin",
+            "temp_metadata.gpx",
+            "temp_metadata.kml",
+        ]:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
 
@@ -164,37 +184,41 @@ class Processor():
             root = tree.getroot()
 
             namespaces = {
-                'default': 'http://www.topografix.com/GPX/1/1',
-                'gpxtpx': 'http://www.garmin.com/xmlschemas/TrackPointExtension/v2'
+                "default": "http://www.topografix.com/GPX/1/1",
+                "gpxtpx": "http://www.garmin.com/xmlschemas/TrackPointExtension/v2",
             }
 
             telemetry_data = []
 
-            for trkpt in root.findall('.//default:trkpt', namespaces):
-                time_element = trkpt.find('default:time', namespaces)
+            for trkpt in root.findall(".//default:trkpt", namespaces):
+                time_element = trkpt.find("default:time", namespaces)
                 if time_element is not None:
                     # Parse and truncate microseconds
-                    timestamp = datetime.datetime.strptime(time_element.text.strip(), '%Y-%m-%dT%H:%M:%S.%fZ')
+                    timestamp = datetime.datetime.strptime(
+                        time_element.text.strip(), "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
                     timestamp = timestamp.replace(microsecond=0)  # Drop microseconds
                     telemetry = {
-                        'timestamp': timestamp,
-                        'lat': float(trkpt.attrib.get('lat', 0.0)),
-                        'lon': float(trkpt.attrib.get('lon', 0.0)),
-                        'elevation': trkpt.findtext('default:ele', "N/A", namespaces),
-                        'heart_rate': trkpt.findtext('.//gpxtpx:hr', "N/A", namespaces),
-                        'speed': trkpt.findtext('.//gpxtpx:speed', "N/A", namespaces)
+                        "timestamp": timestamp,
+                        "lat": float(trkpt.attrib.get("lat", 0.0)),
+                        "lon": float(trkpt.attrib.get("lon", 0.0)),
+                        "elevation": trkpt.findtext("default:ele", "N/A", namespaces),
+                        "heart_rate": trkpt.findtext(".//gpxtpx:hr", "N/A", namespaces),
+                        "speed": trkpt.findtext(".//gpxtpx:speed", "N/A", namespaces),
                     }
                     telemetry_data.append(telemetry)
 
             # Sort telemetry data by timestamp
-            telemetry_data.sort(key=lambda x: x['timestamp'])
-            logger.info(f"Preprocessed and sorted {len(telemetry_data)} telemetry data points.")
+            telemetry_data.sort(key=lambda x: x["timestamp"])
+            logger.info(
+                f"Preprocessed and sorted {len(telemetry_data)} telemetry data points."
+            )
             return telemetry_data
 
         except FileNotFoundError:
             logger.error("GPX file not found.")
             return []
-        
+
     def convert_to_gpx_timestamp(self, seconds):
         """Convert a timestamp in seconds to ISO 8601 format.
 
@@ -213,8 +237,8 @@ class Processor():
         base_time = self.base_timestamp
         delta = datetime.timedelta(seconds=seconds)
         target_time = base_time + delta
-        return target_time.replace(microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ')
-    
+        return target_time.replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
+
     def get_base_timestamp_from_gpx(self):
         """
         Extract the base timestamp from the <metadata><time> element in the GPX file.
@@ -225,11 +249,13 @@ class Processor():
             tree = ET.parse(Processor.TEMP_GPX_FILE)
             root = tree.getroot()
 
-            namespaces = {'default': 'http://www.topografix.com/GPX/1/1'}
-            metadata_time = root.find('./default:metadata/default:time', namespaces)
+            namespaces = {"default": "http://www.topografix.com/GPX/1/1"}
+            metadata_time = root.find("./default:metadata/default:time", namespaces)
 
             if metadata_time is not None:
-                base_time = datetime.datetime.strptime(metadata_time.text.strip(), '%Y-%m-%dT%H:%M:%S.%fZ')
+                base_time = datetime.datetime.strptime(
+                    metadata_time.text.strip(), "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
                 logger.info(f"Base timestamp extracted from GPX: {base_time}")
                 return base_time
             else:
@@ -242,12 +268,12 @@ class Processor():
     def extract_all_frames_ffmpeg(self, video_path, output_folder="frames", crop_top=0):
         """
         Extracts **all** frames from a video using FFmpeg.
-        
+
         Args:
             video_path (str): Path to the video file.
             output_folder (str): Directory to save extracted frames.
             crop_top (int): Number of pixels to crop from the top.
-        
+
         Returns:
             list[tuple]: List of tuples containing frame file paths and timestamps.
         """
@@ -257,11 +283,15 @@ class Processor():
         # Get video metadata using FFprobe
         command = [
             self.FFPROBE_PATH,
-            "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height,nb_frames,avg_frame_rate",
-            "-of", "json",
-            video_path
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height,nb_frames,avg_frame_rate",
+            "-of",
+            "json",
+            video_path,
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         metadata = json.loads(result.stdout)
@@ -273,17 +303,24 @@ class Processor():
         # Ensure crop height is valid
         crop_height = video_height - crop_top
         if crop_height <= 0:
-            raise ValueError(f"Invalid crop height: {crop_height}. Ensure crop_top is not greater than video height.")
+            raise ValueError(
+                f"Invalid crop height: {crop_height}. Ensure crop_top is not greater than video height."
+            )
 
         # Extract **all** frames using FFmpeg
         ffmpeg_command = [
             self.FFMPEG_PATH,
-            "-i", video_path,  # Input video
-            "-vsync", "0",  # Extract every frame
-            "-frame_pts", "1",  # Preserve frame order
-            "-vf", f"crop={video_width}:{crop_height}:0:{crop_top}",  # Crop if needed
-            "-q:v", "2",  # High-quality frames
-            os.path.join(output_folder, "frame_%04d.jpg")  # Save frames sequentially
+            "-i",
+            video_path,  # Input video
+            "-vsync",
+            "0",  # Extract every frame
+            "-frame_pts",
+            "1",  # Preserve frame order
+            "-vf",
+            f"crop={video_width}:{crop_height}:0:{crop_top}",  # Crop if needed
+            "-q:v",
+            "2",  # High-quality frames
+            os.path.join(output_folder, "frame_%04d.jpg"),  # Save frames sequentially
         ]
 
         try:
@@ -294,14 +331,24 @@ class Processor():
 
         # Generate frame file paths
         extracted_frames = [
-            (os.path.join(output_folder, f"frame_{i+1:04d}.jpg"), i)  # No timestamps, just frame index
+            (
+                os.path.join(output_folder, f"frame_{i + 1:04d}.jpg"),
+                i,
+            )  # No timestamps, just frame index
             for i in range(len(os.listdir(output_folder)))
         ]
 
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
         return extracted_frames
-    
-    def extract_frames_ffmpeg(self, video_path, frame_rate=1, output_folder="frames", max_frames=None, crop_top=360):
+
+    def extract_frames_ffmpeg(
+        self,
+        video_path,
+        frame_rate=1,
+        output_folder="frames",
+        max_frames=None,
+        crop_top=360,
+    ):
         """
         Extract frames at specific intervals from a video using FFmpeg, respecting max_frames.
         Args:
@@ -318,11 +365,15 @@ class Processor():
         # Get video metadata using FFprobe
         command = [
             self.FFPROBE_PATH,
-            "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height,nb_frames,avg_frame_rate",
-            "-of", "json",
-            video_path
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height,nb_frames,avg_frame_rate",
+            "-of",
+            "json",
+            video_path,
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         metadata = json.loads(result.stdout)
@@ -330,7 +381,9 @@ class Processor():
         # Calculate total frames and FPS from metadata
         total_frames = int(metadata["streams"][0]["nb_frames"])
         avg_frame_rate = metadata["streams"][0]["avg_frame_rate"]
-        fps = int(eval(avg_frame_rate))  # Handles fractional frame rates like "30000/1001"
+        fps = int(
+            eval(avg_frame_rate)
+        )  # Handles fractional frame rates like "30000/1001"
 
         # Pre-calculate frame timestamps
         frame_interval = max(1, round(fps / frame_rate))
@@ -348,7 +401,9 @@ class Processor():
         # Ensure crop height is valid
         crop_height = video_height - crop_top
         if crop_height <= 0:
-            raise ValueError(f"Invalid crop height: {crop_height}. Ensure crop_top is not greater than video height.")
+            raise ValueError(
+                f"Invalid crop height: {crop_height}. Ensure crop_top is not greater than video height."
+            )
 
         # Build FFmpeg command to extract specific frames using the 'select' filter
         select_filter = "+".join([f"eq(n\\,{index})" for index in target_indices])
@@ -356,13 +411,20 @@ class Processor():
 
         ffmpeg_command = [
             self.FFMPEG_PATH,
-            "-i", video_path,
-            "-map", "0:v:0",  # Process only the video stream
+            "-i",
+            video_path,
+            "-map",
+            "0:v:0",  # Process only the video stream
             "-an",  # Disable audio processing
-            "-vf", f"select='{select_filter}',setpts=N/FRAME_RATE/TB,crop={video_width}:{crop_height}:0:{crop_top}",  # Select specific frames
-            "-vsync", "vfr",  # Variable frame rate
-            "-frames:v", str(len(target_indices)),  # Stop after extracting the desired frames
-            os.path.join(output_folder, f"{video_basename}_%04d.jpg")  # Save frames sequentially
+            "-vf",
+            f"select='{select_filter}',setpts=N/FRAME_RATE/TB,crop={video_width}:{crop_height}:0:{crop_top}",  # Select specific frames
+            "-vsync",
+            "vfr",  # Variable frame rate
+            "-frames:v",
+            str(len(target_indices)),  # Stop after extracting the desired frames
+            os.path.join(
+                output_folder, f"{video_basename}_%04d.jpg"
+            ),  # Save frames sequentially
         ]
 
         # Run the FFmpeg command and handle errors
@@ -374,43 +436,67 @@ class Processor():
 
         # Generate frame file paths and return them with timestamps
         extracted_frames = [
-            (os.path.join(output_folder, f"{video_basename}_{i+1:04d}.jpg"), timestamps[i])
+            (
+                os.path.join(output_folder, f"{video_basename}_{i + 1:04d}.jpg"),
+                timestamps[i],
+            )
             for i in range(len(timestamps))
         ]
         logger.info(f"Extracted {len(extracted_frames)} frames to {output_folder}.")
         return extracted_frames
-        
-    def create_telemetry_objects(self, extracted_frame_tuples: list, video_path: str='Default'): #Runs once, using all extracted_frame_tuples collected in extract_frames
+
+    def create_telemetry_objects(
+        self, extracted_frame_tuples: list, video_path: str = "Default"
+    ):  # Runs once, using all extracted_frame_tuples collected in extract_frames
         telemetry_objects = []
 
         for frame in extracted_frame_tuples:
-            telemetry_object = self._create_telemetry_object(frame, video_path=video_path)
+            telemetry_object = self._create_telemetry_object(
+                frame, video_path=video_path
+            )
             telemetry_objects.append(telemetry_object)
 
-        logger.info(f"Created {len(telemetry_objects)} telemetry objects with frame image filename and timestamp data. ")
+        logger.info(
+            f"Created {len(telemetry_objects)} telemetry objects with frame image filename and timestamp data. "
+        )
         return telemetry_objects
-    
-    def _create_telemetry_object(self, extracted_frame_tuple: tuple, video_path: str=None): #Runs for each extracted_frame_tuple in create_telemetry_objects
+
+    def _create_telemetry_object(
+        self, extracted_frame_tuple: tuple, video_path: str = None
+    ):  # Runs for each extracted_frame_tuple in create_telemetry_objects
         name = os.path.basename(extracted_frame_tuple[0])
         timestamp = extracted_frame_tuple[1]
         filepath = extracted_frame_tuple[0]
-        telemetry_object = TelemetryObject(filename=name, filepath=filepath, timestamp=timestamp, source_video=video_path)
+        telemetry_object = TelemetryObject(
+            filename=name,
+            filepath=filepath,
+            timestamp=timestamp,
+            source_video=video_path,
+        )
         return telemetry_object
 
-    def add_coords_to_telemetry_objects(self, telemetry_objects: list): #Runs once, using all telemetry_objects created in create_telemetry_objects
+    def add_coords_to_telemetry_objects(
+        self, telemetry_objects: list
+    ):  # Runs once, using all telemetry_objects created in create_telemetry_objects
         telemetry_objects = telemetry_objects
 
-        for object in telemetry_objects: 
+        for object in telemetry_objects:
             self._add_coords_to_telemetry_object(object)
 
-        logger.info(f"Collected and saved coordinates for {len(telemetry_objects)} telemetry objects.")
+        logger.info(
+            f"Collected and saved coordinates for {len(telemetry_objects)} telemetry objects."
+        )
         return telemetry_objects
-    
-    def _add_coords_to_telemetry_object(self, telemetry_object): #Runs for each telemetry_object in add_coords_to_telemetry_objects
+
+    def _add_coords_to_telemetry_object(
+        self, telemetry_object
+    ):  # Runs for each telemetry_object in add_coords_to_telemetry_objects
         timestamp = self.convert_to_gpx_timestamp(telemetry_object.timestamp)
-        telemetry = self.get_telemetry_for_timestamp_binary(timestamp, self.telemetry_data)
-        telem_lat = telemetry.get('lat', 0.0)
-        telem_lon = telemetry.get('lon', 0.0)
+        telemetry = self.get_telemetry_for_timestamp_binary(
+            timestamp, self.telemetry_data
+        )
+        telem_lat = telemetry.get("lat", 0.0)
+        telem_lon = telemetry.get("lon", 0.0)
         telemetry_object.lat = telem_lat
         telemetry_object.lon = telem_lon
         telemetry_object.timestamp = timestamp
@@ -419,21 +505,23 @@ class Processor():
     def get_telemetry_for_timestamp_binary(self, target_time, telemetry_data) -> dict:
         """
         Find the GPS telemetry closest to the specified timestamp using binary search.
-        
+
         Args:
             target_time (str): Target timestamp in ISO 8601 format.
             telemetry_data (list): Preprocessed list of telemetry data, sorted by timestamp.
-            
+
         Returns:
             dict: Telemetry data closest to the target timestamp.
         """
         try:
             # Parse and truncate microseconds
-            target_time_dt = datetime.datetime.strptime(target_time, '%Y-%m-%dT%H:%M:%SZ')
+            target_time_dt = datetime.datetime.strptime(
+                target_time, "%Y-%m-%dT%H:%M:%SZ"
+            )
             target_time_dt = target_time_dt.replace(microsecond=0)
 
             # Extract all timestamps from telemetry data
-            timestamps = [entry['timestamp'] for entry in telemetry_data]
+            timestamps = [entry["timestamp"] for entry in telemetry_data]
 
             # Use binary search to find the closest timestamp
             pos = bisect_left(timestamps, target_time_dt)
@@ -448,7 +536,9 @@ class Processor():
                 # Check the two closest points (before and after the target)
                 before = telemetry_data[pos - 1]
                 after = telemetry_data[pos]
-                if abs(before['timestamp'] - target_time_dt) <= abs(after['timestamp'] - target_time_dt):
+                if abs(before["timestamp"] - target_time_dt) <= abs(
+                    after["timestamp"] - target_time_dt
+                ):
                     closest_entry = before
                 else:
                     closest_entry = after
@@ -457,14 +547,8 @@ class Processor():
 
         except Exception as e:
             logger.error(f"Error finding telemetry for {target_time}: {e}")
-            return {
-                'lat': 0.0,
-                'lon': 0.0,
-                'elevation': 0,
-                'heart_rate': 0,
-                'speed': 0
-            }
-        
+            return {"lat": 0.0, "lon": 0.0, "elevation": 0, "heart_rate": 0, "speed": 0}
+
     def get_telemetry_for_timestamp(self, target_time) -> dict:
         """Extract GPS coordinates closest to a specified timestamp from the GPX file."""
         try:
@@ -472,29 +556,29 @@ class Processor():
             root = tree.getroot()
 
             namespaces = {
-                'default': 'http://www.topografix.com/GPX/1/1',
-                'gpxtpx': 'http://www.garmin.com/xmlschemas/TrackPointExtension/v2'
+                "default": "http://www.topografix.com/GPX/1/1",
+                "gpxtpx": "http://www.garmin.com/xmlschemas/TrackPointExtension/v2",
             }
 
-            for trkpt in root.findall('.//default:trkpt', namespaces):
-                time_element = trkpt.find('default:time', namespaces)
+            for trkpt in root.findall(".//default:trkpt", namespaces):
+                time_element = trkpt.find("default:time", namespaces)
                 if time_element is not None and time_element.text == target_time:
                     telemetry = {
-                        'lat': trkpt.attrib.get('lat', 0.0),
-                        'lon': trkpt.attrib.get('lon', 0.0),
-                        'elevation': trkpt.findtext('default:ele', "N/A", namespaces),
-                        'heart_rate': trkpt.findtext('.//gpxtpx:hr', "N/A", namespaces),
-                        'speed': trkpt.findtext('.//gpxtpx:speed', "N/A", namespaces)
+                        "lat": trkpt.attrib.get("lat", 0.0),
+                        "lon": trkpt.attrib.get("lon", 0.0),
+                        "elevation": trkpt.findtext("default:ele", "N/A", namespaces),
+                        "heart_rate": trkpt.findtext(".//gpxtpx:hr", "N/A", namespaces),
+                        "speed": trkpt.findtext(".//gpxtpx:speed", "N/A", namespaces),
                     }
                     return telemetry
 
             logger.error("No matching telemetry data found.")
             errored_telemetry = {
-                'lat': 0.0,
-                'lon': 0.0,
-                'elevation': 0,
-                'heart_rate': 0,
-                'speed': 0
+                "lat": 0.0,
+                "lon": 0.0,
+                "elevation": 0,
+                "heart_rate": 0,
+                "speed": 0,
             }
             return errored_telemetry
 
@@ -522,10 +606,29 @@ class Processor():
         - Add analyses to the TelemetryObjects
         - profit
     """
-        
-    def get_ai_analyses(self, telemetry_objects: list, batch_size: int=3) -> list:
-        analyzed_telem_objects, file_upload_start, image_analysis_start = self.ai.analyze_images_with_ai(telemetry_objects=telemetry_objects, batch_size=batch_size, multithreaded=True)
-        logger.info(f"Successfully analyzed {len(analyzed_telem_objects)} frames with AI.")
+
+    def get_ai_analyses(self, telemetry_objects: list, batch_size: int = 3) -> list:
+        analyzed_telem_objects, file_upload_start, image_analysis_start = (
+            self.ai.analyze_images_with_ai(
+                telemetry_objects=telemetry_objects,
+                batch_size=batch_size,
+                multithreaded=True,
+            )
+        )
+        logger.info(
+            f"Successfully analyzed {len(analyzed_telem_objects)} frames with AI."
+        )
+        return analyzed_telem_objects
+
+    def get_checker_ai_analyses(
+        self, telemetry_objects: list, batch_size: int = 3
+    ) -> list:
+        print("Rechecking files!")
+        analyzed_telem_objects = self.ai.analyze_images_with_checker_ai(
+            telemetry_objects=telemetry_objects,
+            batch_size=batch_size,
+            multithreaded=True,
+        )
         return analyzed_telem_objects
 
     def save_telemetry_objects(self, telemetry_objects: list):
@@ -536,7 +639,7 @@ class Processor():
             telemetry_objects (list): List of telemetry objects.
         """
 
-        print(f'{telemetry_objects = }')
+        print(f"{telemetry_objects = }")
 
         flat_telemetry_objects = []
         for item in telemetry_objects:
@@ -547,8 +650,6 @@ class Processor():
 
         work_order_folder = "work_order_frames"
         os.makedirs(work_order_folder, exist_ok=True)
-
-        
 
         for obj in flat_telemetry_objects:
             video_base = os.path.splitext(os.path.basename(obj.source_video))[0]
@@ -566,7 +667,7 @@ class Processor():
                 "openai_file_id": obj.openai_file_id,
                 "box_file_id": obj.box_file_id,
                 "box_file_url": obj.box_file_url,
-                "analysis_results": obj.analysis_results
+                "analysis_results": obj.analysis_results,
             }
             with open(json_path, "w") as json_file:
                 json.dump(telemetry_data, json_file, indent=4)
@@ -578,17 +679,21 @@ class Processor():
 
             if pothole == "yes" and pothole_confidence >= 0.9:
                 # Copy frame and metadata JSON to work_order_frames/
-                work_order_frame_path = os.path.join(work_order_folder, os.path.basename(obj.filepath))
+                work_order_frame_path = os.path.join(
+                    work_order_folder, os.path.basename(obj.filepath)
+                )
 
                 shutil.copy2(obj.filepath, work_order_frame_path)
 
-                logger.info(f"Copied {obj.filename} to work_order_frames/ (Pothole confidence: {pothole_confidence})")
+                logger.info(
+                    f"Copied {obj.filename} to work_order_frames/ (Pothole confidence: {pothole_confidence})"
+                )
 
         logger.info(f"Saved {len(telemetry_objects)} telemetry objects as JSON files.")
 
     def save_overview_json(self, telemetry_objects: list, output_path="overview.json"):
         """
-        Save an overview JSON file with summary statistics, counts of 'yes' values, 
+        Save an overview JSON file with summary statistics, counts of 'yes' values,
         PCI score histograms, and filenames for pothole detections.
 
         Args:
@@ -631,8 +736,12 @@ class Processor():
             for obj in telemetry_objects:
                 analysis = obj.analysis_results
                 pothole_confidences.append(analysis.get("pothole_confidence", 0.0))
-                alligator_cracking_confidences.append(analysis.get("alligator_cracking_confidence", 0.0))
-                line_cracking_confidences.append(analysis.get("line_cracking_confidence", 0.0))
+                alligator_cracking_confidences.append(
+                    analysis.get("alligator_cracking_confidence", 0.0)
+                )
+                line_cracking_confidences.append(
+                    analysis.get("line_cracking_confidence", 0.0)
+                )
                 debris_confidences.append(analysis.get("debris_confidence", 0.0))
                 road_health_indices.append(analysis.get("road_health_index", 0))
 
@@ -663,8 +772,12 @@ class Processor():
 
             # Calculate averages
             stats["average_pothole_confidence"] = sum(pothole_confidences) / num_objects
-            stats["average_alligator_cracking_confidence"] = sum(alligator_cracking_confidences) / num_objects
-            stats["average_line_cracking_confidence"] = sum(line_cracking_confidences) / num_objects
+            stats["average_alligator_cracking_confidence"] = (
+                sum(alligator_cracking_confidences) / num_objects
+            )
+            stats["average_line_cracking_confidence"] = (
+                sum(line_cracking_confidences) / num_objects
+            )
             stats["average_debris_confidence"] = sum(debris_confidences) / num_objects
             stats["road_health_index_average"] = sum(road_health_indices) / num_objects
 
@@ -673,9 +786,11 @@ class Processor():
             json.dump(stats, json_file, indent=4)
         logger.info(f"Saved overview statistics to {output_path}.")
 
-    def save_full_list(self, telemetry_objects: list, output_path='default_all_frames.json'):
+    def save_full_list(
+        self, telemetry_objects: list, output_path="default_all_frames.json"
+    ):
         analyses = []
-        
+
         for object in telemetry_objects:
             dict_version = object.to_dict()
             analyses.append(dict_version)
@@ -683,7 +798,7 @@ class Processor():
         with open(output_path, "w") as json_file:
             json.dump(analyses, json_file, indent=4)
         logger.info(f"Saved all analyses in {output_path}.")
-    
+
     def calculate_video_coverage(self, telemetry_objects: list):
         num_frames = len(telemetry_objects)
         video_fps = self.video_fps
@@ -707,7 +822,14 @@ class Processor():
         else:
             logger.warning(f"Attempted to update an unknown stage: {stage_name}")
 
-    async def process_video_pipeline(self, video_path, frame_rate=0.5, max_frames=None, batch_size=6, mode="timelapse"):
+    async def process_video_pipeline(
+        self,
+        video_path,
+        frame_rate=0.5,
+        max_frames=None,
+        batch_size=6,
+        mode="timelapse",
+    ):
         """
         Process a video end-to-end, extracting frames, creating telemetry objects,
         analyzing them with OpenAI, and saving results.
@@ -721,18 +843,18 @@ class Processor():
         Returns:
             list: Fully processed telemetry objects with analysis results.
         """
-        
+
         self.mode = mode
         log_file = "pipeline_timing_log.txt"
         file_name = video_path
-        
+
         # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
         video_path = f"unprocessed_videos/{video_path}"
-        #video_path = f"unprocessed_greenway_videos/{video_path}"
+        # video_path = f"unprocessed_greenway_videos/{video_path}"
 
         with open(log_file, "w") as log:
             log.write("Stage Timing Log:\n")
-        
+
         def log_timing(stage, start_time):
             duration = time.time() - start_time
             message = f"{stage} took {duration:.2f} seconds\n"
@@ -740,14 +862,16 @@ class Processor():
             with open(log_file, "a") as log:
                 log.write(message)
             return duration
-        
+
         try:
             self.update_stage("Metadata", "In Progress")
             total_start_time = time.time()
 
             # Step 0: Save settings to self
             stage_start = time.time()
-            self.save_pipeline_settings(frame_rate=frame_rate, max_frames=max_frames, batch_size=batch_size)
+            self.save_pipeline_settings(
+                frame_rate=frame_rate, max_frames=max_frames, batch_size=batch_size
+            )
             log_timing("Step 0: Save pipeline settings", stage_start)
 
             # Step 1: Validate the video file
@@ -767,20 +891,18 @@ class Processor():
             self.update_stage("Frame Extraction", "In Progress")
 
             # Step 3: Extract frames from the video
-            
+
             stage_start = time.time()
             logger.info("Step 3: Extract frames from the video")
             if self.mode == "timelapse":
                 extracted_frames = self.extract_all_frames_ffmpeg(
                     video_path=video_path,
                     output_folder="frames",
-                    crop_top=360  # Crop top for GoPro videos
+                    crop_top=360,  # Crop top for GoPro videos
                 )
             elif self.mode == "video":
                 extracted_frames = self.extract_frames_ffmpeg(
-                    video_path=video_path,
-                    frame_rate=frame_rate,
-                    max_frames=max_frames
+                    video_path=video_path, frame_rate=frame_rate, max_frames=max_frames
                 )
             log_timing("Step 3: Extract frames from the video", stage_start)
 
@@ -790,7 +912,9 @@ class Processor():
             # Step 4: Create telemetry objects for extracted frames
             stage_start = time.time()
             logger.info("Step 4: Create telemetry objects for extracted frames")
-            telemetry_objects = self.create_telemetry_objects(extracted_frames, video_path)
+            telemetry_objects = self.create_telemetry_objects(
+                extracted_frames, video_path
+            )
             log_timing("Step 4: Create telemetry objects", stage_start)
 
             # Step 5: Add GPS coordinates to telemetry objects
@@ -807,8 +931,25 @@ class Processor():
 
             stage_start = time.time()
             logger.info("Step 6: Perform AI analysis on telemetry objects")
-            telemetry_objects = self.get_ai_analyses(telemetry_objects, batch_size=batch_size)
+            telemetry_objects = self.get_ai_analyses(
+                telemetry_objects, batch_size=batch_size
+            )
             log_timing("Step 6: Analyze files with AI", stage_start)
+
+            # Step 6.5: Run additional AI analysis on positive pothole detections
+            # Filter down to only those telemetry objects that have a pothole detection (telem_obj.get('pothole') == 'yes')
+            # Send list of positive detections to a (new?) AI to ask if it's really a pothole.
+            # Return a full re-assessment BUT with a more conservative and repair-based perspective.
+            positive_detections = [
+                i
+                for i in telemetry_objects
+                if i.analysis_results.get("pothole") == "yes"
+            ]
+            print(
+                f"There are {len(positive_detections)} positive detections to re-check"
+            )
+            if positive_detections:
+                telemetry_objects = self.get_checker_ai_analyses(positive_detections)
 
             # Step 7: Save telemetry objects as individual JSON files
             stage_start = time.time()
@@ -824,37 +965,58 @@ class Processor():
             logger.info("Step 8: Create and save an overview.json file")
             self.save_overview_json(telemetry_objects)
             self.save_full_list(telemetry_objects=telemetry_objects)
-            log_timing("Step 8: Create and save overview.json and all_frame_analyses.json", stage_start)
+            log_timing(
+                "Step 8: Create and save overview.json and all_frame_analyses.json",
+                stage_start,
+            )
 
             # Step 9: Cleanup files and archive data in Box
             logger.info("Step 9: Cleanup files and archive data in Box")
             self.cleanup_temp_files(Processor.TEMP_GPX_FILE)
-            telemetry_objects = await self.box.save_frames_to_long_term_storage(telemetry_objects=telemetry_objects, greenway_mode=False, video_path=video_path)
+            telemetry_objects = await self.box.save_frames_to_long_term_storage(
+                telemetry_objects=telemetry_objects,
+                greenway_mode=False,
+                video_path=video_path,
+            )
 
+            logger.info("Deleting any OpenAI files that were created.")
+            openai_file_ids = [obj.openai_file_id for obj in telemetry_objects]
+            self.ai.delete_files(openai_file_ids)
 
             # Finalize
             total_duration = time.time() - total_start_time
             logger.info("Video processing pipeline completed successfully.")
             self.calculate_video_coverage(telemetry_objects)
-            logger.info(f"Analyzed {len(telemetry_objects)} frames, covering {self.minutes_analyzed} minutes of footage.")
+            logger.info(
+                f"Analyzed {len(telemetry_objects)} frames, covering {self.minutes_analyzed} minutes of footage."
+            )
             with open(log_file, "a") as log:
                 log.write(f"Total pipeline duration: {total_duration:.2f} seconds\n")
 
             self.update_stage("Finalization", "Complete")
-            
+
             return telemetry_objects
 
         except Exception as e:
             logger.error(f"Error in video processing pipeline: {e}")
             raise
 
+
 class TelemetryObject:
-    def __init__(self, filename: str=None, filepath: str=None, timestamp: str=None, lat: float=None, lon: float=None, source_video: str=None):
+    def __init__(
+        self,
+        filename: str = None,
+        filepath: str = None,
+        timestamp: str = None,
+        lat: float = None,
+        lon: float = None,
+        source_video: str = None,
+    ):
         self.filename = filename
         self.filepath = filepath
         self.timestamp = timestamp
-        self.lat = lat # y
-        self.lon = lon # x
+        self.lat = lat  # y
+        self.lon = lon  # x
         self.openai_file_id: str = None
         self.box_file_id: str = None
         self.box_file_url: str = None
@@ -862,33 +1024,42 @@ class TelemetryObject:
         self.source_video: str = source_video
 
     def to_dict(self):
-        return {'filename': self.filename,
-                'filepath': self.filepath,
-                'source_video': self.source_video,
-                'timestamp': self.timestamp,
-                'lat': self.lat,
-                'lon': self.lon,
-                'openai_file_id': self.openai_file_id,
-                'box_file_id': self.box_file_id,
-                'box_file_url': self.box_file_url,
-                'analysis_results': self.analysis_results
-                }
-    
+        return {
+            "filename": self.filename,
+            "filepath": self.filepath,
+            "source_video": self.source_video,
+            "timestamp": self.timestamp,
+            "lat": self.lat,
+            "lon": self.lon,
+            "openai_file_id": self.openai_file_id,
+            "box_file_id": self.box_file_id,
+            "box_file_url": self.box_file_url,
+            "analysis_results": self.analysis_results,
+        }
+
     def to_metadata_dict(self):
         return {
             "filename": self.filename,
-            "timestamp": f'{self.timestamp}',
-            "lat1": f'{self.lat}',
-            "lon1": f'{self.lon}',
-            "pothole": [self.analysis_results['pothole'].capitalize()],  # must be a list
-            "potholeConfidence": str(self.analysis_results['pothole_confidence']),
-            "alligatorCracking": [self.analysis_results['alligator_cracking'].capitalize()],
-            "alligatorCrackingConfidence": str(self.analysis_results['alligator_cracking_confidence']),
-            "lineCracking": [self.analysis_results['line_cracking'].capitalize()],
-            "lineCrackingConfidence": str(self.analysis_results['line_cracking_confidence']),
-            "debris": [self.analysis_results['debris'].capitalize()],
-            "summary": self.analysis_results['summary'],
-            "roadHealthIndex": str(self.analysis_results['road_health_index'])
+            "timestamp": f"{self.timestamp}",
+            "lat1": f"{self.lat}",
+            "lon1": f"{self.lon}",
+            "pothole": [
+                self.analysis_results["pothole"].capitalize()
+            ],  # must be a list
+            "potholeConfidence": str(self.analysis_results["pothole_confidence"]),
+            "alligatorCracking": [
+                self.analysis_results["alligator_cracking"].capitalize()
+            ],
+            "alligatorCrackingConfidence": str(
+                self.analysis_results["alligator_cracking_confidence"]
+            ),
+            "lineCracking": [self.analysis_results["line_cracking"].capitalize()],
+            "lineCrackingConfidence": str(
+                self.analysis_results["line_cracking_confidence"]
+            ),
+            "debris": [self.analysis_results["debris"].capitalize()],
+            "summary": self.analysis_results["summary"],
+            "roadHealthIndex": str(self.analysis_results["road_health_index"]),
         }
 
     def add_openai_file_id(self, file_id):
@@ -896,21 +1067,23 @@ class TelemetryObject:
 
     def add_analysis_results(self, analysis):
         self.analysis_results = analysis
-    
+
     def add_box_file_id(self, file_id):
         self.box_file_id = file_id
-    
+
     def add_box_file_url(self, url):
         self.box_file_url = url
 
     def to_geojson(self):
         """Convert telemetry object to a GeoJSON Feature."""
         if self.lon is None or self.lat is None:
-            raise ValueError(f"Telemetry object {self.filename} is missing coordinates.")
+            raise ValueError(
+                f"Telemetry object {self.filename} is missing coordinates."
+            )
 
         geojson_object = None
         geom = geojson.Point((self.lon, self.lat))
-        
+
         # Flatten analysis_results into the properties
         props = {
             "filename": self.filename,
@@ -924,12 +1097,10 @@ class TelemetryObject:
         if self.analysis_results:
             props.update(self.analysis_results)  # Merge analysis_results into props
 
-        geojson_object = geojson.Feature(
-            geometry=geom,
-            properties=props
-        )
+        geojson_object = geojson.Feature(geometry=geom, properties=props)
 
         return geojson_object
+
 
 if __name__ == "__main__":
     # Example video file path
@@ -942,11 +1113,12 @@ if __name__ == "__main__":
 
     # Execute the pipeline
     start_time = time.time()
-    
-    telem_objs = processor.process_video_pipeline(video_path=video_file, frame_rate=1, max_frames=10, batch_size=3)
-    print(f'Telemetry objects: {telem_objs}')
- 
-    
+
+    telem_objs = processor.process_video_pipeline(
+        video_path=video_file, frame_rate=1, max_frames=10, batch_size=3
+    )
+    print(f"Telemetry objects: {telem_objs}")
+
     end_time = time.time()
 
     # Print execution time
