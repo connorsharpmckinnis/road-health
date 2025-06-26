@@ -1,4 +1,3 @@
-from flask import Flask
 from box import Box
 from salesforce import WorkOrderCreator
 from processing import Processor
@@ -7,6 +6,7 @@ import os
 from logging_config import logger
 import shutil
 import asyncio
+from flask import Flask
 
 
 dotenv.load_dotenv()

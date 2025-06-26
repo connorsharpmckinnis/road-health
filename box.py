@@ -1,20 +1,34 @@
-#box_watcher.py
-import requests
+# box_watcher.py
 from logging_config import logger
-from box_sdk_gen import BoxClient, BoxDeveloperTokenAuth, BoxCCGAuth, CCGConfig, UploadFileAttributes, UploadFileAttributesParentField, CreateCollaborationItem, CreateCollaborationItemTypeField, CreateCollaborationAccessibleBy, CreateCollaborationAccessibleByTypeField, CreateCollaborationRole, AddShareLinkToFileSharedLink, AddShareLinkToFileSharedLinkAccessField, CreateFileMetadataByIdScope, GetMetadataTemplateScope
-from boxsdk.config import API
+from box_sdk_gen import (
+    BoxClient,
+    BoxCCGAuth,
+    CCGConfig,
+    UploadFileAttributes,
+    UploadFileAttributesParentField,
+    CreateCollaborationItem,
+    CreateCollaborationItemTypeField,
+    CreateCollaborationAccessibleBy,
+    CreateCollaborationAccessibleByTypeField,
+    CreateCollaborationRole,
+    AddShareLinkToFileSharedLink,
+    AddShareLinkToFileSharedLinkAccessField,
+    CreateFileMetadataByIdScope,
+)
 import os
 from dotenv import load_dotenv
-import json
-import base64
-import hashlib
-import io
 import datetime
-from utils import unprocessed_videos_path, box_archived_images_folder_id, box_archived_videos_folder_id, box_images_folder_id, box_videos_folder_id, box_work_order_images_folder_id, box_road_health_folder_id
+from utils import (
+    unprocessed_videos_path,
+    box_archived_images_folder_id,
+    box_archived_videos_folder_id,
+    box_images_folder_id,
+    box_videos_folder_id,
+    box_work_order_images_folder_id,
+    box_road_health_folder_id,
+)
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import geojson
-import zipfile
 import re
 
 # Load environment variables from .env file
@@ -26,7 +40,8 @@ BOX_CLIENT_ID = os.getenv("BOX_CLIENT_ID")
 BOX_CLIENT_SECRET = os.getenv("BOX_CLIENT_SECRET")
 BOX_ENTERPRISE_ID = os.getenv("BOX_ENTERPRISE_ID")
 
-class Box():
+
+class Box:
     def __init__(self, client_id=None, client_secret=None, enterprise_id=None):
         self.client_id = client_id or BOX_CLIENT_ID
         self.client_secret = client_secret or BOX_CLIENT_SECRET
@@ -44,8 +59,8 @@ class Box():
         self.box_metadata_template_key = "folderWatcherMetadata"
 
         self.authenticate()
-        print(f"{self.client = }")     
-        
+        print(f"{self.client = }")
+
     ## SECURITY AND AUTHENTICATION
 
     def authenticate(self):
@@ -57,7 +72,7 @@ class Box():
             ccg_config = CCGConfig(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                enterprise_id=self.enterprise_id
+                enterprise_id=self.enterprise_id,
             )
             self.auth = BoxCCGAuth(config=ccg_config)
             self.client = BoxClient(auth=self.auth)
@@ -65,22 +80,24 @@ class Box():
         except Exception as e:
             logger.exception(f"Authentication failed: {e}")
             raise
-        
+
     def test_connection(self):
         """
         Tests the connection by retrieving items from the root folder.
         """
         try:
-            root_folder = self.client.folders.get_folder_by_id('0')
+            root_folder = self.client.folders.get_folder_by_id("0")
             logger.info(f"Connected to Box as: {self.client}")
 
             # Retrieve and log items in the root folder
             for item in root_folder.item_collection.entries:
-                logger.info(f"- {item.type.capitalize()} | Name: {item.name} | ID: {item.id}")
+                logger.info(
+                    f"- {item.type.capitalize()} | Name: {item.name} | ID: {item.id}"
+                )
         except Exception as e:
             logger.error(f"Error testing connection: {e}")
 
-    def create_videos_folder(self, parent_folder_id='0'):
+    def create_videos_folder(self, parent_folder_id="0"):
         """
         Checks if a folder named 'Videos' exists under the specified parent folder.
         If not, creates the folder and returns its ID.
@@ -96,7 +113,9 @@ class Box():
             # Check if the folder already exists
             folder_id = self.get_folder_id_by_name(folder_name, parent_folder_id)
             if folder_id:
-                logger.info(f"Folder '{folder_name}' already exists with ID: {folder_id}")
+                logger.info(
+                    f"Folder '{folder_name}' already exists with ID: {folder_id}"
+                )
                 return folder_id
             else:
                 logger.info(f"Folder '{folder_name}' does not exist. Creating...")
@@ -109,13 +128,15 @@ class Box():
         except Exception as e:
             logger.error(f"Error creating 'Videos' folder: {e}")
             return None
-        
-    def create_folder(self, folder_name, parent_folder_id='0'):
+
+    def create_folder(self, folder_name, parent_folder_id="0"):
         """
         Creates a folder under the specified parent folder.
         """
         try:
-            parent_folder = self.client.folders.get_folder_by_id(folder_id=parent_folder_id)
+            parent_folder = self.client.folders.get_folder_by_id(
+                folder_id=parent_folder_id
+            )
             new_folder = self.client.folders.create_folder(folder_name, parent_folder)
             logger.info(f"Folder '{folder_name}' created with ID: {new_folder.id}")
             return new_folder.id
@@ -123,22 +144,26 @@ class Box():
             logger.error(f"Error creating folder '{folder_name}': {e}")
             return None
 
-    def get_folder_id_by_name(self, folder_name, parent_folder_id='0'):
+    def get_folder_id_by_name(self, folder_name, parent_folder_id="0"):
         """
         Retrieves the folder ID for a given folder name under the specified parent folder.
         """
         try:
-            parent_folder = self.client.folders.get_folder_by_id(folder_id=parent_folder_id)
+            parent_folder = self.client.folders.get_folder_by_id(
+                folder_id=parent_folder_id
+            )
             items = parent_folder.item_collection.entries
             for item in items:
-                if item.name == folder_name and item.type == 'FolderBaseTypeField':
+                if item.name == folder_name and item.type == "FolderBaseTypeField":
                     return item.id
-            logger.warning(f"Folder '{folder_name}' not found under parent folder '{parent_folder_id}'.")
+            logger.warning(
+                f"Folder '{folder_name}' not found under parent folder '{parent_folder_id}'."
+            )
             return None
         except Exception as e:
             logger.error(f"Error retrieving folder ID: {e}")
             return None
-        
+
     def list_items_in_folder(self, folder_id):
         """
         Lists all items in the specified folder.
@@ -175,32 +200,33 @@ class Box():
                 new_file_name = os.path.basename(file_path)
             else:
                 new_file_name = new_name
-            
+
             with open(file_path, "rb") as file:
                 uploaded_file = self.client.uploads.upload_file(
                     UploadFileAttributes(
-                        name=new_file_name, parent=UploadFileAttributesParentField(id=folder_id)
+                        name=new_file_name,
+                        parent=UploadFileAttributesParentField(id=folder_id),
                     ),
                     file,
                 )
-        
+
                 return uploaded_file
         except Exception as e:
             logger.error(f"Failed to upload file '{file_path}': {e}")
             return None
-    
+
     def upload_large_file_to_box(self, file_path, file_name, parent_folder_id):
         """Uploads a large file using the Box Gen SDK's `upload_big_file()` method."""
-        
+
         file_size = os.path.getsize(file_path)
 
         try:
-            with open(file_path, 'rb') as file_stream:
+            with open(file_path, "rb") as file_stream:
                 uploaded_file = self.client.chunked_uploads.upload_big_file(
                     file=file_stream,
                     file_name=file_name,
                     file_size=file_size,
-                    parent_folder_id=parent_folder_id
+                    parent_folder_id=parent_folder_id,
                 )
 
             return uploaded_file
@@ -208,17 +234,23 @@ class Box():
         except Exception as e:
             logger.error(f"Error uploading file '{file_name}': {e}")
             return None
-    
+
     def get_file_size(self, file_path):
         return os.path.getsize(file_path)
-    
-    def get_direct_shared_link(self, file_id) -> str: #returns the string URL of the shared link (direct edition) for use in Salesforce displays and elsewhere
-        fileFull = self.client.shared_links_files.add_share_link_to_file(file_id,"shared_link",shared_link=AddShareLinkToFileSharedLink(
-            access=AddShareLinkToFileSharedLinkAccessField.OPEN,),
+
+    def get_direct_shared_link(
+        self, file_id
+    ) -> str:  # returns the string URL of the shared link (direct edition) for use in Salesforce displays and elsewhere
+        fileFull = self.client.shared_links_files.add_share_link_to_file(
+            file_id,
+            "shared_link",
+            shared_link=AddShareLinkToFileSharedLink(
+                access=AddShareLinkToFileSharedLinkAccessField.OPEN,
+            ),
         )
         fileDirectSharedLink = fileFull.shared_link.download_url
         return fileDirectSharedLink
-    
+
     def download_file(self, file_id, file_name=None, folder_path=None):
         """
         Downloads a file from Box by its file ID and saves it locally.
@@ -233,7 +265,7 @@ class Box():
             path = folder_path
         else:
             path = os.path.join(os.getcwd(), file_name)
-        
+
         if file_name:
             file_name = file_name
         else:
@@ -241,10 +273,9 @@ class Box():
 
         path = os.path.join(folder_path, file_name)
 
-
         try:
             # Download the file content
-            with open(path, 'wb') as file:
+            with open(path, "wb") as file:
                 self.client.downloads.download_file_to_output_stream(file_id, file)
 
             return file_name
@@ -259,41 +290,51 @@ class Box():
         downloaded_files = []
 
         for file in files:
-            downloaded_file = self.download_file(file['id'], file_name=file['name'], folder_path=destination_folder_path)
+            downloaded_file = self.download_file(
+                file["id"], file_name=file["name"], folder_path=destination_folder_path
+            )
             downloaded_files.append(downloaded_file)
-                    
-        return downloaded_files
-    
-    async def save_frames_to_long_term_storage(self, destination_folder_id='316117482557', source_normals_folder='frames', source_wos_folder='work_order_frames', telemetry_objects: list=None, greenway_mode=False, video_path: str=None):
-        from processing import TelemetryObject
 
+        return downloaded_files
+
+    async def save_frames_to_long_term_storage(
+        self,
+        destination_folder_id="316117482557",
+        source_normals_folder="frames",
+        source_wos_folder="work_order_frames",
+        telemetry_objects: list = None,
+        greenway_mode=False,
+        video_path: str = None,
+    ):
         telemetry_objects = telemetry_objects or []
         source_video_base = os.path.splitext(os.path.basename(video_path))[0]
 
+        # FALSIFY GREENWAY_MODE TO RETURN TO STANDARD CONFIGURATION
 
-        #FALSIFY GREENWAY_MODE TO RETURN TO STANDARD CONFIGURATION
-
-        logger.info(f"Moving videos from the active folder to the archive...")
+        logger.info("Moving videos from the active folder to the archive...")
         # Get the videos from Box's Videos folder
-        box_videos_folder_contents = self.list_items_in_folder(self.videos_folder_box_id)
-        box_video_ids = [item['id'] for item in box_videos_folder_contents]
+        box_videos_folder_contents = self.list_items_in_folder(
+            self.videos_folder_box_id
+        )
+        box_video_ids = [item["id"] for item in box_videos_folder_contents]
         # Move the videos to the 'Archived Videos' folder
         self.move_files(box_video_ids, self.box_archived_videos_folder_id)
 
-        logger.info(f"Saving frames to long-term storage...")
+        logger.info("Saving frames to long-term storage...")
 
         # Generate a timestamp for unique filenames
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H_%M")
 
         if greenway_mode:
-
             # Convert telemetry objects to GeoJSON Features
-            geojson_features = [telem_obj.to_geojson() for telem_obj in telemetry_objects]
+            geojson_features = [
+                telem_obj.to_geojson() for telem_obj in telemetry_objects
+            ]
             feature_collection = geojson.FeatureCollection(geojson_features)
-            
+
             # Define the GeoJSON file path (local save location)
             geojson_filename = f"{source_video_base}_{timestamp}.geojson"
-            geojson_filepath = os.path.join('greenway_geojsons', geojson_filename)
+            geojson_filepath = os.path.join("greenway_geojsons", geojson_filename)
 
             # Debug: Check if filepath is valid
             print(f"Saving GeoJSON file to: {geojson_filepath}")
@@ -308,58 +349,71 @@ class Box():
 
             # Debug: Check if file exists after writing
             if not os.path.exists(geojson_filepath):
-                logger.error(f"GeoJSON file does not exist at expected path: {geojson_filepath}")
+                logger.error(
+                    f"GeoJSON file does not exist at expected path: {geojson_filepath}"
+                )
                 return None
 
             # Upload the GeoJSON file to Box
             try:
                 uploaded_geojson = await asyncio.to_thread(
-                    self.upload_small_file_to_folder, geojson_filepath, destination_folder_id, geojson_filename
+                    self.upload_small_file_to_folder,
+                    geojson_filepath,
+                    destination_folder_id,
+                    geojson_filename,
                 )
 
                 # Debug: Check if upload worked
-                if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
+                if (
+                    uploaded_geojson
+                    and hasattr(uploaded_geojson, "entries")
+                    and uploaded_geojson.entries
+                ):
                     geojson_box_file_id = uploaded_geojson.entries[0].id
-                    geojson_box_file_url = self.get_direct_shared_link(geojson_box_file_id)
+                    geojson_box_file_url = self.get_direct_shared_link(
+                        geojson_box_file_id
+                    )
                 else:
-                    logger.error("GeoJSON upload failed. `uploaded_geojson` did not return expected structure.")
+                    logger.error(
+                        "GeoJSON upload failed. `uploaded_geojson` did not return expected structure."
+                    )
             except Exception as e:
                 logger.error(f"Error uploading GeoJSON to Box: {e}")
 
             logger.info("Long-term storage process completed.")
             updated_telemetry_objects = telemetry_objects
             return updated_telemetry_objects
-        
+
         # Use the new multithreaded upload function to save all frames to Box
         # REPLACED WITH THE GROUPED/ZIPPED PROCESS BELOW
-        #updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
+        # updated_telemetry_objects = await self.upload_files_to_box_folder(destination_folder_id, prefix_timestamp=timestamp, telemetry_objects=telemetry_objects)
 
         # Bundle frames into per-video ZIPs and upload
         grouped = self.group_telem_objects_by_video(telemetry_objects)
         zip_paths = []
         for base, items in grouped.items():
             # extract file paths
-            fps = [item['filename'] for item in items]
-            video_id = re.search(f'([^/]+)(?=\.)', base).group(1)
+            fps = [item["filename"] for item in items]
+            video_id = re.search(f"([^/]+)(?=\.)", base).group(1)
             zip_name = f"{video_id}_{timestamp}"
-            print(f'{zip_name = }\n{fps = }')
+            print(f"{zip_name = }\n{fps = }")
             zip_path = self.create_zip_from_group(group_name=zip_name, file_list=fps)
             zip_paths.append(zip_path)
         # Upload all ZIP archives
         await self.upload_zip_to_box(zip_paths, destination_folder_id)
         updated_telemetry_objects = telemetry_objects
 
-
-
         logger.info("Saving all telemetry into a single GeoJSON (timelapse mode)...")
 
         # Combine all telemetry objects into one FeatureCollection
-        geojson_features = [telem_obj.to_geojson() for telem_obj in updated_telemetry_objects]
+        geojson_features = [
+            telem_obj.to_geojson() for telem_obj in updated_telemetry_objects
+        ]
         feature_collection = geojson.FeatureCollection(geojson_features)
 
         # Build filename based on source video
         geojson_filename = f"{source_video_base}_{timestamp}_telemetry.geojson"
-        geojson_filepath = os.path.join('road_geojsons', geojson_filename)
+        geojson_filepath = os.path.join("road_geojsons", geojson_filename)
 
         # Save the FeatureCollection GeoJSON locally
         try:
@@ -372,9 +426,16 @@ class Box():
         # Upload the combined GeoJSON to Box
         try:
             uploaded_geojson = await asyncio.to_thread(
-                self.upload_small_file_to_folder, geojson_filepath, '321197026857', geojson_filename
+                self.upload_small_file_to_folder,
+                geojson_filepath,
+                "321197026857",
+                geojson_filename,
             )
-            if uploaded_geojson and hasattr(uploaded_geojson, 'entries') and uploaded_geojson.entries:
+            if (
+                uploaded_geojson
+                and hasattr(uploaded_geojson, "entries")
+                and uploaded_geojson.entries
+            ):
                 geojson_box_file_id = uploaded_geojson.entries[0].id
             else:
                 logger.error(f"GeoJSON upload failed for {geojson_filename}")
@@ -393,14 +454,22 @@ class Box():
         if source_wos_folder:
             try:
                 # Build a lookup map by filename for telemetry objects
-                filename_to_telem = {os.path.basename(obj.filepath): obj for obj in updated_telemetry_objects}
+                filename_to_telem = {
+                    os.path.basename(obj.filepath): obj
+                    for obj in updated_telemetry_objects
+                }
                 for file in os.listdir(source_wos_folder):
                     file_path = os.path.join(source_wos_folder, file)
                     uploaded_file = await asyncio.to_thread(
-                        self.upload_small_file_to_folder, file_path, '308058285408', file
+                        self.upload_small_file_to_folder,
+                        file_path,
+                        "308058285408",
+                        file,
                     )
                     if uploaded_file:
-                        logger.info(f"Uploaded work order frame: {uploaded_file.entries[0].name} with ID: {uploaded_file.entries[0].id}")
+                        logger.info(
+                            f"Uploaded work order frame: {uploaded_file.entries[0].name} with ID: {uploaded_file.entries[0].id}"
+                        )
                         # Get shared link from Box and save it to the telemetry object
                         link = self.get_direct_shared_link(uploaded_file.entries[0].id)
                         # Find the telemetry object by filename
@@ -408,9 +477,9 @@ class Box():
                         if telem_obj:
                             telem_obj.add_box_file_id(uploaded_file.entries[0].id)
                             telem_obj.box_file_url = link
-                            print(f'{telem_obj.box_file_id = }')
-                            print(f'{telem_obj.box_file_url = }')
-                        
+                            print(f"{telem_obj.box_file_id = }")
+                            print(f"{telem_obj.box_file_url = }")
+
             except Exception as e:
                 logger.error(f"Error uploading work order frames: {e}")
 
@@ -423,8 +492,6 @@ class Box():
                 logger.error(f"Error deleting work order JPG files: {e}")
 
             return updated_telemetry_objects
-
-        
 
     def delete_file_by_id(self, file_id):
         """
@@ -457,7 +524,7 @@ class Box():
             logger.error(f"Failed to retrieve user '{user_email}': {e}")
             return None
 
-    def share_folder_with_user_by_email(self, folder_id, user_email, role='viewer'):
+    def share_folder_with_user_by_email(self, folder_id, user_email, role="viewer"):
         """
         Shares a folder with a user by their email address.
 
@@ -468,24 +535,29 @@ class Box():
         try:
             collaboration = self.client.user_collaborations.create_collaboration(
                 item=CreateCollaborationItem(
-                    type=CreateCollaborationItemTypeField.FOLDER,
-                    id=folder_id
+                    type=CreateCollaborationItemTypeField.FOLDER, id=folder_id
                 ),
                 accessible_by=CreateCollaborationAccessibleBy(
                     type=CreateCollaborationAccessibleByTypeField.USER,
-                    login=user_email  # Use email directly instead of ID
+                    login=user_email,  # Use email directly instead of ID
                 ),
-                role=CreateCollaborationRole[role.upper()],  # Convert role string to enum
+                role=CreateCollaborationRole[
+                    role.upper()
+                ],  # Convert role string to enum
             )
 
-            logger.info(f"Collaboration created: {user_email} → Folder {folder_id} as {role}")
+            logger.info(
+                f"Collaboration created: {user_email} → Folder {folder_id} as {role}"
+            )
             return collaboration
 
         except Exception as e:
             logger.error(f"Failed to create collaboration for {user_email}: {e}")
             return None
 
-    def update_file(self, file_id, new_name=None, new_description=None, new_parent_folder_id=None):
+    def update_file(
+        self, file_id, new_name=None, new_description=None, new_parent_folder_id=None
+    ):
         """
         Updates the metadata of a file, including renaming, updating the description,
         or moving it to a new parent folder using the Box Python SDK.
@@ -514,11 +586,11 @@ class Box():
             update_params = {}
 
             if new_name and new_name != current_file.name:
-                update_params['name'] = new_name
+                update_params["name"] = new_name
             if new_description and new_description != current_file.description:
-                update_params['description'] = new_description
+                update_params["description"] = new_description
             if new_parent_folder_id and new_parent_folder_id != current_file.parent.id:
-                update_params['parent'] = {'id': new_parent_folder_id}
+                update_params["parent"] = {"id": new_parent_folder_id}
 
             if not update_params:
                 logger.info(f"No updates needed for file '{file_id}'.")
@@ -526,17 +598,18 @@ class Box():
 
             # Perform the update using the Box SDK
             updated_file = self.client.files.update_file_by_id(
-                file_id=file_id,
-                **update_params
+                file_id=file_id, **update_params
             )
 
-            logger.info(f"File '{updated_file.name}' updated successfully with ID: {updated_file.id}")
+            logger.info(
+                f"File '{updated_file.name}' updated successfully with ID: {updated_file.id}"
+            )
             return updated_file
 
         except Exception as e:
             logger.error(f"Failed to update file '{file_id}': {e}")
             return None
-        
+
     def move_file(self, file_id, destination_folder_id):
         self.update_file(file_id=file_id, destination_folder_id=destination_folder_id)
 
@@ -550,11 +623,20 @@ class Box():
         """
         try:
             for file_id in file_ids:
-                self.update_file(file_id=file_id, new_parent_folder_id=destination_folder_id)
+                self.update_file(
+                    file_id=file_id, new_parent_folder_id=destination_folder_id
+                )
         except Exception as e:
             logger.error(f"Failed to move files: {e}")
 
-    async def upload_files_to_box_folder(self, destination_folder_id, prefix_timestamp=None, max_workers=5, file_paths=None, telemetry_objects: list=None):
+    async def upload_files_to_box_folder(
+        self,
+        destination_folder_id,
+        prefix_timestamp=None,
+        max_workers=5,
+        file_paths=None,
+        telemetry_objects: list = None,
+    ):
         """
         Uploads multiple small files (<50MB each) to a specified Box folder concurrently.
 
@@ -565,20 +647,33 @@ class Box():
             max_workers (int, optional): The maximum number of threads to use for concurrent uploads.
         """
         updated_telemetry_objects = []
-        logger.info(f"Uploading {len(telemetry_objects)} files to Box folder ID '{destination_folder_id}' using multithreading...")
-        
+        logger.info(
+            f"Uploading {len(telemetry_objects)} files to Box folder ID '{destination_folder_id}' using multithreading..."
+        )
+
         async def upload_file(telem_obj):
             """Uploads a file and updates its Box file ID."""
             try:
                 file_path = telem_obj.filepath
-                new_file_name = f"{prefix_timestamp}_{os.path.basename(file_path)}" if prefix_timestamp else os.path.basename(file_path)
+                new_file_name = (
+                    f"{prefix_timestamp}_{os.path.basename(file_path)}"
+                    if prefix_timestamp
+                    else os.path.basename(file_path)
+                )
 
                 # Upload the file to Box
-                fake_file_obj = await asyncio.to_thread(self.upload_small_file_to_folder, file_path, destination_folder_id, new_file_name)
+                fake_file_obj = await asyncio.to_thread(
+                    self.upload_small_file_to_folder,
+                    file_path,
+                    destination_folder_id,
+                    new_file_name,
+                )
                 real_file_obj = fake_file_obj.entries[0]
 
                 # Build metadata dict from telem_obj
-                telem_metadata = telem_obj.to_metadata_dict()  # You define this method on your TelemetryObject
+                telem_metadata = (
+                    telem_obj.to_metadata_dict()
+                )  # You define this method on your TelemetryObject
 
                 # Attach metadata to file
                 await asyncio.to_thread(
@@ -586,18 +681,19 @@ class Box():
                     real_file_obj.id,
                     CreateFileMetadataByIdScope.ENTERPRISE,
                     self.box_metadata_template_key,
-                    telem_metadata
+                    telem_metadata,
                 )
 
                 if real_file_obj:
                     box_file_id = real_file_obj.id
-                    
-                    box_file_url = self.get_direct_shared_link(box_file_id)  # Optional: Store Box direct URL
-                    print(f'{box_file_id = }')
-                    print(f'{box_file_url = }')
+
+                    box_file_url = self.get_direct_shared_link(
+                        box_file_id
+                    )  # Optional: Store Box direct URL
+                    print(f"{box_file_id = }")
+                    print(f"{box_file_url = }")
                     telem_obj.add_box_file_id(box_file_id)
                     telem_obj.add_box_file_url(box_file_url)
-                    
 
                     updated_telemetry_objects.append(telem_obj)
             except Exception as e:
@@ -610,9 +706,10 @@ class Box():
 
         logger.info("All files uploaded successfully.")
         return updated_telemetry_objects
-    
+
     def group_telem_objects_by_video(self, telemetry_objects: list):
         from collections import defaultdict
+
         """
         Groups telemetry objects by their video file name.
 
@@ -625,12 +722,14 @@ class Box():
         grouped_objects = defaultdict(list)
 
         for telem_obj in telemetry_objects:
-            source_video = telem_obj.to_dict().get('source_video')
+            source_video = telem_obj.to_dict().get("source_video")
             if source_video:
                 grouped_objects[source_video].append(telem_obj.to_dict())
         return dict(grouped_objects)
-    
-    def create_zip_from_group(self, group_name: str, file_list: list, output_dir: str = 'zipped_files') -> str:
+
+    def create_zip_from_group(
+        self, group_name: str, file_list: list, output_dir: str = "zipped_files"
+    ) -> str:
         """
         Creates a zip file from a list of file paths for a specific group.
 
@@ -650,23 +749,22 @@ class Box():
             file_list = file_list.get(group_name, [])
 
         # If list elements are dicts with 'filepath', extract paths
-        if file_list and isinstance(file_list[0], dict) and 'filepath' in file_list[0]:
-            file_list = [item['filepath'] for item in file_list]
-
+        if file_list and isinstance(file_list[0], dict) and "filepath" in file_list[0]:
+            file_list = [item["filepath"] for item in file_list]
 
         os.makedirs(output_dir, exist_ok=True)
         zip_file_path = os.path.join(output_dir, f"{group_name}.zip")
 
-        with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for file_path in file_list:
-                full_path = os.path.join('frames', file_path)
+                full_path = os.path.join("frames", file_path)
                 if os.path.exists(full_path):
                     zipf.write(full_path, arcname=os.path.basename(file_path))
                 else:
                     print(f"File {full_path} does not exist. Skipping.")
-        
+
         return zip_file_path
-    
+
     async def upload_zip_to_box(self, zip_file_paths, destination_folder_id):
         """
         Uploads a zip file to a specified Box folder.
@@ -693,21 +791,21 @@ class Box():
 
             try:
                 if file_size > 50 * 1024 * 1024:
-                    print('Uploading large file...')
+                    print("Uploading large file...")
                     file_metadata = await asyncio.to_thread(
-                        self.upload_large_file_to_box, 
-                        zip_file_path, 
-                        file_name, 
-                        destination_folder_id
+                        self.upload_large_file_to_box,
+                        zip_file_path,
+                        file_name,
+                        destination_folder_id,
                     )
 
                 else:
-                    print('Uploading regular file...')
+                    print("Uploading regular file...")
                     file_metadata = await asyncio.to_thread(
-                        self.upload_small_file_to_folder, 
+                        self.upload_small_file_to_folder,
                         zip_file_path,
                         destination_folder_id,
-                        file_name
+                        file_name,
                     )
 
                 uploaded_files.append(file_metadata)
@@ -718,8 +816,6 @@ class Box():
         await asyncio.gather(*tasks)
 
         return uploaded_files
-            
-
 
 
 async def main():
@@ -728,34 +824,80 @@ async def main():
 
     unprocessed_videos_folder = unprocessed_videos_path
 
-    root_items = box_client.list_items_in_folder('0')
-    print(f'{len(root_items) = }')
+    root_items = box_client.list_items_in_folder("0")
+    print(f"{len(root_items) = }")
 
-    road_health_items = box_client.list_items_in_folder(box_client.box_road_health_folder_id)
-    print(f'{len(road_health_items) = }')
+    road_health_items = box_client.list_items_in_folder(
+        box_client.box_road_health_folder_id
+    )
+    print(f"{len(road_health_items) = }")
 
     from processing import TelemetryObject
 
-    object1 = TelemetryObject('1.jpg', 'frames/1.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object2 = TelemetryObject('2.jpg', 'frames/2.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object3 = TelemetryObject('3.jpg', 'frames/3.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object4 = TelemetryObject('4.jpg', 'frames/4.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object5 = TelemetryObject('5.jpg', 'frames/5.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010101')
-    object6 = TelemetryObject('6.jpg', 'frames/6.jpg', '2025/01/01T4:21:09', '73.110292', '-41.44123', 'GX010102')
+    object1 = TelemetryObject(
+        "1.jpg",
+        "frames/1.jpg",
+        "2025/01/01T4:21:09",
+        "73.110292",
+        "-41.44123",
+        "GX010101",
+    )
+    object2 = TelemetryObject(
+        "2.jpg",
+        "frames/2.jpg",
+        "2025/01/01T4:21:09",
+        "73.110292",
+        "-41.44123",
+        "GX010101",
+    )
+    object3 = TelemetryObject(
+        "3.jpg",
+        "frames/3.jpg",
+        "2025/01/01T4:21:09",
+        "73.110292",
+        "-41.44123",
+        "GX010101",
+    )
+    object4 = TelemetryObject(
+        "4.jpg",
+        "frames/4.jpg",
+        "2025/01/01T4:21:09",
+        "73.110292",
+        "-41.44123",
+        "GX010101",
+    )
+    object5 = TelemetryObject(
+        "5.jpg",
+        "frames/5.jpg",
+        "2025/01/01T4:21:09",
+        "73.110292",
+        "-41.44123",
+        "GX010101",
+    )
+    object6 = TelemetryObject(
+        "6.jpg",
+        "frames/6.jpg",
+        "2025/01/01T4:21:09",
+        "73.110292",
+        "-41.44123",
+        "GX010102",
+    )
     telem_objects = [object1, object2, object3, object4, object5, object6]
     grouped_objs = box_client.group_telem_objects_by_video(telem_objects)
-    print(f'{grouped_objs = }')
-    zip_file_paths = box_client.create_zip_from_group('GX010101', grouped_objs)
-    print(f'{zip_file_paths = }')
-    results = await box_client.upload_zip_to_box(zip_file_paths, box_client.box_images_folder_id)
-    print(f'{results = }')
+    print(f"{grouped_objs = }")
+    zip_file_paths = box_client.create_zip_from_group("GX010101", grouped_objs)
+    print(f"{zip_file_paths = }")
+    results = await box_client.upload_zip_to_box(
+        zip_file_paths, box_client.box_images_folder_id
+    )
+    print(f"{results = }")
 
-    '''
+    """
     client.metadata_templates.get_metadata_template(
     GetMetadataTemplateScope.ENTERPRISE, template.template_key
     )
-    '''
-    '''all_templates = box_client.client.metadata_templates.get_enterprise_metadata_templates()
+    """
+    """all_templates = box_client.client.metadata_templates.get_enterprise_metadata_templates()
     print(all_templates)
 
     test_metadata_key = 'folderWatcherMetadata'
@@ -774,21 +916,21 @@ async def main():
         "summary": "This is a summary of a pothole, found on the top-right portion of the frame in question. Yada yada yada.",
         "roadHealthIndex": "52"
     }
-    '''
+    """
 
-    
-    '''
+    """
     test_file_id = '1797090814848'
     #box_client.client.file_metadata.delete_file_metadata_by_id(test_file_id, CreateFileMetadataByIdScope.ENTERPRISE, test_metadata_key)
     metadataFull = box_client.client.file_metadata.create_file_metadata_by_id(test_file_id, CreateFileMetadataByIdScope.ENTERPRISE, test_metadata_key, test_metadata)
     #metadataFull = box_client.client.metadata_templates.get_metadata_template(GetMetadataTemplateScope.ENTERPRISE, test_metadata_key)
     print(f'{metadataFull = }')
-    '''
+    """
+
 
 # Run the async main function
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
 
-    #box_client.share_folder_with_user_by_email(videos_folder_id, 'connor.mckinnis@carync.gov', role='editor')
+    # box_client.share_folder_with_user_by_email(videos_folder_id, 'connor.mckinnis@carync.gov', role='editor')
 
-    #box_client.upload_large_file_to_box(file_name='GX010014.mp4', file_path='unprocessed_videos/GX010014.MP4', parent_folder_id=box_client.videos_folder_box_id)
+    # box_client.upload_large_file_to_box(file_name='GX010014.mp4', file_path='unprocessed_videos/GX010014.MP4', parent_folder_id=box_client.videos_folder_box_id)
