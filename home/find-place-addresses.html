@@ -1,0 +1,41 @@
+
+        <html>
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+                <title>Find place addresses</title>
+
+                <style>
+                    html,
+                    body,
+                    #viewDiv {
+                        padding: 0;
+                        margin: 0;
+                        height: 100%;
+                        width: 100%;
+                    }
+                </style>
+
+                <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css">
+                <script src="https://js.arcgis.com/4.30/"></script>
+
+                <script>
+                    require(["esri/config", "esri/WebMap", "esri/views/MapView"], function(esriConfig, WebMap, MapView) {
+
+
+                        const map = WebMap.fromJSON({"authoringApp": "ArcGISPythonAPI", "authoringAppVersion": "2.4.1.1", "baseMap": {"baseMapLayers": [{"id": "world-hillshade-layer", "layerType": "ArcGISTiledMapServiceLayer", "listMode": "show", "opacity": 1.0, "refreshInterval": 0.0, "showLegend": false, "title": "World Hillshade", "url": "https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer", "visibility": true}, {"id": "topo-vector-base-layer", "layerType": "VectorTileLayer", "opacity": 1.0, "styleUrl": "https://www.arcgis.com/sharing/rest/content/items/7dc6cea0b1764a1f9af2e679f642f0f5/resources/styles/root.json", "title": "World Topo", "visibility": true}], "title": "topo vector"}, "bookmarks": [], "initialState": {"viewpoint": {"rotation": 0.0, "targetGeometry": {"spatialReference": {"latestWkid": 3857, "wkid": 102100}, "xmax": -13213609.419586241, "xmin": -13214507.879196435, "ymax": 4048256.225007785, "ymin": 4033979.6589309387}}}, "operationalLayers": [{"disablePopup": false, "featureCollection": {"layers": [{"disablePopup": false, "featureSet": {"features": [{"attributes": {"PlaceName": "Philz Coffee", "Place_addr": "26787 Agoura Rd, Ste E9, Calabasas, California, 91302", "OBJECTID": 1, "SHAPE": {"x": -118.707944, "y": 34.139976, "spatialReference": {"wkid": 4326, "latestWkid": 4326}}}, "geometry": {"spatialReference": {"latestWkid": 4326, "wkid": 4326}, "x": -118.707944, "y": 34.139976}}, {"attributes": {"PlaceName": "The HAWC Cafe", "Place_addr": "24255 Pacific Coast Hwy, Malibu, California, 90263", "OBJECTID": 2, "SHAPE": {"x": -118.706746, "y": 34.038567, "spatialReference": {"wkid": 4326, "latestWkid": 4326}}}, "geometry": {"spatialReference": {"latestWkid": 4326, "wkid": 4326}, "x": -118.706746, "y": 34.038567}}, {"attributes": {"PlaceName": "Starbucks", "Place_addr": "24255 Pacific Coast Hwy, Malibu, California, 90263", "OBJECTID": 3, "SHAPE": {"x": -118.706715, "y": 34.038551, "spatialReference": {"wkid": 4326, "latestWkid": 4326}}}, "geometry": {"spatialReference": {"latestWkid": 4326, "wkid": 4326}, "x": -118.706715, "y": 34.038551}}, {"attributes": {"PlaceName": "Starbucks", "Place_addr": "26531 Agoura Rd, Calabasas, California, 91302", "OBJECTID": 4, "SHAPE": {"x": -118.700325, "y": 34.144157, "spatialReference": {"wkid": 4326, "latestWkid": 4326}}}, "geometry": {"spatialReference": {"latestWkid": 4326, "wkid": 4326}, "x": -118.700325, "y": 34.144157}}, {"attributes": {"PlaceName": "Starbucks", "Place_addr": "26521 Agoura Rd, Calabasas, California, 91302", "OBJECTID": 5, "SHAPE": {"x": -118.699873, "y": 34.144759, "spatialReference": {"wkid": 4326, "latestWkid": 4326}}}, "geometry": {"spatialReference": {"latestWkid": 4326, "wkid": 4326}, "x": -118.699873, "y": 34.144759}}], "geometryType": "esriGeometryPoint"}, "layerDefinition": {"drawingInfo": {"renderer": {"symbol": {"angle": 0.0, "color": [226, 29, 145, 158], "outline": {"color": [0, 0, 0, 255], "style": "esriSLSSolid", "type": "esriSLS", "width": 0.75}, "size": 12, "style": "esriSMSCircle", "type": "esriSMS", "xoffset": 0, "yoffset": 0}, "type": "simple"}}, "fields": [{"alias": "PlaceName", "name": "PlaceName", "type": "esriFieldTypeString"}, {"alias": "Place_addr", "name": "Place_addr", "type": "esriFieldTypeString"}, {"alias": "OBJECTID", "name": "OBJECTID", "type": "esriFieldTypeOID"}], "geometryType": "esriGeometryPoint", "id": 0, "name": "a66b7b", "objectIdField": "OBJECTID", "spatialReference": {"latestWkid": 4326, "wkid": 4326}}, "showLegend": true}], "showLegend": true}, "id": "d63a204d1a00", "layerDefinition": {"drawingInfo": {"renderer": {"symbol": {"angle": 0.0, "color": [226, 29, 145, 158], "outline": {"color": [0, 0, 0, 255], "style": "esriSLSSolid", "type": "esriSLS", "width": 0.75}, "size": 12, "style": "esriSMSCircle", "type": "esriSMS", "xoffset": 0, "yoffset": 0}, "type": "simple"}}, "fields": [{"alias": "PlaceName", "name": "PlaceName", "type": "esriFieldTypeString"}, {"alias": "Place_addr", "name": "Place_addr", "type": "esriFieldTypeString"}, {"alias": "OBJECTID", "name": "OBJECTID", "type": "esriFieldTypeOID"}], "geometryType": "esriGeometryPoint", "id": 0, "name": "a66b7b", "objectIdField": "OBJECTID", "spatialReference": {"latestWkid": 4326, "wkid": 4326}}, "layerType": "ArcGISFeatureLayer", "listMode": "show", "opacity": 1.0, "popupInfo": {"description": "Address: {Place_addr}", "title": "{PlaceName}"}, "refreshInterval": 0.0, "screenSizePerspective": true, "showLabels": false, "showLegend": true, "timeAnimation": true, "title": "a66b7b", "visibility": true}], "referenceScale": 0.0, "spatialReference": {"latestWkid": 3857, "wkid": 102100}, "version": "2.32"});
+
+                        const view = new MapView({
+                            map: map,
+                            extent: {"xmin": -13214507.879196435, "ymin": 4033979.6589309387, "xmax": -13213609.419586241, "ymax": 4048256.225007785, "spatialReference": {"latestWkid": 3857, "wkid": 102100}},
+                            container: "viewDiv"
+                        });
+
+                    });
+                </script>
+            </head>
+            <body>
+                <div id="viewDiv"></div>
+            </body>
+        </html>
+        
