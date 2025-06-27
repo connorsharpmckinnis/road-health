@@ -83,11 +83,14 @@ class WorkOrderCreator:
         description="Default",
         box_file_url="https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg",
     ):
+        from geospatial import RoadOwnerFinder
+
         record_id = None
         lat_str = metadata_item.get("lat", 0)
         lon_str = metadata_item.get("lon", 0)
         lat = float(lat_str)
         lon = float(lon_str)
+        owner = RoadOwnerFinder.get_pothole_owner(lat=lat, lon=lon)
 
         ai_event = {
             "Subject__c": subject,
@@ -97,6 +100,7 @@ class WorkOrderCreator:
             "Location__Longitude__s": lon,
             "RecordTypeId": "012VF000001Go9xYAC",
             "OwnerId": "00GVF000003yaN3",
+            "Location_Owner__c": owner,
         }
 
         response = self.sf.AI_Event__c.create(ai_event)
@@ -137,6 +141,7 @@ class WorkOrderCreator:
                 analysis_results = object.analysis_results
                 pothole = analysis_results.get("pothole", "no")
                 pothole_confidence = analysis_results.get("pothole_confidence", 0)
+
                 if pothole == "yes" and pothole_confidence > 0.9:
                     description = self.create_description_package(object.to_dict())
                     box_url = object.box_file_url
