@@ -3,8 +3,6 @@ import json
 from simple_salesforce import Salesforce
 from PIL import Image
 import base64
-from utils import *
-from analysis import *
 import dotenv
 import logging
 import io

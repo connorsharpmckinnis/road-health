@@ -7,9 +7,7 @@ from ai import AI
 import dotenv
 import json
 import time
-from utils import *
 from logging_config import logger
-from analysis import *
 from bisect import bisect_left
 import shutil
 import geojson
@@ -801,7 +799,6 @@ class Processor:
 
     def calculate_video_coverage(self, telemetry_objects: list):
         num_frames = len(telemetry_objects)
-        video_fps = self.video_fps
         analysis_frames_per_second = self.analysis_frames_per_second
         seconds_analyzed = round(num_frames / analysis_frames_per_second)
         minutes_analyzed = seconds_analyzed // 60
@@ -846,7 +843,6 @@ class Processor:
 
         self.mode = mode
         log_file = "pipeline_timing_log.txt"
-        file_name = video_path
 
         # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
         video_path = f"unprocessed_videos/{video_path}"
