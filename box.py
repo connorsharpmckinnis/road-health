@@ -59,7 +59,8 @@ class Box:
         self.box_metadata_template_key = "folderWatcherMetadata"
 
         self.authenticate()
-        print(f"{self.client = }")
+
+        print("Box client initialized")
 
     ## SECURITY AND AUTHENTICATION
 
@@ -396,7 +397,6 @@ class Box:
             fps = [item["filename"] for item in items]
             video_id = re.search(f"([^/]+)(?=\.)", base).group(1)
             zip_name = f"{video_id}_{timestamp}"
-            print(f"{zip_name = }\n{fps = }")
             zip_path = self.create_zip_from_group(group_name=zip_name, file_list=fps)
             zip_paths.append(zip_path)
         # Upload all ZIP archives
@@ -442,7 +442,7 @@ class Box:
         except Exception as e:
             logger.error(f"Error uploading GeoJSON {geojson_filename}: {e}")
 
-        # Delete all the jpg files in the 'frames' folder
+        # Delete all the files in the 'frames' folder
         try:
             for file in os.listdir(source_normals_folder):
                 os.remove(os.path.join(source_normals_folder, file))
@@ -475,7 +475,7 @@ class Box:
                         # Find the telemetry object by filename
                         telem_obj = filename_to_telem.get(file)
                         if telem_obj:
-                            telem_obj.add_box_file_id(uploaded_file.entries[0].id)
+                            telem_obj.box_file_id(uploaded_file.entries[0].id)
                             telem_obj.box_file_url = link
                             print(f"{telem_obj.box_file_id = }")
                             print(f"{telem_obj.box_file_url = }")
@@ -821,16 +821,6 @@ class Box:
 async def main():
     # Initialize the Box client
     box_client = Box(BOX_CLIENT_ID, BOX_CLIENT_SECRET, BOX_ENTERPRISE_ID)
-
-    unprocessed_videos_folder = unprocessed_videos_path
-
-    root_items = box_client.list_items_in_folder("0")
-    print(f"{len(root_items) = }")
-
-    road_health_items = box_client.list_items_in_folder(
-        box_client.box_road_health_folder_id
-    )
-    print(f"{len(road_health_items) = }")
 
     from processing import TelemetryObject
 

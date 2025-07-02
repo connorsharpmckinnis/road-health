@@ -88,7 +88,8 @@ class WorkOrderCreator:
         lon_str = metadata_item.get("lon", 0)
         lat = float(lat_str)
         lon = float(lon_str)
-        owner = RoadOwnerFinder.get_pothole_owner(lat=lat, lon=lon)
+        road_owner_finder = RoadOwnerFinder(api_key=os.getenv("ARCGIS_API_KEY"))
+        owner = road_owner_finder.get_pothole_owner(lat=lat, lon=lon)
 
         ai_event = {
             "Subject__c": subject,
@@ -223,7 +224,6 @@ class WorkOrderCreator:
         return simplified_locations
 
     def get_street_segments(self, metadata_item):  # Subprocesses
-        print("DEBUG: Running get_street_segments")
         # Prep a query by adding the variance coordinates as +- conditions including WHERE
         # Run a query for street segments with the WHERE conditions added
         meta = metadata_item
@@ -304,7 +304,6 @@ class WorkOrderCreator:
 
 
         """
-        print("DEBUG: Running create_description_package")
         # Extract metadata details
         ai_analysis = metadata_item.get("analysis_results", {})
         analysis_summary = ai_analysis.get("summary", "No analysis summary provided.")
@@ -386,7 +385,6 @@ class WorkOrderCreator:
             resource_name = f"road_image_{sanitized_name}"
 
             # Construct the Static Resource payload
-            print(f"DEBUG: {resource_name = }")
             static_resource = {
                 "Name": resource_name,
                 "ContentType": "image/jpeg",
@@ -396,7 +394,6 @@ class WorkOrderCreator:
 
             # Create the Static Resource in Salesforce
             response = self.sf.StaticResource.create(static_resource)
-            print(f"DEBUG: {response = }")
             return response["id"], resource_name
 
         except Exception as e:

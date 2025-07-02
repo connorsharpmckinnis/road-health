@@ -75,6 +75,10 @@ class Processor:
             subprocess.run(
                 [
                     Processor.FFMPEG_PATH,
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-nostats",
                     "-y",
                     "-i",
                     mp4_file_path,
@@ -86,6 +90,8 @@ class Processor:
                     "rawvideo",
                     Processor.TEMP_BIN_FILE,
                 ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 check=True,
             )
             logger.info(f"Extracted binary metadata to {Processor.TEMP_BIN_FILE}.")
@@ -101,9 +107,7 @@ class Processor:
                     "gopro2gpx not found. Ensure the virtual environment is activated!"
                 )
 
-            result = subprocess.run(
-                ["gopro2gpx", "-s", "-vv", mp4_file_path, gpx_prefix]
-            )
+            result = subprocess.run(["gopro2gpx", "-s", mp4_file_path, gpx_prefix])
 
             if result.returncode != 0:
                 logger.error(f"gopro2gpx failed with error:\n{result.stderr}")
@@ -281,8 +285,6 @@ class Processor:
         # Get video metadata using FFprobe
         command = [
             self.FFPROBE_PATH,
-            "-v",
-            "error",
             "-select_streams",
             "v:0",
             "-show_entries",
@@ -363,7 +365,6 @@ class Processor:
         # Get video metadata using FFprobe
         command = [
             self.FFPROBE_PATH,
-            "-v",
             "error",
             "-select_streams",
             "v:0",
