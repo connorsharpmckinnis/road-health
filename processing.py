@@ -7,9 +7,7 @@ from ai import AI
 import dotenv
 import json
 import time
-from utils import *
 from logging_config import logger
-from analysis import *
 from bisect import bisect_left
 import shutil
 import geojson
@@ -77,6 +75,10 @@ class Processor:
             subprocess.run(
                 [
                     Processor.FFMPEG_PATH,
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-nostats",
                     "-y",
                     "-i",
                     mp4_file_path,
@@ -88,6 +90,8 @@ class Processor:
                     "rawvideo",
                     Processor.TEMP_BIN_FILE,
                 ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 check=True,
             )
             logger.info(f"Extracted binary metadata to {Processor.TEMP_BIN_FILE}.")
@@ -103,9 +107,7 @@ class Processor:
                     "gopro2gpx not found. Ensure the virtual environment is activated!"
                 )
 
-            result = subprocess.run(
-                ["gopro2gpx", "-s", "-vv", mp4_file_path, gpx_prefix]
-            )
+            result = subprocess.run(["gopro2gpx", "-s", mp4_file_path, gpx_prefix])
 
             if result.returncode != 0:
                 logger.error(f"gopro2gpx failed with error:\n{result.stderr}")
@@ -283,8 +285,6 @@ class Processor:
         # Get video metadata using FFprobe
         command = [
             self.FFPROBE_PATH,
-            "-v",
-            "error",
             "-select_streams",
             "v:0",
             "-show_entries",
@@ -365,7 +365,6 @@ class Processor:
         # Get video metadata using FFprobe
         command = [
             self.FFPROBE_PATH,
-            "-v",
             "error",
             "-select_streams",
             "v:0",
@@ -801,7 +800,6 @@ class Processor:
 
     def calculate_video_coverage(self, telemetry_objects: list):
         num_frames = len(telemetry_objects)
-        video_fps = self.video_fps
         analysis_frames_per_second = self.analysis_frames_per_second
         seconds_analyzed = round(num_frames / analysis_frames_per_second)
         minutes_analyzed = seconds_analyzed // 60
@@ -846,7 +844,6 @@ class Processor:
 
         self.mode = mode
         log_file = "pipeline_timing_log.txt"
-        file_name = video_path
 
         # update the video path to pull from unprocessed_videos/ for Non-Greenway mode
         video_path = f"unprocessed_videos/{video_path}"

@@ -3,8 +3,6 @@ import json
 from simple_salesforce import Salesforce
 from PIL import Image
 import base64
-from utils import *
-from analysis import *
 import dotenv
 import logging
 import io
@@ -83,11 +81,15 @@ class WorkOrderCreator:
         description="Default",
         box_file_url="https://upload.wikimedia.org/wikipedia/commons/c/c7/Pothole_Big.jpg",
     ):
+        from geospatial import RoadOwnerFinder
+
         record_id = None
         lat_str = metadata_item.get("lat", 0)
         lon_str = metadata_item.get("lon", 0)
         lat = float(lat_str)
         lon = float(lon_str)
+        road_owner_finder = RoadOwnerFinder(api_key=os.getenv("ARCGIS_API_KEY"))
+        owner = road_owner_finder.get_pothole_owner(lat=lat, lon=lon)
 
         ai_event = {
             "Subject__c": subject,
@@ -97,6 +99,7 @@ class WorkOrderCreator:
             "Location__Longitude__s": lon,
             "RecordTypeId": "012VF000001Go9xYAC",
             "OwnerId": "00GVF000003yaN3",
+            "Location_Owner__c": owner,
         }
 
         response = self.sf.AI_Event__c.create(ai_event)
@@ -137,6 +140,7 @@ class WorkOrderCreator:
                 analysis_results = object.analysis_results
                 pothole = analysis_results.get("pothole", "no")
                 pothole_confidence = analysis_results.get("pothole_confidence", 0)
+
                 if pothole == "yes" and pothole_confidence > 0.9:
                     description = self.create_description_package(object.to_dict())
                     box_url = object.box_file_url
@@ -220,7 +224,6 @@ class WorkOrderCreator:
         return simplified_locations
 
     def get_street_segments(self, metadata_item):  # Subprocesses
-        print("DEBUG: Running get_street_segments")
         # Prep a query by adding the variance coordinates as +- conditions including WHERE
         # Run a query for street segments with the WHERE conditions added
         meta = metadata_item
@@ -301,7 +304,6 @@ class WorkOrderCreator:
 
 
         """
-        print("DEBUG: Running create_description_package")
         # Extract metadata details
         ai_analysis = metadata_item.get("analysis_results", {})
         analysis_summary = ai_analysis.get("summary", "No analysis summary provided.")
@@ -383,7 +385,6 @@ class WorkOrderCreator:
             resource_name = f"road_image_{sanitized_name}"
 
             # Construct the Static Resource payload
-            print(f"DEBUG: {resource_name = }")
             static_resource = {
                 "Name": resource_name,
                 "ContentType": "image/jpeg",
@@ -393,7 +394,6 @@ class WorkOrderCreator:
 
             # Create the Static Resource in Salesforce
             response = self.sf.StaticResource.create(static_resource)
-            print(f"DEBUG: {response = }")
             return response["id"], resource_name
 
         except Exception as e:
