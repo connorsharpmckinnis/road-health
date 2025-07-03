@@ -290,14 +290,11 @@ class WorkOrderCreator:
                 "file_id": "frame_0001.jpg",
                 "pothole": "no",
                 "pothole_confidence": 0.85,
-                "alligator_cracking": "yes",
-                "alligator_cracking_confidence": 0.92,
-                "line_cracking": "yes",
-                "line_cracking_confidence": 0.89,
-                "debris": "no",
-                "debris_confidence": 0.95,
+                "alligator_cracking": "light",
+                "line_cracking": "moderate",
+                "raveling": "none",
                 "summary": "The road exhibits significant alligator cracking and extensive line cracking, indicating structural distress. Overall condition is Poor.",
-                "road_health_index": 42
+                "estimated_pcr": 42
             }
         }
 
@@ -309,14 +306,10 @@ class WorkOrderCreator:
         analysis_summary = ai_analysis.get("summary", "No analysis summary provided.")
         pothole = ai_analysis.get("pothole", None)
         pothole_confidence = ai_analysis.get("pothole_confidence", None)
-        line_cracking = ai_analysis.get("line_cracking", None)
-        line_cracking_confidence = ai_analysis.get("line_cracking_confidence", None)
-        alligator_cracking = ai_analysis.get("alligator_cracking", None)
-        alligator_cracking_confidence = ai_analysis.get(
-            "alligator_cracking_confidence", None
-        )
-        debris = ai_analysis.get("debris", None)
-        debris_confidence = ai_analysis.get("debris_confidence", None)
+        line_cracking = ai_analysis.get("line_cracking", 'Unknown')
+        alligator_cracking = ai_analysis.get("alligator_cracking", 'Unknown')
+        raveling = ai_analysis.get("raveling", 'Unknown')
+        est_pcr = ai_analysis.get("estimated_pcr", 'nAn')
         lat = metadata_item.get("lat", "Unknown")
         lon = metadata_item.get("lon", "Unknown")
 
@@ -328,15 +321,20 @@ class WorkOrderCreator:
             )
         if line_cracking is not None:
             assessment_details.append(
-                f"Line Cracking: {'Yes' if line_cracking else 'No'} ({line_cracking_confidence * 100:.1f}%)"
+                f"Line Cracking: {line_cracking}"
             )
         if alligator_cracking is not None:
             assessment_details.append(
-                f"Alligator Cracking: {'Yes' if alligator_cracking else 'No'} ({alligator_cracking_confidence * 100:.1f}%)"
+                f"Alligator Cracking: {alligator_cracking}"
             )
-        if debris is not None:
+        if raveling is not None:
             assessment_details.append(
-                f"Debris: {'Yes' if debris else 'No'} ({debris_confidence * 100:.1f}%)"
+                f"Raveling: {raveling}"
+            )
+
+        if est_pcr is not None:
+            assessment_details.append(
+                f"Estimated PCR: {est_pcr}"
             )
 
         # Construct the Google Maps URL

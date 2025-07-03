@@ -690,101 +690,6 @@ class Processor:
 
         logger.info(f"Saved {len(telemetry_objects)} telemetry objects as JSON files.")
 
-    def save_overview_json(self, telemetry_objects: list, output_path="overview.json"):
-        """
-        Save an overview JSON file with summary statistics, counts of 'yes' values,
-        PCI score histograms, and filenames for pothole detections.
-
-        Args:
-            telemetry_objects (list): List of telemetry objects.
-            output_path (str): Path to save the overview JSON file.
-        """
-        num_objects = len(telemetry_objects)
-        stats = {
-            "total_frames": num_objects,
-            "average_pothole_confidence": 0.0,
-            "average_alligator_cracking_confidence": 0.0,
-            "average_line_cracking_confidence": 0.0,
-            "average_debris_confidence": 0.0,
-            "road_health_index_average": 0.0,
-            "counts": {
-                "pothole": 0,
-                "line_cracking": 0,
-                "alligator_cracking": 0,
-                "debris": 0,
-            },
-            "pci_histogram": {
-                "0-19": 0,
-                "20-39": 0,
-                "40-59": 0,
-                "60-79": 0,
-                "80-100": 0,
-            },
-            "pothole_filenames": [],
-            "pothole_details": [],
-        }
-
-        if num_objects > 0:
-            # Gather analysis data
-            pothole_confidences = []
-            alligator_cracking_confidences = []
-            line_cracking_confidences = []
-            debris_confidences = []
-            road_health_indices = []
-
-            for obj in telemetry_objects:
-                analysis = obj.analysis_results
-                pothole_confidences.append(analysis.get("pothole_confidence", 0.0))
-                alligator_cracking_confidences.append(
-                    analysis.get("alligator_cracking_confidence", 0.0)
-                )
-                line_cracking_confidences.append(
-                    analysis.get("line_cracking_confidence", 0.0)
-                )
-                debris_confidences.append(analysis.get("debris_confidence", 0.0))
-                road_health_indices.append(analysis.get("road_health_index", 0))
-
-                # Count 'yes' values for each category
-                if analysis.get("pothole") == "yes":
-                    stats["counts"]["pothole"] += 1
-                    stats["pothole_filenames"].append(obj.filename)
-                    stats["pothole_details"].append(obj.to_dict())
-                if analysis.get("line_cracking") == "yes":
-                    stats["counts"]["line_cracking"] += 1
-                if analysis.get("alligator_cracking") == "yes":
-                    stats["counts"]["alligator_cracking"] += 1
-                if analysis.get("debris") == "yes":
-                    stats["counts"]["debris"] += 1
-
-                # Categorize PCI scores into histogram ranges
-                pci_score = analysis.get("road_health_index", 0)
-                if 0 <= pci_score <= 19:
-                    stats["pci_histogram"]["0-19"] += 1
-                elif 20 <= pci_score <= 39:
-                    stats["pci_histogram"]["20-39"] += 1
-                elif 40 <= pci_score <= 59:
-                    stats["pci_histogram"]["40-59"] += 1
-                elif 60 <= pci_score <= 79:
-                    stats["pci_histogram"]["60-79"] += 1
-                elif 80 <= pci_score <= 100:
-                    stats["pci_histogram"]["80-100"] += 1
-
-            # Calculate averages
-            stats["average_pothole_confidence"] = sum(pothole_confidences) / num_objects
-            stats["average_alligator_cracking_confidence"] = (
-                sum(alligator_cracking_confidences) / num_objects
-            )
-            stats["average_line_cracking_confidence"] = (
-                sum(line_cracking_confidences) / num_objects
-            )
-            stats["average_debris_confidence"] = sum(debris_confidences) / num_objects
-            stats["road_health_index_average"] = sum(road_health_indices) / num_objects
-
-        # Save to overview.json
-        with open(output_path, "w") as json_file:
-            json.dump(stats, json_file, indent=4)
-        logger.info(f"Saved overview statistics to {output_path}.")
-
     def save_full_list(
         self, telemetry_objects: list, output_path="default_all_frames.json"
     ):
@@ -960,7 +865,6 @@ class Processor:
             # Step 8: Create and save an overview.json file
             stage_start = time.time()
             logger.info("Step 8: Create and save an overview.json file")
-            self.save_overview_json(telemetry_objects)
             self.save_full_list(telemetry_objects=telemetry_objects)
             log_timing(
                 "Step 8: Create and save overview.json and all_frame_analyses.json",
@@ -1047,16 +951,10 @@ class TelemetryObject:
             "alligatorCracking": [
                 self.analysis_results["alligator_cracking"].capitalize()
             ],
-            "alligatorCrackingConfidence": str(
-                self.analysis_results["alligator_cracking_confidence"]
-            ),
             "lineCracking": [self.analysis_results["line_cracking"].capitalize()],
-            "lineCrackingConfidence": str(
-                self.analysis_results["line_cracking_confidence"]
-            ),
-            "debris": [self.analysis_results["debris"].capitalize()],
+            "raveling": [self.analysis_results["raveling"].capitalize()],
             "summary": self.analysis_results["summary"],
-            "roadHealthIndex": str(self.analysis_results["road_health_index"]),
+            "estimatedPCR": str(self.analysis_results["estimated_pcr"]),
         }
 
     def add_openai_file_id(self, file_id):

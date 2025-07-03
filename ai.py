@@ -498,4 +498,5 @@ class AI:
 
 if __name__ == "__main__":
     ai = AI(os.getenv("OPENAI_API_KEY"))
-    ai.clear_old_files(days_ago_threshold=0)
+    results = ai.create_assistant("batch")
+    print(results)
