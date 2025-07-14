@@ -371,9 +371,6 @@ class Box:
                     and uploaded_geojson.entries
                 ):
                     geojson_box_file_id = uploaded_geojson.entries[0].id
-                    geojson_box_file_url = self.get_direct_shared_link(
-                        geojson_box_file_id
-                    )
                 else:
                     logger.error(
                         "GeoJSON upload failed. `uploaded_geojson` did not return expected structure."
@@ -464,7 +461,7 @@ class Box:
                         self.upload_small_file_to_folder,
                         file_path,
                         "308058285408",
-                        file,
+                        f"{file}_{timestamp}",
                     )
                     if uploaded_file:
                         logger.info(
@@ -475,7 +472,7 @@ class Box:
                         # Find the telemetry object by filename
                         telem_obj = filename_to_telem.get(file)
                         if telem_obj:
-                            telem_obj.box_file_id(uploaded_file.entries[0].id)
+                            telem_obj.box_file_id = uploaded_file.entries[0].id
                             telem_obj.box_file_url = link
                             print(f"{telem_obj.box_file_id = }")
                             print(f"{telem_obj.box_file_url = }")
@@ -484,12 +481,13 @@ class Box:
                 logger.error(f"Error uploading work order frames: {e}")
 
             # Delete all the jpg files in the 'work_order_frames' folder
-            try:
+            """try:
                 for file in os.listdir(source_wos_folder):
                     os.remove(os.path.join(source_wos_folder, file))
                 logger.info(f"Deleted all files in {source_wos_folder}")
             except Exception as e:
                 logger.error(f"Error deleting work order JPG files: {e}")
+            """
 
             return updated_telemetry_objects
 

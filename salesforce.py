@@ -21,7 +21,7 @@ class WorkOrderCreator:
         client_id: str = None,
         metadata_folder: str = None,
         telemetry_items: list = None,
-        sandbox: bool = True,
+        sandbox: bool = False,
     ):
         """
         Initialize the WorkOrderCreator class with Salesforce authentication.
@@ -37,18 +37,20 @@ class WorkOrderCreator:
         self.all_metadata = telemetry_items if telemetry_items else []
 
         username = (
-            username if username is not None else os.getenv("SALESFORCE_USERNAME")
+            username if username is not None else os.getenv("SALESFORCE_USERNAME_PROD")
         )
         password = (
-            password if password is not None else os.getenv("SALESFORCE_PASSWORD")
+            password if password is not None else os.getenv("SALESFORCE_PASSWORD_PROD")
         )
         security_token = (
             security_token
             if security_token is not None
-            else os.getenv("SALESFORCE_SECURITY_TOKEN")
+            else os.getenv("SALESFORCE_SECURITY_TOKEN_PROD")
         )
         client_id = (
-            client_id if client_id is not None else os.getenv("SALESFORCE_CONSUMER_KEY")
+            client_id
+            if client_id is not None
+            else os.getenv("SALESFORCE_CONSUMER_KEY_PROD")
         )
 
         domain = (
@@ -97,8 +99,8 @@ class WorkOrderCreator:
             "Subject_Image_URL__c": box_file_url,
             "Location__Latitude__s": lat,
             "Location__Longitude__s": lon,
-            "RecordTypeId": "012VF000001Go9xYAC",
-            "OwnerId": "00GVF000003yaN3",
+            "RecordTypeId": "012Ki0000004IAGIA2",
+            "OwnerId": "00GKi000001OUQ2",
             "Location_Owner__c": owner,
         }
 
@@ -306,10 +308,10 @@ class WorkOrderCreator:
         analysis_summary = ai_analysis.get("summary", "No analysis summary provided.")
         pothole = ai_analysis.get("pothole", None)
         pothole_confidence = ai_analysis.get("pothole_confidence", None)
-        line_cracking = ai_analysis.get("line_cracking", 'Unknown')
-        alligator_cracking = ai_analysis.get("alligator_cracking", 'Unknown')
-        raveling = ai_analysis.get("raveling", 'Unknown')
-        est_pcr = ai_analysis.get("estimated_pcr", 'nAn')
+        line_cracking = ai_analysis.get("line_cracking", "Unknown")
+        alligator_cracking = ai_analysis.get("alligator_cracking", "Unknown")
+        raveling = ai_analysis.get("raveling", "Unknown")
+        est_pcr = ai_analysis.get("estimated_pcr", "nAn")
         lat = metadata_item.get("lat", "Unknown")
         lon = metadata_item.get("lon", "Unknown")
 
@@ -320,22 +322,14 @@ class WorkOrderCreator:
                 f"Pothole Presence: {'Yes' if pothole else 'No'} ({pothole_confidence * 100:.1f}%)"
             )
         if line_cracking is not None:
-            assessment_details.append(
-                f"Line Cracking: {line_cracking}"
-            )
+            assessment_details.append(f"Line Cracking: {line_cracking}")
         if alligator_cracking is not None:
-            assessment_details.append(
-                f"Alligator Cracking: {alligator_cracking}"
-            )
+            assessment_details.append(f"Alligator Cracking: {alligator_cracking}")
         if raveling is not None:
-            assessment_details.append(
-                f"Raveling: {raveling}"
-            )
+            assessment_details.append(f"Raveling: {raveling}")
 
         if est_pcr is not None:
-            assessment_details.append(
-                f"Estimated PCR: {est_pcr}"
-            )
+            assessment_details.append(f"Estimated PCR: {est_pcr}")
 
         # Construct the Google Maps URL
         maps_url = f"https://www.google.com/maps/place/{lat},{lon}"
@@ -499,11 +493,22 @@ class WorkOrderCreator:
 if __name__ == "__main__":
     print("starting")
 
+    """
     username = os.getenv("SALESFORCE_USERNAME")
     password = os.getenv("SALESFORCE_PASSWORD")
     security_token = os.getenv("SALESFORCE_SECURITY_TOKEN")
     client_id = os.getenv("SALESFORCE_CONSUMER_KEY")
     is_sandbox = True
+    """
+    username = os.getenv("SALESFORCE_USERNAME_PROD")
+    password = os.getenv("SALESFORCE_PASSWORD_PROD")
+    security_token = os.getenv("SALESFORCE_SECURITY_TOKEN_PROD")
+    client_id = os.getenv("SALESFORCE_CONSUMER_KEY_PROD")
+    is_sandbox = False
+
+    print(
+        f"{username = } \n{password = } \n{security_token = } \n{client_id = } \n{is_sandbox = }"
+    )
 
     w_o_creator = WorkOrderCreator(
         username=username,
