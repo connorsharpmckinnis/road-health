@@ -13,6 +13,7 @@ from utils import (
     set_batch_assistant,
     get_greenway_assistant,
     set_greenway_assistant,
+    get_checker_assistant,
     model,
     instructions,
     batch_response_format,
@@ -68,6 +69,7 @@ class AI:
         self.instructions = instructions
         self.batch_instructions = instructions
         self.current_assistant_id = None
+        self.checker_assistant_id = get_checker_assistant()
 
         self.response_format = response_format
         self.batch_response_format = batch_response_format
@@ -360,9 +362,9 @@ class AI:
                 self.create_assistant(type="greenway")
             self.current_assistant_id = self.greenway_assistant_id
         elif assistant == "checker":
-            if not self.assistant_id:
+            if not self.checker_assistant_id:
                 self.create_assistant(type="checker")
-            self.current_assistant_id = self.assistant_id
+            self.current_assistant_id = self.checker_assistant_id
 
         if multithreaded:
             from concurrent.futures import ThreadPoolExecutor
@@ -498,5 +500,5 @@ class AI:
 
 if __name__ == "__main__":
     ai = AI(os.getenv("OPENAI_API_KEY"))
-    results = ai.create_assistant("batch")
+    results = ai.create_assistant("checker")
     print(results)
