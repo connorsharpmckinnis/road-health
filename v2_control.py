@@ -1,6 +1,5 @@
 import os
 import shutil
-from google import genai
 
 from v2_processing import VideoProcessor
 from v2_configurations import road_health, people_counting, audio_sentiment
@@ -61,7 +60,7 @@ def analyze_single_file(client:GeminiConnection, file:str, config, model:str): #
 
 
 
-def main(input_folder:str="default_input", mode:str="video", seconds_per_frame:int=1, analysis_folder:str="v2_analysis", config=people_counting, model="gemini-2.5-flash-lite", output_folder:str="v2_output"):
+def main(input_folder:str="default_input", mode:str="video", seconds_per_frame:int=1, analysis_folder:str="v2_analysis", config=people_counting, model="gemini-2.5-flash-lite", output_folder:str="v2_output_content"):
     results = []
     analyses = []
     
@@ -82,15 +81,25 @@ def main(input_folder:str="default_input", mode:str="video", seconds_per_frame:i
         results.append(result)
         
         
-    # Analyze files (Analysis -> Output)    
-    files_to_analyze = os.listdir(analysis_folder)
-    for file in files_to_analyze:
-        filepath = os.path.join(analysis_folder, file)
-        result, analysis = analyze_single_file(client, filepath, config, model)
-        file_analysis = {file: analysis}
-        results.append(result)
-        analyses.append(file_analysis)
-        shutil.move(filepath, output_folder)
+        # Analyze files (Analysis -> Output)    
+        files_to_analyze = os.listdir(analysis_folder)
+        for file in files_to_analyze:
+            filepath = os.path.join(analysis_folder, file)
+            result, analysis = analyze_single_file(client, filepath, config, model)
+            print(file)
+            client.update_point(file, analysis)
+            
+            file_analysis = {file: analysis}
+            results.append(result)
+            analyses.append(file_analysis)
+            shutil.move(filepath, output_folder)
+        
+    client.export_db_to_json()
+    client.clear_points_table()
+    
+    client.close_db()
+        
+    
         
         
     
@@ -105,7 +114,7 @@ if __name__ == "__main__":
     mode = "video"
     seconds_per_frame = 1
     analysis_folder = "v2_analysis"
-    output_folder = "v2_output"
+    output_folder = "v2_output_content"
     config = people_counting
     model = "gemini-2.5-flash-lite"
     main(input_folder, mode, seconds_per_frame, analysis_folder, config, model, output_folder)

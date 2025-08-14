@@ -1,5 +1,4 @@
-from pydantic import BaseModel, conint, Field
-from typing import TypeAlias
+from pydantic import BaseModel, Field
 
 # Road Health
 class RoadHealth(BaseModel):
