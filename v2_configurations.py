@@ -27,9 +27,10 @@ people_counting = {
 # Audio Sentiment
 class AudioSentiment(BaseModel):
     sentiment: int = Field(ge=-100, le=100)
+    transcript: str
     
 audio_sentiment = {
-    "prompt": "You are a sentiment analyst, and your task is to evaluate the sentiment of the provided content. Your response should be an integer between -100 and 100, with negative numbers reflecting negative sentiment and positive reflecting positive.",
+    "prompt": "You are a sentiment analyst, and your task is to transcribe and evaluate the sentiment of the provided content. Your response should be an integer between -100 and 100, with negative numbers reflecting negative sentiment and positive reflecting positive.",
     "schema": AudioSentiment,
     "mime_type": "audio/mp3"
 }

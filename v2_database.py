@@ -17,5 +17,17 @@ command = """CREATE TABLE points (
     lat REAL,
     lon REAL,
     analysis TEXT)"""
+    
+    
+new_command = """CREATE TABLE items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_filename TEXT NOT NULL,
+    process_datetime DATETIME NOT NULL,
+    metadata TEXT,
+    analysis TEXT
+)
+"""
+
+cursor.execute(new_command)
 
 

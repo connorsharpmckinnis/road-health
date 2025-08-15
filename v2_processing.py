@@ -35,13 +35,25 @@ class VideoProcessor:
             height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
             timestamp_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
             analysis = json.dumps({})
+            
+            metadata = {
+                "frame_filename": filename,
+                "timestamp_ms": timestamp_ms,
+                "width": width,
+                "height": height,
+                "fps": fps,
+            }
 
             
             command = """INSERT INTO points (source_filename, frame_filename, process_datetime, timestamp_ms, width, height, fps, analysis)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
-                
+            
             cursor.execute(command, (source_filename, filename, process_datetime, timestamp_ms, width, height, fps, analysis))
                 
+            # Update row in the items database that has a matching source_filename value with the new metadata variable
+            update_command = """UPDATE items SET metadata = ? WHERE source_filename = ?"""
+            cursor.execute(update_command, (json.dumps(metadata), source_filename))
+            
             saved_count += 1
             
         cap.release()

@@ -6,8 +6,6 @@ import sqlite3
 import os
 from datetime import datetime
 
-from v2_configurations import road_health, people_counting, audio_sentiment
-
 class GeminiConnection:
     
     def __init__(self):
@@ -34,16 +32,16 @@ class GeminiConnection:
 
         print(f"Exported {len(data)} records to {output_path}")
         
-    def clear_points_table(self, db_path="v2_points.db"):
-        self.cursor.execute("DELETE FROM points")
+    def clear_table(self, db_path="v2_points.db", table_name="points"):
+        self.cursor.execute("DELETE FROM ?", (table_name,))
         self.conn.commit()
 
     def close_db(self):
         self.conn.close()
         
-    def file_to_bytestring(self, image):
-        with open(image, 'rb') as image:
-            bytestring = image.read()
+    def file_to_bytestring(self, file):
+        with open(file, 'rb') as file:
+            bytestring = file.read()
             return bytestring  
     
     def analyze_content(self, content:str, configuration:dict, model="gemini-2.5-flash-lite") -> dict:
@@ -61,7 +59,8 @@ class GeminiConnection:
                 "response_mime_type": "application/json",
                 "response_schema": configuration["schema"],
             },
-        ).text
+        ).text        
+        
         results = json.loads(response or "{}")
         return results
     
